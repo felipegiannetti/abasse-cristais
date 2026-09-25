@@ -33,3 +33,22 @@ export interface CategoryCount {
   name: string;
   count: number;
 }
+
+export interface Stats {
+  total: number;
+  byStatus: Record<ProductStatus, number>;
+  featured: number;
+  images: number;
+  availableValueCents: number;
+  categories: CategoryCount[];
+  recent: Product[];
+}
+
+export interface TeamMember {
+  id: string;
+  username: string;
+  createdAt: string;
+  mustChangePassword: boolean;
+  createdBy: string | null;
+  isYou: boolean;
+}

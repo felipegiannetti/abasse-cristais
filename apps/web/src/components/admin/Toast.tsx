@@ -34,7 +34,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8 }}
               className={`glass pointer-events-auto rounded-full px-5 py-3 text-sm font-medium ${
-                t.tone === 'success' ? 'text-jade-300' : 'text-red-300'
+                t.tone === 'success' ? 'text-gold-300' : 'text-red-300'
               }`}
             >
               {t.message}

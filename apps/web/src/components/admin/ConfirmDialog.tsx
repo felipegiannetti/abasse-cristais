@@ -32,7 +32,7 @@ export function ConfirmDialog({ open, title, message, confirmLabel, loadingLabel
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[90] grid place-items-center bg-ink-950/80 px-5 backdrop-blur-sm"
+          className="fixed inset-0 z-[90] grid place-items-center bg-navy-950/80 px-5 backdrop-blur-sm"
           onClick={() => !loading && onCancel()}
         >
           <motion.div
@@ -45,10 +45,10 @@ export function ConfirmDialog({ open, title, message, confirmLabel, loadingLabel
             onClick={(e) => e.stopPropagation()}
             className="glass w-full max-w-md rounded-3xl p-8"
           >
-            <h2 id="confirm-title" className="font-display text-3xl text-ice">
+            <h2 id="confirm-title" className="font-display text-3xl text-pearl">
               {title}
             </h2>
-            <p className="mt-3 text-ice/65">{message}</p>
+            <p className="mt-3 text-pearl/65">{message}</p>
             <div className="mt-8 flex justify-end gap-3">
               <button className="btn btn-ghost btn-sm" onClick={onCancel} disabled={loading} autoFocus>
                 {m.common.cancel}

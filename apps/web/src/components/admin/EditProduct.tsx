@@ -27,8 +27,8 @@ export function EditProduct({ id }: { id: string }) {
   if (error) {
     return (
       <div className="glass rounded-3xl p-10 text-center">
-        <p className="font-display text-3xl text-ice">{error}</p>
-        <Link href={href('/admin')} className="btn btn-ghost mt-6">
+        <p className="font-display text-3xl text-pearl">{error}</p>
+        <Link href={href('/admin/products')} className="btn btn-ghost mt-6">
           {m.admin.form.back}
         </Link>
       </div>
@@ -37,7 +37,7 @@ export function EditProduct({ id }: { id: string }) {
   if (!product) {
     return (
       <div
-        className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-jade-400/30 border-t-jade-400"
+        className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400"
         role="status"
         aria-label={m.common.loading}
       />

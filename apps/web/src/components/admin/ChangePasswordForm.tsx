@@ -51,14 +51,14 @@ export function ChangePasswordForm() {
   return (
     <div className="mx-auto max-w-lg">
       <p className="eyebrow">{forced ? t.firstAccess : t.security}</p>
-      <h1 className="mt-3 font-display text-4xl font-medium text-ice sm:text-5xl">{forced ? t.titleForced : t.title}</h1>
+      <h1 className="mt-3 font-display text-4xl font-medium text-pearl sm:text-5xl">{forced ? t.titleForced : t.title}</h1>
       {forced && (
-        <p className="mt-4 rounded-2xl border border-jade-400/25 bg-jade-400/[0.07] px-5 py-4 text-sm leading-relaxed text-ice/80">
+        <p className="mt-4 rounded-2xl border border-gold-400/25 bg-gold-400/[0.07] px-5 py-4 text-sm leading-relaxed text-pearl/80">
           {t.forcedNote}
         </p>
       )}
 
-      <form onSubmit={onSubmit} className="glass mt-8 space-y-5 rounded-[1.75rem] p-8" noValidate>
+      <form onSubmit={onSubmit} className="glass-strong gold-border mt-8 space-y-5 rounded-[1.75rem] p-8" noValidate>
         <div>
           <label htmlFor="current" className="label">
             {forced ? t.initial : t.current}
@@ -74,7 +74,7 @@ export function ChangePasswordForm() {
             {t.rules.map((label, i) => {
               const ok = ruleTests[i](next);
               return (
-                <li key={label} className={`flex items-center gap-2 transition-colors ${ok ? 'text-jade-300' : 'text-ice/45'}`}>
+                <li key={label} className={`flex items-center gap-2 transition-colors ${ok ? 'text-gold-300' : 'text-pearl/45'}`}>
                   <span aria-hidden="true">{ok ? '✓' : '○'}</span>
                   {label}
                 </li>

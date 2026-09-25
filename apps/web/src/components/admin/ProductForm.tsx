@@ -1,18 +1,38 @@
 'use client';
 
+import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { revalidateCatalog } from '@/app/actions';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { centsToInput, parsePriceToCents } from '@/lib/format';
 import type { Product, ProductStatus } from '@/lib/types';
+import { IconExternal } from './AdminIcons';
 import { ImageManager, type ImageItem } from './ImageManager';
+import { ProductPreview } from './ProductPreview';
 import { useToast } from './Toast';
 
 const STATUSES: ProductStatus[] = ['AVAILABLE', 'SOLD_OUT', 'HIDDEN'];
+
+function Section({ n, title, children, delay = 0 }: { n: number; title: string; children: ReactNode; delay?: number }) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 22 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
+      className="glass-strong rounded-[1.75rem] p-6 sm:p-7"
+    >
+      <h2 className="flex items-center gap-3 font-display text-2xl text-pearl">
+        <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-600 font-sans text-sm font-bold text-navy-950">{n}</span>
+        {title}
+      </h2>
+      <div className="mt-5">{children}</div>
+    </motion.section>
+  );
+}
 
 export function ProductForm({ initial }: { initial?: Product }) {
   const router = useRouter();
@@ -54,6 +74,8 @@ export function ProductForm({ initial }: { initial?: Product }) {
     removedIds.current.push(...gone.map((i) => i.id!));
     setImages(next);
   }
+
+  const priceCentsLive = useMemo(() => (price.trim() ? parsePriceToCents(price) : null), [price]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -109,7 +131,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
 
       await revalidateCatalog();
       toast(initial ? t.updated : t.created);
-      router.push(href('/admin'));
+      router.push(href('/admin/products'));
     } catch (err) {
       setError(errorText(err, m, t.unexpected) + (productId || slug ? ` ${t.keptNote}` : ''));
       setSaving(false);
@@ -117,98 +139,153 @@ export function ProductForm({ initial }: { initial?: Product }) {
     }
   }
 
-  const opt = <span className="normal-case tracking-normal text-ice/30">{t.optional}</span>;
+  const opt = <span className="normal-case tracking-normal text-pearl/30">{t.optional}</span>;
 
   return (
-    <form onSubmit={onSubmit} noValidate className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <form onSubmit={onSubmit} noValidate>
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href={href('/admin')} className="text-sm text-ice/50 hover:text-jade-300">
+          <Link href={href('/admin/products')} className="text-sm text-pearl/50 transition-colors hover:text-gold-300">
             {t.back}
           </Link>
-          <h1 className="mt-3 font-display text-4xl font-medium text-ice sm:text-5xl">{initial ? t.titleEdit : t.titleNew}</h1>
+          <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">{initial ? t.titleEdit : t.titleNew}</h1>
         </div>
         {slug && (
           <a href={href(`/products/${slug}`)} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">
-            {t.viewOnSite}
+            {t.viewOnSite.replace(' ↗', '')} <IconExternal className="h-4 w-4" />
           </a>
         )}
       </div>
 
-      <section className="glass space-y-5 rounded-[1.75rem] p-6 sm:p-8">
-        <h2 className="font-display text-2xl text-ice">{t.info}</h2>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="sm:col-span-2">
-            <label htmlFor="name" className="label">{t.name}</label>
-            <input id="name" className="field" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder={t.namePh} required />
-          </div>
-          <div>
-            <label htmlFor="category" className="label">{t.category}</label>
-            <input id="category" className="field" list="categories" value={category} maxLength={60} onChange={(e) => setCategory(e.target.value)} placeholder={t.categoryPh} required />
-            <datalist id="categories">
-              {categories.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-          </div>
-          <div>
-            <label htmlFor="price" className="label">{t.price}</label>
-            <input id="price" className="field" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={t.pricePh} />
-            <p className="mt-1.5 text-xs text-ice/40">{t.priceHint}</p>
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="description" className="label">{t.description}</label>
-            <textarea id="description" className="field min-h-40 resize-y" value={description} maxLength={5000} onChange={(e) => setDescription(e.target.value)} placeholder={t.descriptionPh} required />
-          </div>
-          <div>
-            <label htmlFor="weight" className="label">{t.weight} {opt}</label>
-            <input id="weight" className="field" value={weight} maxLength={60} onChange={(e) => setWeight(e.target.value)} placeholder={t.weightPh} />
-          </div>
-          <div>
-            <label htmlFor="dimensions" className="label">{t.dimensions} {opt}</label>
-            <input id="dimensions" className="field" value={dimensions} maxLength={60} onChange={(e) => setDimensions(e.target.value)} placeholder={t.dimensionsPh} />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="origin" className="label">{t.origin} {opt}</label>
-            <input id="origin" className="field" value={origin} maxLength={60} onChange={(e) => setOrigin(e.target.value)} placeholder={t.originPh} />
-          </div>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-6">
+          <Section n={1} title={t.sectionBasics}>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="name" className="label">{t.name}</label>
+                <input id="name" className="field" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} placeholder={t.namePh} required />
+              </div>
+              <div>
+                <label htmlFor="category" className="label">{t.category}</label>
+                <input id="category" className="field" list="categories" value={category} maxLength={60} onChange={(e) => setCategory(e.target.value)} placeholder={t.categoryPh} required />
+                <datalist id="categories">
+                  {categories.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label htmlFor="price" className="label">{t.price}</label>
+                <input id="price" className="field" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={t.pricePh} />
+                <p className="mt-1.5 text-xs text-pearl/40">{t.priceHint}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="description" className="label">{t.description}</label>
+                <textarea id="description" className="field min-h-40 resize-y" value={description} maxLength={5000} onChange={(e) => setDescription(e.target.value)} placeholder={t.descriptionPh} required />
+                <p className="mt-1.5 text-right text-xs tabular-nums text-pearl/30">{description.length}/5000</p>
+              </div>
+              <div>
+                <label htmlFor="weight" className="label">{t.weight} {opt}</label>
+                <input id="weight" className="field" value={weight} maxLength={60} onChange={(e) => setWeight(e.target.value)} placeholder={t.weightPh} />
+              </div>
+              <div>
+                <label htmlFor="dimensions" className="label">{t.dimensions} {opt}</label>
+                <input id="dimensions" className="field" value={dimensions} maxLength={60} onChange={(e) => setDimensions(e.target.value)} placeholder={t.dimensionsPh} />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="origin" className="label">{t.origin} {opt}</label>
+                <input id="origin" className="field" value={origin} maxLength={60} onChange={(e) => setOrigin(e.target.value)} placeholder={t.originPh} />
+              </div>
+            </div>
+          </Section>
+
+          <Section n={2} title={t.sectionMedia} delay={0.08}>
+            <ImageManager items={images} onChange={handleImages} onError={(msg) => toast(msg, 'error')} disabled={saving} />
+          </Section>
+
+          <Section n={3} title={t.sectionPublish} delay={0.16}>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label htmlFor="status" className="label">{t.status}</label>
+                <select id="status" className="field" value={status} onChange={(e) => setStatus(e.target.value as ProductStatus)}>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>{m.admin.statusLong[s]}</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={featured}
+                onClick={() => setFeatured((v) => !v)}
+                className={`flex items-center gap-4 self-end rounded-2xl border px-5 py-3.5 text-left transition-colors ${featured ? 'border-gold-400/50 bg-gold-400/10' : 'border-white/10 bg-white/[0.03] hover:border-gold-400/30'}`}
+              >
+                <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${featured ? 'bg-gold-400' : 'bg-white/15'}`}>
+                  <motion.span layout transition={{ type: 'spring', stiffness: 500, damping: 32 }} className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow ${featured ? 'right-0.5' : 'left-0.5'}`} />
+                </span>
+                <span>
+                  <span className="block font-medium text-pearl">{t.featured}</span>
+                  <span className="block text-xs text-pearl/45">{t.featuredHint}</span>
+                </span>
+              </button>
+            </div>
+          </Section>
+
+          <AnimatePresence>
+            {error && (
+              <motion.p
+                role="alert"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-red-200"
+              >
+                {error}
+              </motion.p>
+            )}
+          </AnimatePresence>
         </div>
-      </section>
 
-      <section className="glass rounded-[1.75rem] p-6 sm:p-8">
-        <ImageManager items={images} onChange={handleImages} onError={(msg) => toast(msg, 'error')} disabled={saving} />
-      </section>
+        {/* Live preview */}
+        <aside className="xl:sticky xl:top-24 xl:self-start">
+          <ProductPreview
+            data={{
+              name,
+              category,
+              priceCents: priceCentsLive,
+              status,
+              featured,
+              description,
+              weight,
+              dimensions,
+              origin,
+              cover: images[0]?.url,
+              photos: images.length,
+            }}
+          />
+        </aside>
+      </div>
 
-      <section className="glass grid gap-5 rounded-[1.75rem] p-6 sm:grid-cols-2 sm:p-8">
-        <div>
-          <label htmlFor="status" className="label">{t.status}</label>
-          <select id="status" className="field" value={status} onChange={(e) => setStatus(e.target.value as ProductStatus)}>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>{m.admin.statusLong[s]}</option>
-            ))}
-          </select>
-        </div>
-        <label className="flex cursor-pointer items-center gap-3 self-end rounded-2xl border border-white/10 bg-white/[0.03] px-5 py-3.5 hover:border-jade-400/40">
-          <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} className="h-5 w-5 accent-[#34e0a1]" />
-          <span>
-            <span className="block font-medium text-ice">{t.featured}</span>
-            <span className="block text-xs text-ice/45">{t.featuredHint}</span>
-          </span>
-        </label>
-      </section>
-
-      {error && (
-        <p role="alert" className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">
-          {error}
-        </p>
-      )}
-
-      <div className="sticky bottom-4 z-30 flex flex-wrap items-center gap-3 rounded-full border border-white/10 bg-ink-950/85 p-2.5 pl-3 backdrop-blur-xl">
+      {/* Sticky action bar */}
+      <div className="glass-strong sticky bottom-4 z-30 mt-8 flex flex-wrap items-center gap-3 rounded-full p-2.5 pl-3">
         <button type="submit" disabled={saving} className="btn btn-primary">
           {saving ? t.saving : initial ? t.save : t.create}
         </button>
-        <Link href={href('/admin')} className="btn btn-ghost">{t.cancel}</Link>
-        {progress && <span className="text-sm text-jade-300" role="status">{progress}</span>}
+        <Link href={href('/admin/products')} className="btn btn-ghost">{t.cancel}</Link>
+        <AnimatePresence>
+          {progress && (
+            <motion.span
+              initial={{ opacity: 0, x: -8 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0 }}
+              className="flex items-center gap-2 text-sm text-gold-300"
+              role="status"
+            >
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-gold-400/30 border-t-gold-400" />
+              {progress}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </div>
     </form>
   );
