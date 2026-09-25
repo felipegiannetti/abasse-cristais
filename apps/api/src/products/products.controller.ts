@@ -14,7 +14,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle } from '@nestjs/throttler';
 import { config } from '../config';
 import { AdminGuard } from '../auth/admin.guard';
 import {
@@ -49,6 +49,7 @@ export class PublicProductsController {
 /** Gestão de produtos — exige sessão de admin (e senha já trocada). */
 @Controller('admin/products')
 @UseGuards(AdminGuard)
+@SkipThrottle() // session-protected; a per-IP bucket shared behind the proxy would let outsiders block the admin
 export class AdminProductsController {
   constructor(private readonly products: ProductsService) {}
 
@@ -84,8 +85,7 @@ export class AdminProductsController {
   }
 
   @Post(':id/images')
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: config.maxImageBytes, files: 1 } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: config.maxImageBytes, files: 1, fields: 0, parts: 2 } }))
   addImage(@Param('id') id: string, @UploadedFile() file?: Express.Multer.File) {
     return this.products.addImage(id, file);
   }

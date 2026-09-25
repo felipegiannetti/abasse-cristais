@@ -6,8 +6,8 @@ import cookieParser from 'cookie-parser';
 import type { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { loginTokenGate } from './auth/login-token.middleware';
 import { config } from './config';
-import { UPLOADS_DIR } from './storage/storage.service';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -26,18 +26,20 @@ function originCheck(req: Request, _res: Response, next: NextFunction) {
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.set('trust proxy', true); // atrás da Vercel/Next: IP real do cliente
+  app.set('trust proxy', config.trustProxyHops); // trusted hops only; never `true` (X-Forwarded-For spoofing)
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cookieParser());
+  // Admin/auth responses carry private data: never let browsers or shared caches store them.
+  app.use(['/admin', '/auth'], (_req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
+  app.use('/auth/login', loginTokenGate);
   app.use(originCheck);
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
-
-  if (!config.isProd && !config.blobToken) {
-    app.useStaticAssets(UPLOADS_DIR, { prefix: '/uploads' });
-  }
 
   await app.listen(process.env.PORT ?? 4000);
 }

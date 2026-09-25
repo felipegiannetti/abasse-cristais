@@ -7,10 +7,16 @@ import {
 import { Prisma, ProductStatus } from '@prisma/client';
 import { config } from '../config';
 import { PrismaService } from '../prisma/prisma.service';
-import { StorageService, detectImage } from '../storage/storage.service';
+import { detectImage } from './image-type';
 import { CreateProductDto, ListProductsQuery, UpdateProductDto } from './products.dto';
 
-const withImages = { images: { orderBy: { position: 'asc' } } } satisfies Prisma.ProductInclude;
+// NEVER select the image bytes here: listings must only carry ids (the bytes are served by GET /images/:id).
+const withImages = {
+  images: { select: { id: true }, orderBy: { position: 'asc' } },
+} satisfies Prisma.ProductInclude;
+
+/** Path of an image as exposed through the site's /api proxy. */
+export const imageUrl = (id: string) => `/api/images/${id}`;
 type ProductWithImages = Prisma.ProductGetPayload<{ include: typeof withImages }>;
 
 const PUBLIC_STATUSES: ProductStatus[] = ['AVAILABLE', 'SOLD_OUT'];
@@ -40,7 +46,7 @@ export function serialize(p: ProductWithImages) {
     origin: p.origin,
     featured: p.featured,
     status: p.status,
-    images: p.images.map((i) => ({ id: i.id, url: i.url })),
+    images: p.images.map((i) => ({ id: i.id, url: imageUrl(i.id) })),
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
@@ -48,10 +54,7 @@ export function serialize(p: ProductWithImages) {
 
 @Injectable()
 export class ProductsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly storage: StorageService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ---------- leitura ----------
 
@@ -163,10 +166,9 @@ export class ProductsService {
   }
 
   async remove(id: string) {
-    const p = await this.prisma.product.findUnique({ where: { id }, include: { images: true } });
-    if (!p) throw new NotFoundException({ code: 'PRODUCT_NOT_FOUND', message: 'Product not found.' });
+    // images are rows of this database and go away with the product (ON DELETE CASCADE)
+    await this.ensureExists(id);
     await this.prisma.product.delete({ where: { id } });
-    await Promise.all(p.images.map((i) => this.storage.remove(i.url)));
   }
 
   // ---------- imagens ----------
@@ -178,27 +180,35 @@ export class ProductsService {
     const kind = detectImage(file.buffer);
     if (!kind) throw new UnsupportedMediaTypeException({ code: 'INVALID_IMAGE_FORMAT', message: 'Invalid format. Use JPG, PNG or WebP.' });
 
-    const count = await this.prisma.productImage.count({ where: { productId } });
-    if (count >= config.maxImagesPerProduct) {
-      throw new BadRequestException({ code: 'IMAGE_LIMIT', message: `Limit of ${config.maxImagesPerProduct} images per product.` });
-    }
-
-    const url = await this.storage.save(file.buffer, kind);
-    const last = await this.prisma.productImage.aggregate({
-      where: { productId },
-      _max: { position: true },
+    // Lock the product row so concurrent uploads can neither exceed the image limit nor share a position.
+    const image = await this.prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Product" WHERE id = ${productId} FOR UPDATE`;
+      const stats = await tx.productImage.aggregate({
+        where: { productId },
+        _count: { _all: true },
+        _max: { position: true },
+      });
+      if (stats._count._all >= config.maxImagesPerProduct) {
+        throw new BadRequestException({ code: 'IMAGE_LIMIT', message: `Limit of ${config.maxImagesPerProduct} images per product.` });
+      }
+      return tx.productImage.create({
+        data: {
+          productId,
+          data: new Uint8Array(file.buffer), // raw bytes go to the bytea column
+          mimeType: kind.mime,
+          size: file.buffer.length,
+          position: (stats._max.position ?? -1) + 1,
+        },
+        select: { id: true },
+      });
     });
-    const image = await this.prisma.productImage.create({
-      data: { productId, url, position: (last._max.position ?? -1) + 1 },
-    });
-    return { id: image.id, url: image.url };
+    return { id: image.id, url: imageUrl(image.id) };
   }
 
   async removeImage(productId: string, imageId: string) {
-    const image = await this.prisma.productImage.findFirst({ where: { id: imageId, productId } });
-    if (!image) throw new NotFoundException({ code: 'IMAGE_NOT_FOUND', message: 'Image not found.' });
-    await this.prisma.productImage.delete({ where: { id: image.id } });
-    await this.storage.remove(image.url);
+    // deleteMany scoped by productId: an image can only be removed through its own product
+    const { count } = await this.prisma.productImage.deleteMany({ where: { id: imageId, productId } });
+    if (!count) throw new NotFoundException({ code: 'IMAGE_NOT_FOUND', message: 'Image not found.' });
   }
 
   async reorderImages(productId: string, ids: string[]) {
