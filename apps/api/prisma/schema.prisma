@@ -19,6 +19,8 @@ model AdminUser {
   tokenVersion       Int       @default(0)
   failedAttempts     Int       @default(0)
   lockedUntil        DateTime?
+  // who created this admin (null for the seeded first admin)
+  createdById        String?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 }
@@ -62,4 +64,12 @@ model ProductImage {
   createdAt DateTime @default(now())
 
   @@index([productId, position])
+}
+
+// Site-wide settings edited by the admins (single row, id = "main")
+model SiteSettings {
+  id        String   @id @default("main")
+  // digits only, with country code (e.g. 5511999999999); empty = fall back to the web app's env default
+  whatsapp  String   @default("")
+  updatedAt DateTime @updatedAt
 }

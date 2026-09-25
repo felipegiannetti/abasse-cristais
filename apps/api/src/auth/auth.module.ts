@@ -14,6 +14,6 @@ import { SessionService } from './session.service';
     })],
   controllers: [AuthController],
   providers: [AuthService, AdminGuard, SessionService],
-  exports: [AdminGuard, JwtModule, SessionService],
+  exports: [AdminGuard, JwtModule, SessionService, AuthService],
 })
 export class AuthModule {}

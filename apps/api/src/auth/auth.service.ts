@@ -103,6 +103,20 @@ export class AuthService {
     }
   }
 
+  /**
+   * Step-up authentication for sensitive actions (creating/deleting admins, resetting passwords):
+   * re-checks the acting admin's password (a stolen 60-day session alone is not enough) and feeds
+   * the same per-account lockout as the login form.
+   */
+  async assertPassword(userId: string, password: string): Promise<void> {
+    const user = await this.prisma.adminUser.findUniqueOrThrow({ where: { id: userId } });
+    if (user.lockedUntil && user.lockedUntil > new Date()) throw lockedError();
+    if (!(await compare(password, user.passwordHash))) {
+      await this.registerFailure(user.id);
+      throw new BadRequestException({ code: 'WRONG_CURRENT_PASSWORD', message: 'Current password is incorrect.' });
+    }
+  }
+
   private async registerFailure(userId: string) {
     const u = await this.prisma.adminUser.update({
       where: { id: userId },
