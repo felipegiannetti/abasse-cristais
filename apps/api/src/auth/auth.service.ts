@@ -1,0 +1,110 @@
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { compare, hash } from 'bcryptjs';
+import { config } from '../config';
+import { PrismaService } from '../prisma/prisma.service';
+
+const BCRYPT_COST = 12;
+let dummyHash: Promise<string> | undefined;
+// Hash "de mentira" para gastar o mesmo tempo quando o usuário não existe (evita enumeração por timing).
+const getDummyHash = () => (dummyHash ??= hash('senha-inexistente', BCRYPT_COST));
+
+const lockedError = () =>
+  new HttpException(
+    { code: 'TOO_MANY_ATTEMPTS', message: 'Too many failed attempts. Try again in a few minutes.' },
+    HttpStatus.TOO_MANY_REQUESTS,
+  );
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwt: JwtService,
+  ) {}
+
+  async login(username: string, password: string) {
+    const user = await this.prisma.adminUser.findUnique({
+      where: { username: username.trim().toLowerCase() },
+    });
+
+    if (user?.lockedUntil && user.lockedUntil > new Date()) throw lockedError();
+
+    const ok = await compare(password, user?.passwordHash ?? (await getDummyHash()));
+    if (!user || !ok) {
+      if (user) await this.registerFailure(user.id);
+      throw new UnauthorizedException({ code: 'INVALID_CREDENTIALS', message: 'Invalid username or password.' });
+    }
+
+    if (user.failedAttempts > 0 || user.lockedUntil) {
+      await this.prisma.adminUser.update({
+        where: { id: user.id },
+        data: { failedAttempts: 0, lockedUntil: null },
+      });
+    }
+
+    return { token: await this.sign(user.id, user.tokenVersion), user: this.publicUser(user) };
+  }
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.adminUser.findUniqueOrThrow({ where: { id: userId } });
+
+    if (user.lockedUntil && user.lockedUntil > new Date()) throw lockedError();
+
+    if (!(await compare(currentPassword, user.passwordHash))) {
+      await this.registerFailure(user.id);
+      throw new BadRequestException({ code: 'WRONG_CURRENT_PASSWORD', message: 'Current password is incorrect.' });
+    }
+    if (newPassword === currentPassword) {
+      throw new BadRequestException({ code: 'SAME_PASSWORD', message: 'The new password must be different from the current one.' });
+    }
+    if (newPassword.toLowerCase().includes(user.username)) {
+      throw new BadRequestException({ code: 'PASSWORD_CONTAINS_USERNAME', message: 'The new password cannot contain the username.' });
+    }
+
+    const updated = await this.prisma.adminUser.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: await hash(newPassword, BCRYPT_COST),
+        mustChangePassword: false,
+        tokenVersion: { increment: 1 }, // derruba qualquer outra sessão aberta
+        failedAttempts: 0,
+        lockedUntil: null,
+      },
+    });
+
+    return { token: await this.sign(updated.id, updated.tokenVersion), user: this.publicUser(updated) };
+  }
+
+  private async registerFailure(userId: string) {
+    const u = await this.prisma.adminUser.update({
+      where: { id: userId },
+      data: { failedAttempts: { increment: 1 } },
+    });
+    if (u.failedAttempts >= config.maxFailedLogins) {
+      await this.prisma.adminUser.update({
+        where: { id: userId },
+        data: {
+          failedAttempts: 0,
+          lockedUntil: new Date(Date.now() + config.lockMinutes * 60_000),
+        },
+      });
+    }
+  }
+
+  private sign(userId: string, tokenVersion: number) {
+    return this.jwt.signAsync(
+      { sub: userId, tv: tokenVersion },
+      { algorithm: 'HS256', expiresIn: `${config.sessionDays}d` },
+    );
+  }
+
+  private publicUser(u: { username: string; mustChangePassword: boolean }) {
+    return { username: u.username, mustChangePassword: u.mustChangePassword };
+  }
+}
