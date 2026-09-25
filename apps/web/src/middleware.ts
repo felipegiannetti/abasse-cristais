@@ -55,6 +55,6 @@ export function middleware(req: NextRequest) {
   return NextResponse.rewrite(internal(rest));
 }
 
-// Everything except Next internals, the API proxy, local uploads and files with an extension
+// Everything except Next internals, the API proxy (incl. /api/images) and files with an extension
 // (robots.txt, sitemap.xml, icon.svg, images…).
-export const config = { matcher: ['/((?!_next/|api/|uploads/|.*\\..*).*)'] };
+export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)'] };

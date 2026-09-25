@@ -25,8 +25,6 @@ export function ProductImage({ src, alt, sizes, priority, className = '' }: Prop
       fill
       sizes={sizes}
       priority={priority}
-      // Em desenvolvimento a API serve /uploads direto do disco: não passa pelo otimizador.
-      unoptimized={src.startsWith('/uploads/')}
       className={`object-cover ${className}`}
     />
   );
