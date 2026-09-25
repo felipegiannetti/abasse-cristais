@@ -8,6 +8,8 @@ export const isLocale = (v: string): v is Locale => (locales as readonly string[
 
 /** '/products' → '/products' (en) | '/pt/products' (pt). Keeps '#hash' and '?query'. */
 export function localePath(locale: Locale, path: string): string {
+  // collapse leading slashes: '//host' would be a protocol-relative URL (open redirect)
+  path = path.replace(/^\/{2,}/, '/');
   if (locale === defaultLocale) return path;
   if (path === '/') return '/pt';
   if (path.startsWith('/#') || path.startsWith('/?')) return `/pt${path.slice(1)}`;

@@ -151,6 +151,8 @@ export const en = {
     INVALID_CREDENTIALS: 'Invalid username or password.',
     TOO_MANY_ATTEMPTS: 'Too many failed attempts. Try again in a few minutes.',
     WRONG_CURRENT_PASSWORD: 'Current password is incorrect.',
+    PASSWORD_TOO_LONG: 'The new password is too long.',
+    LOGIN_UNAVAILABLE: 'Sign-in is not available from this address.',
     SAME_PASSWORD: 'The new password must be different from the current one.',
     PASSWORD_CONTAINS_USERNAME: 'The new password cannot contain the username.',
     PASSWORD_CHANGE_REQUIRED: 'You must change the initial password before continuing.',

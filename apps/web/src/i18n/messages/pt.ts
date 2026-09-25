@@ -153,6 +153,8 @@ export const pt: Messages = {
     INVALID_CREDENTIALS: 'Usuário ou senha inválidos.',
     TOO_MANY_ATTEMPTS: 'Muitas tentativas incorretas. Tente novamente em alguns minutos.',
     WRONG_CURRENT_PASSWORD: 'Senha atual incorreta.',
+    PASSWORD_TOO_LONG: 'A nova senha é longa demais.',
+    LOGIN_UNAVAILABLE: 'O login não está disponível a partir deste endereço.',
     SAME_PASSWORD: 'A nova senha deve ser diferente da atual.',
     PASSWORD_CONTAINS_USERNAME: 'A nova senha não pode conter o nome de usuário.',
     PASSWORD_CHANGE_REQUIRED: 'Você precisa trocar a senha inicial antes de continuar.',

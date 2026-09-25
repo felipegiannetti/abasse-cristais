@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Logo } from '@/components/Logo';
+import { stripLocale } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 
@@ -26,6 +27,8 @@ export default function AdminLoginPage() {
         method: 'POST',
         json: { username, password },
         autoRedirect: false,
+        // The API only accepts logins that prove knowledge of the secret address (the path segment).
+        headers: { 'X-Admin-Login-Token': stripLocale(window.location.pathname).replace(/^\/+|\/+$/g, '') },
       });
       router.replace(href(me.mustChangePassword ? '/admin/change-password' : '/admin'));
     } catch (err) {
