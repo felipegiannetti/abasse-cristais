@@ -13,14 +13,14 @@ export function whatsappUrl(message: string, number?: string): string {
 export const generalMessage = (m: Messages) => fmt(m.whatsapp.general, { brand: site.name });
 
 export function productMessage(
-  p: Pick<Product, 'name' | 'slug' | 'priceCents'>,
+  p: Pick<Product, 'name' | 'slug' | 'priceCents' | 'saleMode'>,
   locale: Locale,
   m: Messages,
 ): string {
   return fmt(m.whatsapp.product, {
     brand: site.name,
     name: p.name,
-    price: formatPrice(p.priceCents, locale, m),
+    price: formatPrice(p.priceCents, locale, m, p.saleMode),
     url: `${site.url}${localePath(locale, `/products/${p.slug}`)}`,
   });
 }

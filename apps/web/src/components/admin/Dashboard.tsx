@@ -9,6 +9,8 @@ import { api, errorText } from '@/lib/client-api';
 import type { ProductStatus, Stats } from '@/lib/types';
 import {
   IconArrowRight,
+  IconCart,
+  IconChart,
   IconExternal,
   IconGem,
   IconImage,
@@ -152,6 +154,9 @@ export function Dashboard() {
           <Link href={href('/admin/products/new')} className="btn btn-primary">
             <IconPlus className="h-4 w-4" /> {t.quickAdd}
           </Link>
+          <Link href={href('/admin/sales/new')} className="btn btn-ghost">
+            <IconCart className="h-4 w-4" /> Registrar venda
+          </Link>
           <Link href={href('/admin/products')} className="btn btn-ghost">
             {t.quickManage} <IconArrowRight className="h-4 w-4" />
           </Link>
@@ -292,6 +297,8 @@ export function Dashboard() {
           <div className="mt-4 grid gap-3">
             {[
               { href: href('/admin/products/new'), icon: <IconPlus />, label: t.quickAdd, external: false },
+              { href: href('/admin/sales/new'), icon: <IconCart />, label: 'Registrar venda', external: false },
+              { href: href('/admin/finance'), icon: <IconChart />, label: 'Financeiro', external: false },
               { href: href('/admin/settings'), icon: <IconSettings />, label: m.admin.shell.settings, external: false },
               { href: href('/'), icon: <IconExternal />, label: t.quickSite, external: true },
             ].map((a) => (

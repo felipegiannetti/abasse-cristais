@@ -155,3 +155,30 @@ export const IconShield = (p: P) => (
     <path d="m9 12 2.2 2.2L15.5 10" />
   </svg>
 );
+export const IconCart = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 4h2.5l2.2 10.2a1.5 1.5 0 0 0 1.5 1.2h8.2a1.5 1.5 0 0 0 1.5-1.1L20.5 8H6.2" />
+    <circle cx="9.5" cy="19.5" r="1.3" />
+    <circle cx="17" cy="19.5" r="1.3" />
+  </svg>
+);
+export const IconChart = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M4 20V4M4 20h16" />
+    <path d="m7.5 15 3.5-4.5 3 2.5 4.5-6" />
+  </svg>
+);
+export const IconTruck = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 6h11v10H3zM14 9h4l3 3v4h-7z" />
+    <circle cx="7" cy="17.5" r="1.7" />
+    <circle cx="17" cy="17.5" r="1.7" />
+  </svg>
+);
+export const IconContact = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <circle cx="9" cy="10.5" r="2.4" />
+    <path d="M5.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3M15 9h3.5M15 12.5h3.5" />
+  </svg>
+);

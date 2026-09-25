@@ -8,6 +8,7 @@ import { fmt } from '@/i18n/config';
 import { formatPrice, plural } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
+import { formatGrams } from '@/lib/format';
 import type { Product, ProductList, ProductStatus, Stats } from '@/lib/types';
 import { IconEdit, IconGem, IconGrid, IconList, IconPlus, IconSearch, IconStar, IconTrash } from './AdminIcons';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -15,6 +16,9 @@ import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
 
 const PAGE_SIZE = 18;
+
+const stockLabel = (p: Product) => (p.saleMode === 'WEIGHT' ? formatGrams(p.stockGrams ?? 0) : `${p.stockQuantity ?? 0} un.`);
+const lowStock = (p: Product) => (p.saleMode === 'WEIGHT' ? (p.stockGrams ?? 0) < 500 : (p.stockQuantity ?? 0) <= 1);
 const STATUSES: ProductStatus[] = ['AVAILABLE', 'SOLD_OUT', 'HIDDEN'];
 
 const STATUS_STYLE: Record<ProductStatus, string> = {
@@ -291,11 +295,14 @@ export function ProductsAdmin() {
                     <div className="absolute inset-x-3 bottom-3">
                       <p className="truncate text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-gold-300">{p.category}</p>
                       <p className="truncate font-display text-2xl leading-tight text-pearl">{p.name}</p>
-                      <p className="text-sm font-semibold text-gold-300">{formatPrice(p.priceCents, locale, m)}</p>
+                      <p className="text-sm font-semibold text-gold-300">{formatPrice(p.priceCents, locale, m, p.saleMode)}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between gap-2 px-4 py-3">
-                    <span className="text-xs text-pearl/45">{plural(p.images.length, t.photoOne, t.photoMany)}</span>
+                    <span className="text-xs text-pearl/45">
+                      {plural(p.images.length, t.photoOne, t.photoMany)} ·{' '}
+                      <span className={lowStock(p) ? 'font-semibold text-amber-300' : ''}>estoque {stockLabel(p)}</span>
+                    </span>
                     <div className="flex gap-2">
                       <Link href={href(`/admin/products/${p.id}`)} className="btn btn-ghost btn-sm !px-4">
                         <IconEdit className="h-4 w-4" /> {t.edit}
@@ -350,7 +357,10 @@ export function ProductsAdmin() {
                     {p.category} · {plural(p.images.length, t.photoOne, t.photoMany)}
                   </p>
                 </div>
-                <p className="text-sm font-semibold text-gold-300">{formatPrice(p.priceCents, locale, m)}</p>
+                <p className="text-sm font-semibold text-gold-300">
+                  {formatPrice(p.priceCents, locale, m, p.saleMode)}
+                  <span className={`block text-xs font-normal ${lowStock(p) ? 'text-amber-300' : 'text-pearl/45'}`}>estoque {stockLabel(p)}</span>
+                </p>
                 <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                   {statusPill(p)}
                   {starBtn(p)}

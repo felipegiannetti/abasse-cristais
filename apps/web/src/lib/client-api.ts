@@ -60,7 +60,10 @@ export async function api<T = unknown>(
 export function errorText(err: unknown, m: Messages, fallback?: string): string {
   if (err instanceof ApiError) {
     const byCode = err.code ? (m.errors as Record<string, string>)[err.code] : undefined;
-    return byCode ?? (err.message || fallback || m.errors.UNKNOWN);
+    if (byCode) return byCode;
+    // validation errors come without a code (the API text is English): prefix them in Portuguese
+    if (!err.code && err.status === 400 && err.message) return `${m.errors.INVALID_DATA} ${err.message}`;
+    return err.message || fallback || m.errors.UNKNOWN;
   }
   return fallback ?? m.errors.UNKNOWN;
 }

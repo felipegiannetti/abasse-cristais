@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Component, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { IconArrowRight, IconCheck, IconLock, IconShield, IconUser } from '@/components/admin/AdminIcons';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Logo } from '@/components/Logo';
 import { stripLocale } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
@@ -134,10 +133,6 @@ export default function AdminLoginPage() {
           />
         )}
       </AnimatePresence>
-
-      <div className="absolute right-5 top-5 z-30">
-        <LanguageSwitcher />
-      </div>
 
       <motion.div animate={shake} className="relative z-10 w-full max-w-[26rem]">
         <motion.div

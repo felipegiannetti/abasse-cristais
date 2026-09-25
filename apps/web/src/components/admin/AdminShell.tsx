@@ -4,12 +4,14 @@ import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { Logo } from '@/components/Logo';
 import { stripLocale } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
 import { ApiError, api } from '@/lib/client-api';
 import {
+  IconCart,
+  IconChart,
+  IconContact,
   IconDashboard,
   IconExternal,
   IconGem,
@@ -96,13 +98,16 @@ export function AdminShell({ children, allowPasswordChange = false }: { children
   const nav = [
     { path: '/admin', label: m.admin.shell.dashboard, icon: IconDashboard, exact: true },
     { path: '/admin/products', label: m.admin.nav.products, icon: IconGem },
+    { path: '/admin/sales', label: 'Vendas', icon: IconCart },
+    { path: '/admin/customers', label: 'Clientes', icon: IconContact },
+    { path: '/admin/finance', label: 'Financeiro', icon: IconChart },
     { path: '/admin/team', label: m.admin.shell.team, icon: IconUsers },
     { path: '/admin/settings', label: m.admin.shell.settings, icon: IconSettings },
     { path: '/admin/change-password', label: m.admin.nav.password, icon: IconKey },
   ];
   const isActive = (n: (typeof nav)[number]) => (n.exact ? pathname === n.path : pathname === n.path || pathname.startsWith(`${n.path}/`));
   const current = [...nav].reverse().find(isActive);
-  const title = pathname === '/admin/products/new' ? m.admin.form.titleNew : pathname.startsWith('/admin/products/') ? m.admin.form.titleEdit : (current?.label ?? m.admin.panel);
+  const title = pathname === '/admin/sales/new' ? 'Registrar venda' : pathname.startsWith('/admin/sales/') ? 'Venda' : pathname === '/admin/products/new' ? m.admin.form.titleNew : pathname.startsWith('/admin/products/') ? m.admin.form.titleEdit : (current?.label ?? m.admin.panel);
   const full = !me.mustChangePassword;
 
   // plain render helpers (not components) so the active pill keeps its animation across renders
@@ -230,7 +235,6 @@ export function AdminShell({ children, allowPasswordChange = false }: { children
                       <IconSearch className="h-5 w-5" />
                     </button>
                   )}
-                  <LanguageSwitcher />
                   {!full && (
                     <button onClick={logout} className="btn btn-ghost btn-sm">
                       {m.admin.nav.logout}

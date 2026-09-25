@@ -49,7 +49,7 @@ function CopyRow({ label, value }: { label: string; value: string }) {
 }
 
 export function TeamPage() {
-  const { locale, m, href } = useI18n();
+  const { m, href } = useI18n();
   const t = m.admin.team;
   const toast = useToast();
   const nav = { homePath: href('/'), changePasswordPath: href('/admin/change-password') };
@@ -126,7 +126,7 @@ export function TeamPage() {
         : dialog?.kind === 'reset'
           ? fmt(t.resetTitle, { name: dialog.user.username })
           : '';
-  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
 
   return (
     <div>

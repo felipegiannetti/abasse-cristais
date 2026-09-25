@@ -4,7 +4,7 @@ import { motion } from 'motion/react';
 import { formatPrice } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import { productMessage } from '@/lib/whatsapp';
-import type { ProductStatus } from '@/lib/types';
+import type { ProductStatus, SaleMode } from '@/lib/types';
 import { IconCheck, IconGem } from './AdminIcons';
 
 export interface PreviewData {
@@ -19,6 +19,7 @@ export interface PreviewData {
   origin: string;
   cover?: string;
   photos: number;
+  saleMode: SaleMode;
 }
 
 /** Live preview: the catalog card, the WhatsApp message the customer will send, and a quality meter. */
@@ -40,7 +41,7 @@ export function ProductPreview({ data }: { data: PreviewData }) {
   const C = 2 * Math.PI * R;
 
   const message = productMessage(
-    { name: data.name.trim() || t.previewEmpty, slug: 'your-product', priceCents: data.priceCents },
+    { name: data.name.trim() || t.previewEmpty, slug: 'your-product', priceCents: data.priceCents, saleMode: data.saleMode },
     locale,
     m,
   );
@@ -82,7 +83,7 @@ export function ProductPreview({ data }: { data: PreviewData }) {
           <div className="p-4">
             <p className="font-display text-2xl font-semibold leading-tight text-pearl">{data.name.trim() || t.previewEmpty}</p>
             <p className={`mt-1 text-base font-semibold ${data.priceCents == null ? 'text-pearl/60' : 'text-gold-300'}`}>
-              {formatPrice(data.priceCents, locale, m)}
+              {formatPrice(data.priceCents, locale, m, data.saleMode)}
             </p>
             <div className="btn btn-primary mt-3 w-full !py-2.5 text-sm">{sold ? m.product.askSimilar : m.product.want}</div>
           </div>

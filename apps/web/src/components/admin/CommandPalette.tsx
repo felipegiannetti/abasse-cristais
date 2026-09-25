@@ -7,6 +7,9 @@ import { useI18n } from '@/i18n/provider';
 import { api } from '@/lib/client-api';
 import type { ProductList } from '@/lib/types';
 import {
+  IconCart,
+  IconChart,
+  IconContact,
   IconDashboard,
   IconExternal,
   IconGem,
@@ -48,9 +51,13 @@ export function CommandPalette({ open, onClose, onLogout }: { open: boolean; onC
     const base: Command[] = [
       { id: 'dash', group: 'navigate', label: m.admin.shell.dashboard, icon: <IconDashboard className={ic} />, run: go('/admin') },
       { id: 'prod', group: 'navigate', label: m.admin.nav.products, icon: <IconGem className={ic} />, run: go('/admin/products') },
+      { id: 'sales', group: 'navigate', label: 'Vendas', icon: <IconCart className={ic} />, run: go('/admin/sales') },
+      { id: 'cust', group: 'navigate', label: 'Clientes', icon: <IconContact className={ic} />, run: go('/admin/customers') },
+      { id: 'fin', group: 'navigate', label: 'Financeiro', icon: <IconChart className={ic} />, run: go('/admin/finance') },
       { id: 'team', group: 'navigate', label: m.admin.shell.team, icon: <IconUsers className={ic} />, run: go('/admin/team') },
       { id: 'set', group: 'navigate', label: m.admin.shell.settings, icon: <IconSettings className={ic} />, run: go('/admin/settings') },
       { id: 'pwd', group: 'navigate', label: m.admin.nav.password, icon: <IconKey className={ic} />, run: go('/admin/change-password') },
+      { id: 'newsale', group: 'actions', label: 'Registrar venda', icon: <IconCart className={ic} />, run: go('/admin/sales/new') },
       { id: 'new', group: 'actions', label: m.admin.shell.newProduct, icon: <IconPlus className={ic} />, run: go('/admin/products/new') },
       {
         id: 'site',
