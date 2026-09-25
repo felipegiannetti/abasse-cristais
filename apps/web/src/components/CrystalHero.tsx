@@ -16,18 +16,18 @@ const CrystalScene = dynamic(() => import('./CrystalScene'), { ssr: false });
 function CrystalFallback() {
   return (
     <div className="absolute inset-0 grid place-items-center lg:pl-[40%]" aria-hidden="true">
-      <div className="absolute h-[70%] w-[70%] rounded-full bg-jade-500/20 blur-[110px]" />
-      <svg viewBox="0 0 200 260" className="relative h-[52%] max-h-[520px] animate-float drop-shadow-[0_0_60px_rgb(52_224_161/0.45)]">
+      <div className="absolute h-[70%] w-[70%] rounded-full bg-gold-500/20 blur-[110px]" />
+      <svg viewBox="0 0 200 260" className="relative h-[52%] max-h-[520px] animate-float drop-shadow-[0_0_60px_rgb(224_189_122/0.45)]">
         <defs>
           <linearGradient id="fa" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#e9fff6" />
-            <stop offset="1" stopColor="#12c98b" />
+            <stop offset="0" stopColor="#f5f0e6" />
+            <stop offset="1" stopColor="#c9a35c" />
           </linearGradient>
         </defs>
-        <polygon points="100,8 160,56 160,178 100,250 40,178 40,56" fill="url(#fa)" opacity="0.28" stroke="#7ff0c6" strokeWidth="1.5" />
-        <polygon points="100,8 132,56 100,250 68,56" fill="#7ff0c6" opacity="0.42" />
-        <polygon points="40,56 68,56 100,250 40,178" fill="#12c98b" opacity="0.4" />
-        <polygon points="160,56 132,56 100,250 160,178" fill="#7ee7ff" opacity="0.3" />
+        <polygon points="100,8 160,56 160,178 100,250 40,178 40,56" fill="url(#fa)" opacity="0.28" stroke="#efd9a8" strokeWidth="1.5" />
+        <polygon points="100,8 132,56 100,250 68,56" fill="#efd9a8" opacity="0.42" />
+        <polygon points="40,56 68,56 100,250 40,178" fill="#c9a35c" opacity="0.4" />
+        <polygon points="160,56 132,56 100,250 160,178" fill="#8fb6e8" opacity="0.3" />
       </svg>
     </div>
   );
@@ -53,7 +53,7 @@ function hasWebGL() {
 }
 
 export function CrystalHero() {
-  const { m, href } = useI18n();
+  const { m, href, whatsapp } = useI18n();
   const h = m.home.hero;
   const sectionRef = useRef<HTMLElement>(null);
   const [supported, setSupported] = useState(true);
@@ -116,7 +116,7 @@ export function CrystalHero() {
             {m.common.tagline}
           </motion.p>
 
-          <h1 className="mt-5 font-display text-[clamp(2.7rem,min(11.5vw,11svh),5.4rem)] font-medium leading-[0.98] tracking-tight text-ice">
+          <h1 className="mt-5 font-display text-[clamp(2.7rem,min(11.5vw,11svh),5.4rem)] font-medium leading-[0.98] tracking-tight text-pearl">
             {[h.line1, h.line2].map((line, i) => (
               <span key={line} className="block overflow-hidden pb-[0.12em]">
                 <motion.span
@@ -145,7 +145,7 @@ export function CrystalHero() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.75 }}
-            className="mt-5 max-w-lg text-base leading-relaxed text-ice/70 sm:text-lg"
+            className="mt-5 max-w-lg text-base leading-relaxed text-pearl/70 sm:text-lg"
           >
             {h.text}
           </motion.p>
@@ -159,7 +159,7 @@ export function CrystalHero() {
             <Link href={href('/products')} className="btn btn-primary">
               {h.explore} <ArrowIcon />
             </Link>
-            <a href={whatsappUrl(generalMessage(m))} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+            <a href={whatsappUrl(generalMessage(m), whatsapp)} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
               <WhatsAppIcon className="h-4 w-4" /> {h.whatsapp}
             </a>
           </motion.div>
@@ -169,10 +169,10 @@ export function CrystalHero() {
       {/* Interaction hint */}
       {supported && ready && (
         <div className="pointer-events-none absolute inset-x-0 top-[calc(46svh+0.35rem)] z-10 flex justify-center px-5 lg:bottom-7 lg:top-auto">
-          <div className="glass flex items-center gap-3 rounded-full px-5 py-2.5 text-xs tracking-wide text-ice/80">
+          <div className="glass flex items-center gap-3 rounded-full px-5 py-2.5 text-xs tracking-wide text-pearl/80">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-jade-400 opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-jade-400" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold-400 opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-gold-400" />
             </span>
             <AnimatePresence mode="wait">
               <motion.span
@@ -186,7 +186,7 @@ export function CrystalHero() {
                   h.hintDrag
                 ) : (
                   <>
-                    <span className="font-semibold text-jade-300">{h.variants[variant]}</span> · {h.hintChange}
+                    <span className="font-semibold text-gold-300">{h.variants[variant]}</span> · {h.hintChange}
                   </>
                 )}
               </motion.span>

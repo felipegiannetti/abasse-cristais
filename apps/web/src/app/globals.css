@@ -1,24 +1,25 @@
 @import 'tailwindcss';
+@import './admin.css';
 
 /* ------------------------------------------------------------------
-   Paleta Abasse Crystal — cristal (gelo/aqua) + verde esmeralda
+   Paleta Abasse Crystal (da logo) — azul marinho + dourado champanhe + marfim
 ------------------------------------------------------------------- */
 @theme {
   --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
   --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink-950: #020d09;
-  --color-ink-900: #05150f;
-  --color-ink-800: #0a241a;
-  --color-ink-700: #113526;
+  --color-navy-950: #061229;
+  --color-navy-900: #0a1a38;
+  --color-navy-800: #0e2648;
+  --color-navy-700: #163a6b;
 
-  --color-jade-300: #7ff0c6;
-  --color-jade-400: #34e0a1;
-  --color-jade-500: #12c98b;
-  --color-jade-600: #0a9f6d;
+  --color-gold-300: #efd9a8;
+  --color-gold-400: #e0bd7a;
+  --color-gold-500: #c9a35c;
+  --color-gold-600: #a8843f;
 
-  --color-ice: #e9fff6;
-  --color-aqua: #7ee7ff;
+  --color-pearl: #f5f0e6;
+  --color-sky: #8fb6e8;
 
   --animate-marquee: marquee 40s linear infinite;
   --animate-float: float 7s ease-in-out infinite;
@@ -58,20 +59,20 @@ html {
 }
 
 body {
-  background: var(--color-ink-950);
-  color: color-mix(in oklab, var(--color-ice) 82%, transparent);
+  background: var(--color-navy-950);
+  color: color-mix(in oklab, var(--color-pearl) 82%, transparent);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background: var(--color-jade-400);
-  color: var(--color-ink-950);
+  background: var(--color-gold-400);
+  color: var(--color-navy-950);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-jade-400);
+  outline: 2px solid var(--color-gold-400);
   outline-offset: 3px;
   border-radius: 6px;
 }
@@ -90,17 +91,17 @@ body {
 }
 
 @layer components {
-  /* Fundo com auroras esmeralda + grão sutil */
+  /* Fundo azul marinho com brilhos azul/dourado + grão sutil */
   .aurora {
     position: fixed;
     inset: 0;
     z-index: -10;
     pointer-events: none;
     background:
-      radial-gradient(60rem 40rem at 85% -10%, rgb(18 201 139 / 0.16), transparent 60%),
-      radial-gradient(50rem 40rem at -10% 35%, rgb(126 231 255 / 0.07), transparent 60%),
-      radial-gradient(45rem 35rem at 60% 110%, rgb(52 224 161 / 0.1), transparent 60%),
-      var(--color-ink-950);
+      radial-gradient(60rem 40rem at 85% -10%, rgb(70 120 210 / 0.26), transparent 60%),
+      radial-gradient(50rem 40rem at -10% 35%, rgb(201 163 92 / 0.07), transparent 60%),
+      radial-gradient(45rem 35rem at 60% 110%, rgb(60 110 200 / 0.18), transparent 60%),
+      var(--color-navy-950);
   }
   .grain {
     position: fixed;
@@ -123,7 +124,7 @@ body {
   }
 
   .text-gradient {
-    background: linear-gradient(100deg, var(--color-ice) 10%, var(--color-jade-300) 45%, var(--color-aqua) 90%);
+    background: linear-gradient(100deg, var(--color-pearl) 10%, var(--color-gold-300) 45%, var(--color-sky) 90%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -131,11 +132,11 @@ body {
   .text-shimmer {
     background: linear-gradient(
       100deg,
-      var(--color-ice) 20%,
-      var(--color-jade-300) 40%,
-      var(--color-aqua) 50%,
-      var(--color-jade-300) 60%,
-      var(--color-ice) 80%
+      var(--color-pearl) 20%,
+      var(--color-gold-300) 40%,
+      #ffffff 50%,
+      var(--color-gold-300) 60%,
+      var(--color-pearl) 80%
     );
     background-size: 200% auto;
     -webkit-background-clip: text;
@@ -149,7 +150,7 @@ body {
     letter-spacing: 0.32em;
     text-transform: uppercase;
     font-weight: 600;
-    color: var(--color-jade-400);
+    color: var(--color-gold-400);
   }
 
   .btn {
@@ -179,17 +180,17 @@ body {
     cursor: not-allowed;
   }
   .btn-primary {
-    color: var(--color-ink-950);
-    background: linear-gradient(120deg, var(--color-jade-300), var(--color-jade-500));
+    color: var(--color-navy-950);
+    background: linear-gradient(120deg, var(--color-gold-300), var(--color-gold-500));
     box-shadow:
       0 0 0 1px rgb(255 255 255 / 0.25) inset,
-      0 12px 34px -10px rgb(18 201 139 / 0.7);
+      0 12px 34px -10px rgb(201 163 92 / 0.7);
   }
   .btn-primary:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow:
       0 0 0 1px rgb(255 255 255 / 0.35) inset,
-      0 18px 44px -10px rgb(52 224 161 / 0.85);
+      0 18px 44px -10px rgb(224 189 122 / 0.85);
   }
   .btn-primary::after {
     content: '';
@@ -203,14 +204,14 @@ body {
     transform: translateX(120%);
   }
   .btn-ghost {
-    color: var(--color-ice);
-    border: 1px solid rgb(233 255 246 / 0.22);
+    color: var(--color-pearl);
+    border: 1px solid rgb(245 240 230 / 0.22);
     background: rgb(255 255 255 / 0.03);
     backdrop-filter: blur(8px);
   }
   .btn-ghost:hover:not(:disabled) {
-    border-color: var(--color-jade-400);
-    background: rgb(52 224 161 / 0.1);
+    border-color: var(--color-gold-400);
+    background: rgb(224 189 122 / 0.1);
     transform: translateY(-2px);
   }
   .btn-danger {
@@ -233,7 +234,7 @@ body {
     border: 1px solid rgb(255 255 255 / 0.12);
     background: rgb(255 255 255 / 0.04);
     padding: 0.8rem 1rem;
-    color: var(--color-ice);
+    color: var(--color-pearl);
     font-size: 0.95rem;
     transition:
       border-color 0.2s,
@@ -241,16 +242,16 @@ body {
       background 0.2s;
   }
   .field::placeholder {
-    color: rgb(233 255 246 / 0.32);
+    color: rgb(245 240 230 / 0.32);
   }
   .field:focus {
     outline: none;
-    border-color: var(--color-jade-400);
-    background: rgb(52 224 161 / 0.06);
-    box-shadow: 0 0 0 4px rgb(52 224 161 / 0.14);
+    border-color: var(--color-gold-400);
+    background: rgb(224 189 122 / 0.06);
+    box-shadow: 0 0 0 4px rgb(224 189 122 / 0.14);
   }
   select.field option {
-    background: var(--color-ink-900);
+    background: var(--color-navy-900);
   }
   .label {
     display: block;
@@ -259,7 +260,7 @@ body {
     font-weight: 600;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgb(233 255 246 / 0.6);
+    color: rgb(245 240 230 / 0.6);
   }
 
   /* Facetas decorativas */

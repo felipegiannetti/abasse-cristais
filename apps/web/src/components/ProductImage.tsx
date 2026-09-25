@@ -13,7 +13,7 @@ interface Props {
 export function ProductImage({ src, alt, sizes, priority, className = '' }: Props) {
   if (!src) {
     return (
-      <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-ink-800 to-ink-900 text-jade-400/40">
+      <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-navy-800 to-navy-900 text-gold-400/40">
         <GemIcon className="h-14 w-14" />
       </div>
     );

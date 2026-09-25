@@ -9,12 +9,27 @@ interface I18n {
   m: Messages;
   /** Locale-aware internal link: href('/products') → '/pt/products' when in Portuguese. */
   href: (path: string) => string;
+  /** WhatsApp number (digits) configured by the admin; every WhatsApp button uses it. */
+  whatsapp: string;
 }
 
 const Ctx = createContext<I18n | null>(null);
 
-export function I18nProvider({ locale, messages, children }: { locale: Locale; messages: Messages; children: ReactNode }) {
-  const value = useMemo<I18n>(() => ({ locale, m: messages, href: (p) => localePath(locale, p) }), [locale, messages]);
+export function I18nProvider({
+  locale,
+  messages,
+  whatsapp = '',
+  children,
+}: {
+  locale: Locale;
+  messages: Messages;
+  whatsapp?: string;
+  children: ReactNode;
+}) {
+  const value = useMemo<I18n>(
+    () => ({ locale, m: messages, href: (p) => localePath(locale, p), whatsapp }),
+    [locale, messages, whatsapp],
+  );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

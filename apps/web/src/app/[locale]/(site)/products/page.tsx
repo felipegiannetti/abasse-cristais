@@ -5,7 +5,7 @@ import { Reveal } from '@/components/Reveal';
 import { ArrowIcon, GemIcon, WhatsAppIcon } from '@/components/icons';
 import { getMessages, isLocale, localePath, plural, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchCategories, fetchProducts } from '@/lib/api';
+import { fetchCategories, fetchProducts, fetchWhatsapp } from '@/lib/api';
 import { generalMessage, whatsappUrl } from '@/lib/whatsapp';
 
 export const revalidate = 60;
@@ -28,6 +28,7 @@ export async function generateMetadata({ params }: Pick<Props, 'params'>): Promi
 }
 
 export default async function CatalogPage({ params, searchParams }: Props) {
+  const whatsapp = await fetchWhatsapp();
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
   const m = getMessages(locale);
@@ -53,10 +54,10 @@ export default async function CatalogPage({ params, searchParams }: Props) {
     <div className="mx-auto max-w-7xl px-5 pb-10 pt-36 sm:px-8">
       <Reveal className="max-w-2xl">
         <p className="eyebrow">{c.eyebrow}</p>
-        <h1 className="mt-4 font-display text-5xl font-medium leading-tight text-ice sm:text-6xl">
+        <h1 className="mt-4 font-display text-5xl font-medium leading-tight text-pearl sm:text-6xl">
           {c.titleA} <span className="text-gradient italic">{c.titleB}</span>
         </h1>
-        <p className="mt-4 text-lg text-ice/65">{c.intro}</p>
+        <p className="mt-4 text-lg text-pearl/65">{c.intro}</p>
       </Reveal>
 
       {/* Filters */}
@@ -71,7 +72,7 @@ export default async function CatalogPage({ params, searchParams }: Props) {
               active={sp.category?.toLowerCase() === cat.name.toLowerCase()}
               to={href({ category: cat.name, q: sp.q })}
             >
-              {cat.name} <span className="ml-1 text-ice/40">{cat.count}</span>
+              {cat.name} <span className="ml-1 text-pearl/40">{cat.count}</span>
             </Chip>
           ))}
         </div>
@@ -89,7 +90,7 @@ export default async function CatalogPage({ params, searchParams }: Props) {
           <button
             type="submit"
             aria-label={c.search}
-            className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-jade-400/15 text-jade-300 hover:bg-jade-400/30"
+            className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-gold-400/15 text-gold-300 hover:bg-gold-400/30"
           >
             <ArrowIcon />
           </button>
@@ -99,7 +100,7 @@ export default async function CatalogPage({ params, searchParams }: Props) {
       {/* Grid */}
       {items.length > 0 ? (
         <>
-          <p className="mt-10 text-sm text-ice/45">
+          <p className="mt-10 text-sm text-pearl/45">
             {filtered ? plural(total, c.foundOne, c.foundMany) : plural(total, c.countOne, c.countMany)}
           </p>
           <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -119,8 +120,8 @@ export default async function CatalogPage({ params, searchParams }: Props) {
                   aria-current={n === page ? 'page' : undefined}
                   className={`grid h-11 w-11 place-items-center rounded-full border text-sm font-semibold transition-colors ${
                     n === page
-                      ? 'border-jade-400 bg-jade-400 text-ink-950'
-                      : 'border-white/15 text-ice/70 hover:border-jade-400/60 hover:text-ice'
+                      ? 'border-gold-400 bg-gold-400 text-navy-950'
+                      : 'border-white/15 text-pearl/70 hover:border-gold-400/60 hover:text-pearl'
                   }`}
                 >
                   {n}
@@ -131,16 +132,16 @@ export default async function CatalogPage({ params, searchParams }: Props) {
         </>
       ) : (
         <div className="glass mt-12 rounded-3xl px-6 py-20 text-center">
-          <GemIcon className="mx-auto h-10 w-10 text-jade-400" />
-          <p className="mt-4 font-display text-3xl text-ice">{filtered ? c.emptyFiltered : c.emptyAll}</p>
-          <p className="mx-auto mt-2 max-w-md text-ice/60">{c.emptyText}</p>
+          <GemIcon className="mx-auto h-10 w-10 text-gold-400" />
+          <p className="mt-4 font-display text-3xl text-pearl">{filtered ? c.emptyFiltered : c.emptyAll}</p>
+          <p className="mx-auto mt-2 max-w-md text-pearl/60">{c.emptyText}</p>
           <div className="mt-7 flex flex-wrap justify-center gap-3">
             {filtered && (
               <Link href={localePath(locale, '/products')} className="btn btn-ghost">
                 {c.clearFilters}
               </Link>
             )}
-            <a href={whatsappUrl(generalMessage(m))} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            <a href={whatsappUrl(generalMessage(m), whatsapp)} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
               <WhatsAppIcon className="h-4 w-4" /> {m.home.hero.whatsapp}
             </a>
           </div>
@@ -158,8 +159,8 @@ function Chip({ active, to, children }: { active: boolean; to: string; children:
       aria-current={active ? 'true' : undefined}
       className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
         active
-          ? 'border-jade-400 bg-jade-400/15 text-jade-300'
-          : 'border-white/12 text-ice/70 hover:border-jade-400/50 hover:text-ice'
+          ? 'border-gold-400 bg-gold-400/15 text-gold-300'
+          : 'border-white/12 text-pearl/70 hover:border-gold-400/50 hover:text-pearl'
       }`}
     >
       {children}

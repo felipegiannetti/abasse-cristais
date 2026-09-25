@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { site } from '@/content/site';
 import { getMessages, htmlLang, isLocale, locales, ogLocale } from '@/i18n';
 import { I18nProvider } from '@/i18n/provider';
+import { fetchWhatsapp } from '@/lib/api';
 import '../globals.css';
 
 const display = Cormorant_Garamond({
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-export const viewport: Viewport = { themeColor: '#020d09' };
+export const viewport: Viewport = { themeColor: '#061229' };
 
 export default async function LocaleLayout({
   children,
@@ -53,11 +54,12 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
+  const whatsapp = await fetchWhatsapp();
 
   return (
     <html lang={htmlLang[locale]} className={`${display.variable} ${sans.variable}`}>
       <body className="min-h-dvh antialiased">
-        <I18nProvider locale={locale} messages={getMessages(locale)}>
+        <I18nProvider locale={locale} messages={getMessages(locale)} whatsapp={whatsapp}>
           {children}
         </I18nProvider>
       </body>

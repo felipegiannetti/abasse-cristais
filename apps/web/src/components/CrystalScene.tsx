@@ -6,9 +6,9 @@ import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 
 export const CRYSTAL_VARIANTS = [
-  { name: 'Esmeralda', attenuation: '#12d98f', sheen: '#7ff0c6' },
-  { name: 'Quartzo cristal', attenuation: '#dff9ff', sheen: '#ffffff' },
-  { name: 'Água-marinha', attenuation: '#4fd0ff', sheen: '#a9f0ff' },
+  { name: 'Quartzo cristal', attenuation: '#fff3d6', sheen: '#ffe7b0' }, // como o cristal da logo
+  { name: 'Champanhe', attenuation: '#e8c98a', sheen: '#f3dfae' },
+  { name: 'Safira', attenuation: '#4f86e0', sheen: '#dbe7fb' },
   { name: 'Ametista', attenuation: '#a37bff', sheen: '#d9c6ff' },
 ] as const;
 
@@ -38,12 +38,12 @@ const CLUSTER: [[number, number, number], [number, number, number], number][] = 
 
 // Orbes luminosos atrás do cristal: são o que ele refrata (o fundo da página é transparente).
 const ORBS: [number, number, number, number, string][] = [
-  [-1.6, 1.2, 0, 0.16, '#b8ffe3'],
-  [1.7, 1.5, -0.5, 0.11, '#7ee7ff'],
-  [-0.2, -1.7, 0.3, 0.2, '#7ff0c6'],
-  [1.9, -0.9, 0, 0.14, '#e9fff6'],
-  [-2.0, -0.6, -0.4, 0.09, '#7ee7ff'],
-  [0.3, 1.9, -0.6, 0.08, '#e9fff6'],
+  [-1.6, 1.2, 0, 0.16, '#f3dfae'],
+  [1.7, 1.5, -0.5, 0.11, '#8fb6e8'],
+  [-0.2, -1.7, 0.3, 0.2, '#efd9a8'],
+  [1.9, -0.9, 0, 0.14, '#f5f0e6'],
+  [-2.0, -0.6, -0.4, 0.09, '#8fb6e8'],
+  [0.3, 1.9, -0.6, 0.08, '#f5f0e6'],
   [0.9, 0.2, 0.6, 0.06, '#ffffff'],
 ];
 
@@ -69,7 +69,7 @@ function Crystal({ onVariant, reduceMotion }: SceneProps) {
         roughness: 0.0,
         metalness: 0,
         dispersion: 0.35,
-        attenuationDistance: 1.7,
+        attenuationDistance: 2.4,
         attenuationColor: new THREE.Color(CRYSTAL_VARIANTS[0].attenuation),
         sheen: 0.6,
         sheenColor: new THREE.Color(CRYSTAL_VARIANTS[0].sheen),
@@ -208,7 +208,7 @@ function Crystal({ onVariant, reduceMotion }: SceneProps) {
         ))}
         <mesh rotation={[0.25, 0.3, 0]}>
           <torusGeometry args={[2.2, 0.018, 16, 140]} />
-          <meshBasicMaterial color="#2fa57a" toneMapped={false} />
+          <meshBasicMaterial color="#a8843f" toneMapped={false} />
         </mesh>
       </group>
 
@@ -226,16 +226,16 @@ function Crystal({ onVariant, reduceMotion }: SceneProps) {
         ))}
       </group>
 
-      <Sparkles count={70} scale={[9, 6, 4]} size={3.2} speed={0.35} opacity={0.85} color="#b8ffe3" />
+      <Sparkles count={70} scale={[9, 6, 4]} size={3.2} speed={0.35} opacity={0.85} color="#f3dfae" />
 
       {/* Luzes de estúdio geradas em runtime: sem baixar HDRI externo */}
       <Environment resolution={256}>
         <group rotation={[-Math.PI / 3, 0, 1]}>
           <Lightformer form="rect" intensity={4.5} position={[0, 5, -9]} scale={[10, 10, 1]} color="#ffffff" />
-          <Lightformer form="rect" intensity={3.2} position={[-6, 1, -1]} scale={[10, 2, 1]} rotation-y={Math.PI / 2} color="#2bffb0" />
-          <Lightformer form="rect" intensity={3} position={[6, -1, -1]} scale={[10, 2, 1]} rotation-y={-Math.PI / 2} color="#7ee7ff" />
-          <Lightformer form="ring" intensity={2.4} position={[0, 1, 6]} scale={6} color="#e9fff6" />
-          <Lightformer form="circle" intensity={2} position={[0, -6, 2]} scale={8} color="#12c98b" />
+          <Lightformer form="rect" intensity={3.2} position={[-6, 1, -1]} scale={[10, 2, 1]} rotation-y={Math.PI / 2} color="#ffd98a" />
+          <Lightformer form="rect" intensity={3} position={[6, -1, -1]} scale={[10, 2, 1]} rotation-y={-Math.PI / 2} color="#8fb6e8" />
+          <Lightformer form="ring" intensity={2.4} position={[0, 1, 6]} scale={6} color="#f5f0e6" />
+          <Lightformer form="circle" intensity={2} position={[0, -6, 2]} scale={8} color="#c9a35c" />
         </group>
       </Environment>
     </>
@@ -264,7 +264,7 @@ export default function CrystalScene({
       onCreated={({ gl }) => {
         gl.setClearColor(0x000000, 0);
         gl.toneMapping = THREE.ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.15;
+        gl.toneMappingExposure = 1.3;
         onReady?.();
       }}
       style={{ position: 'absolute', inset: 0 }}

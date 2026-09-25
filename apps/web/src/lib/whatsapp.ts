@@ -3,9 +3,11 @@ import { fmt, localePath, type Locale } from '@/i18n/config';
 import { formatPrice, type Messages } from '@/i18n';
 import type { Product } from './types';
 
-export function whatsappUrl(message: string): string {
+/** wa.me link to `number` (digits with country code; comes from the admin settings, env as fallback). */
+export function whatsappUrl(message: string, number?: string): string {
   const text = encodeURIComponent(message);
-  return site.whatsapp ? `https://wa.me/${site.whatsapp}?text=${text}` : `https://wa.me/?text=${text}`;
+  const to = (number || site.whatsapp || '').replace(/\D/g, '');
+  return to ? `https://wa.me/${to}?text=${text}` : `https://wa.me/?text=${text}`;
 }
 
 export const generalMessage = (m: Messages) => fmt(m.whatsapp.general, { brand: site.name });

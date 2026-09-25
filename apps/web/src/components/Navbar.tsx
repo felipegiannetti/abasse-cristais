@@ -13,7 +13,7 @@ import { WhatsAppIcon } from './icons';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { m, href } = useI18n();
+  const { m, href, whatsapp } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -36,7 +36,7 @@ export function Navbar() {
   return (
     <header
       className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-        scrolled || open ? 'border-b border-white/[0.07] bg-ink-950/70 backdrop-blur-xl' : 'border-b border-transparent'
+        scrolled || open ? 'border-b border-white/[0.07] bg-navy-950/70 backdrop-blur-xl' : 'border-b border-transparent'
       }`}
     >
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
@@ -50,12 +50,12 @@ export function Navbar() {
                 key={l.path}
                 href={l.href}
                 className={`group relative text-sm font-medium tracking-wide transition-colors ${
-                  active ? 'text-jade-300' : 'text-ice/75 hover:text-ice'
+                  active ? 'text-gold-300' : 'text-pearl/75 hover:text-pearl'
                 }`}
               >
                 {l.label}
                 <span
-                  className={`absolute -bottom-1.5 left-0 h-px bg-jade-400 transition-all duration-300 ${
+                  className={`absolute -bottom-1.5 left-0 h-px bg-gold-400 transition-all duration-300 ${
                     active ? 'w-full' : 'w-0 group-hover:w-full'
                   }`}
                 />
@@ -67,7 +67,7 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           <a
-            href={whatsappUrl(generalMessage(m))}
+            href={whatsappUrl(generalMessage(m), whatsapp)}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-primary btn-sm hidden sm:inline-flex"
@@ -83,9 +83,9 @@ export function Navbar() {
             className="grid h-10 w-10 place-items-center rounded-full border border-white/15 md:hidden"
           >
             <span className="relative block h-3 w-5">
-              <span className={`absolute left-0 h-px w-5 bg-ice transition-all ${open ? 'top-1.5 rotate-45' : 'top-0'}`} />
-              <span className={`absolute left-0 top-1.5 h-px w-5 bg-ice transition-opacity ${open ? 'opacity-0' : ''}`} />
-              <span className={`absolute left-0 h-px w-5 bg-ice transition-all ${open ? 'top-1.5 -rotate-45' : 'top-3'}`} />
+              <span className={`absolute left-0 h-px w-5 bg-pearl transition-all ${open ? 'top-1.5 rotate-45' : 'top-0'}`} />
+              <span className={`absolute left-0 top-1.5 h-px w-5 bg-pearl transition-opacity ${open ? 'opacity-0' : ''}`} />
+              <span className={`absolute left-0 h-px w-5 bg-pearl transition-all ${open ? 'top-1.5 -rotate-45' : 'top-3'}`} />
             </span>
           </button>
         </div>
@@ -103,12 +103,12 @@ export function Navbar() {
           >
             <div className="flex flex-col gap-1 px-5 pb-6 pt-2">
               {links.map((l) => (
-                <Link key={l.path} href={l.href} className="rounded-xl px-3 py-3 font-display text-2xl text-ice hover:bg-white/5">
+                <Link key={l.path} href={l.href} className="rounded-xl px-3 py-3 font-display text-2xl text-pearl hover:bg-white/5">
                   {l.label}
                 </Link>
               ))}
               <a
-                href={whatsappUrl(generalMessage(m))}
+                href={whatsappUrl(generalMessage(m), whatsapp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary mt-3"

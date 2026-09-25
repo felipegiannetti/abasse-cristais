@@ -7,7 +7,7 @@ import { WhatsAppIcon } from '@/components/icons';
 import { site } from '@/content/site';
 import { formatPrice, getMessages, isLocale, localePath, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchProduct } from '@/lib/api';
+import { fetchProduct, fetchWhatsapp } from '@/lib/api';
 import { productMessage, whatsappUrl } from '@/lib/whatsapp';
 
 export const revalidate = 60;
@@ -30,6 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
+  const whatsapp = await fetchWhatsapp();
   const { locale: raw, slug } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
   const m = getMessages(locale);
@@ -66,8 +67,8 @@ export default async function ProductPage({ params }: Props) {
     <div className="mx-auto max-w-7xl px-5 pb-10 pt-32 sm:px-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
 
-      <nav aria-label={m.product.breadcrumb} className="mb-8 text-sm text-ice/50">
-        <Link href={localePath(locale, '/products')} className="hover:text-jade-300">
+      <nav aria-label={m.product.breadcrumb} className="mb-8 text-sm text-pearl/50">
+        <Link href={localePath(locale, '/products')} className="hover:text-gold-300">
           {m.product.back}
         </Link>
       </nav>
@@ -81,21 +82,21 @@ export default async function ProductPage({ params }: Props) {
 
         <Reveal delay={0.1} y={16}>
           <p className="eyebrow">{p.category}</p>
-          <h1 className="mt-4 font-display text-5xl font-medium leading-[1.05] text-ice sm:text-6xl">{p.name}</h1>
-          <p className={`mt-5 text-3xl font-semibold ${p.priceCents == null ? 'text-ice/60' : 'text-jade-300'}`}>
+          <h1 className="mt-4 font-display text-5xl font-medium leading-[1.05] text-pearl sm:text-6xl">{p.name}</h1>
+          <p className={`mt-5 text-3xl font-semibold ${p.priceCents == null ? 'text-pearl/60' : 'text-gold-300'}`}>
             {formatPrice(p.priceCents, locale, m)}
           </p>
 
-          <div className="mt-8 h-px bg-gradient-to-r from-jade-400/50 via-white/10 to-transparent" />
+          <div className="mt-8 h-px bg-gradient-to-r from-gold-400/50 via-white/10 to-transparent" />
 
-          <p className="mt-8 whitespace-pre-line text-lg leading-relaxed text-ice/75">{p.description}</p>
+          <p className="mt-8 whitespace-pre-line text-lg leading-relaxed text-pearl/75">{p.description}</p>
 
           {specs.length > 0 && (
             <dl className="mt-8 grid grid-cols-2 gap-3">
               {specs.map((s) => (
                 <div key={s.label} className="glass rounded-2xl px-5 py-4">
-                  <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-ice/45">{s.label}</dt>
-                  <dd className="mt-1 font-medium text-ice">{s.value}</dd>
+                  <dt className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-pearl/45">{s.label}</dt>
+                  <dd className="mt-1 font-medium text-pearl">{s.value}</dd>
                 </div>
               ))}
             </dl>
@@ -103,7 +104,7 @@ export default async function ProductPage({ params }: Props) {
 
           <div className="mt-10">
             <a
-              href={whatsappUrl(productMessage(p, locale, m))}
+              href={whatsappUrl(productMessage(p, locale, m), whatsapp)}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-primary w-full py-4 text-base sm:w-auto"
@@ -111,7 +112,7 @@ export default async function ProductPage({ params }: Props) {
               <WhatsAppIcon className="h-5 w-5" />
               {soldOut ? m.product.askSimilarLong : m.product.wantLong}
             </a>
-            <p className="mt-4 text-sm text-ice/45">{m.product.disclaimer}</p>
+            <p className="mt-4 text-sm text-pearl/45">{m.product.disclaimer}</p>
           </div>
         </Reveal>
       </div>

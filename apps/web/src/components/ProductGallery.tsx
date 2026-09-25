@@ -43,7 +43,7 @@ export function ProductGallery({ images, name, soldOut }: { images: Img[]; name:
           </motion.div>
         </AnimatePresence>
         {soldOut && (
-          <span className="absolute right-4 top-4 rounded-full bg-ice px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-ink-950">
+          <span className="absolute right-4 top-4 rounded-full bg-pearl px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-navy-950">
             {m.product.soldOut}
           </span>
         )}
@@ -59,7 +59,7 @@ export function ProductGallery({ images, name, soldOut }: { images: Img[]; name:
               aria-label={fmt(m.product.photoN, { n: i + 1 })}
               onClick={() => setIndex(i)}
               className={`relative aspect-square overflow-hidden rounded-2xl border transition-all ${
-                i === index ? 'border-jade-400 ring-2 ring-jade-400/40' : 'border-white/10 opacity-60 hover:opacity-100'
+                i === index ? 'border-gold-400 ring-2 ring-gold-400/40' : 'border-white/10 opacity-60 hover:opacity-100'
               }`}
             >
               <ProductImage src={img.url} alt="" sizes="120px" />

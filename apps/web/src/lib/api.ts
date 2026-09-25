@@ -1,9 +1,11 @@
+import { site } from '@/content/site';
 import type { CategoryCount, Product, ProductList } from './types';
 
 // Leitura pública feita no servidor (Server Components), com cache por tag.
 const API_URL = (process.env.API_URL || 'http://localhost:4000').replace(/\/$/, '');
 
 export const PRODUCTS_TAG = 'products';
+export const SETTINGS_TAG = 'settings';
 
 async function get<T>(path: string, fallback: T): Promise<T> {
   try {
@@ -37,5 +39,21 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
     return res.ok ? ((await res.json()) as Product) : null;
   } catch {
     return null;
+  }
+}
+
+/**
+ * WhatsApp number every button on the site uses. It is edited by the admins (Settings page) and stored in
+ * the database; the env variable is only a fallback for when nothing has been configured yet.
+ */
+export async function fetchWhatsapp(): Promise<string> {
+  const fallback = site.whatsapp;
+  try {
+    const res = await fetch(`${API_URL}/settings/public`, { next: { revalidate: 60, tags: [SETTINGS_TAG] } });
+    if (!res.ok) return fallback;
+    const data = (await res.json()) as { whatsapp?: string };
+    return /^\d{10,15}$/.test(data.whatsapp ?? '') ? (data.whatsapp as string) : fallback;
+  } catch {
+    return fallback;
   }
 }

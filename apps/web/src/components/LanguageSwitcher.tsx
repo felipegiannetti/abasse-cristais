@@ -47,7 +47,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
           title={LABEL[l].full}
           onClick={(e) => onClick(e, l)}
           className={`rounded-full px-2.5 py-1.5 tracking-wider transition-colors ${
-            l === locale ? 'bg-jade-400 text-ink-950' : 'text-ice/60 hover:text-ice'
+            l === locale ? 'bg-gold-400 text-navy-950' : 'text-pearl/60 hover:text-pearl'
           }`}
         >
           {LABEL[l].short}
