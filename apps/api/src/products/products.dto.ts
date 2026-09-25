@@ -1,4 +1,4 @@
-import { ProductStatus } from '@prisma/client';
+import { ProductStatus, SaleMode } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -71,6 +71,32 @@ export class CreateProductDto {
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+
+  /** UNIT: sold by the piece · WEIGHT: sold by the kilogram (price and cost are then per kg). */
+  @IsOptional()
+  @IsEnum(SaleMode)
+  saleMode?: SaleMode;
+
+  /** Pieces in stock (UNIT products). */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1_000_000)
+  stockQuantity?: number;
+
+  /** Grams in stock (WEIGHT products). */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000_000)
+  stockGrams?: number;
+
+  /** What one piece / one kg cost the business. Admin only. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000_000)
+  costCents?: number | null;
 }
 
 export class UpdateProductDto {
@@ -126,6 +152,32 @@ export class UpdateProductDto {
   @IsOptional()
   @IsEnum(ProductStatus)
   status?: ProductStatus;
+
+  /** UNIT: sold by the piece · WEIGHT: sold by the kilogram (price and cost are then per kg). */
+  @IsOptional()
+  @IsEnum(SaleMode)
+  saleMode?: SaleMode;
+
+  /** Pieces in stock (UNIT products). */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1_000_000)
+  stockQuantity?: number;
+
+  /** Grams in stock (WEIGHT products). */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000_000)
+  stockGrams?: number;
+
+  /** What one piece / one kg cost the business. Admin only. */
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100_000_000)
+  costCents?: number | null;
 }
 
 export class ListProductsQuery {

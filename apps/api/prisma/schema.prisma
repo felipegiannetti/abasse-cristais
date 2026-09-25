@@ -25,6 +25,11 @@ model AdminUser {
   updatedAt          DateTime  @updatedAt
 }
 
+enum SaleMode {
+  UNIT
+  WEIGHT
+}
+
 enum ProductStatus {
   AVAILABLE
   SOLD_OUT
@@ -32,21 +37,29 @@ enum ProductStatus {
 }
 
 model Product {
-  id          String         @id @default(cuid())
-  slug        String         @unique
-  name        String
-  description String
+  id            String         @id @default(cuid())
+  slug          String         @unique
+  name          String
+  description   String
   // valor em centavos; null = "sob consulta"
-  priceCents  Int?
-  category    String
-  weight      String?
-  dimensions  String?
-  origin      String?
-  featured    Boolean        @default(false)
-  status      ProductStatus  @default(AVAILABLE)
-  images      ProductImage[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  priceCents    Int?
+  category      String
+  weight        String?
+  dimensions    String?
+  origin        String?
+  featured      Boolean        @default(false)
+  status        ProductStatus  @default(AVAILABLE)
+  // UNIT: sold by the piece (price/cost per piece, stock in stockQuantity)
+  // WEIGHT: sold by the kilogram (price/cost per kg, stock in stockGrams)
+  saleMode      SaleMode       @default(UNIT)
+  stockQuantity Int            @default(1)
+  stockGrams    Int            @default(0)
+  // what the piece/kg cost the business (admin only, never exposed publicly)
+  costCents     Int?
+  images        ProductImage[]
+  saleItems     SaleItem[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([status, featured])
   @@index([category])
@@ -72,4 +85,121 @@ model SiteSettings {
   // digits only, with country code (e.g. 5511999999999); empty = fall back to the web app's env default
   whatsapp  String   @default("")
   updatedAt DateTime @updatedAt
+}
+
+// ------------------------------------------------------------------ customers & sales
+
+model Customer {
+  id           String   @id @default(cuid())
+  name         String
+  email        String?
+  phone        String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  region       String?
+  postalCode   String?
+  // ISO 3166-1 alpha-2 (BR, US, ES…): the shop ships worldwide
+  country      String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sales        Sale[]
+
+  @@index([name])
+}
+
+enum SaleStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Sale {
+  id                String      @id @default(cuid())
+  // human-friendly order number
+  number            Int         @unique @default(autoincrement())
+  soldAt            DateTime    @default(now())
+  status            SaleStatus  @default(PAID)
+  customerId        String?
+  customer          Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  // snapshots: the history must not change when the customer record changes (or is erased)
+  customerName      String
+  shipTo            Json?
+  shippingMethod    String?
+  shippingCostCents Int         @default(0)
+  trackingCode      String?
+  paymentMethod     String
+  discountCents     Int         @default(0)
+  subtotalCents     Int
+  totalCents        Int
+  currency          String      @default("BRL")
+  notes             String?
+  // WhatsApp reference code that led to this sale (links clicks → conversations → sales)
+  clickRef          String?
+  createdById       String?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  items             SaleItem[]
+  photos            SalePhoto[]
+
+  @@index([soldAt])
+  @@index([status])
+  @@index([customerId])
+  @@index([clickRef])
+}
+
+model SaleItem {
+  id             String   @id @default(cuid())
+  saleId         String
+  sale           Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  // snapshots, so reports survive product edits/deletion
+  productName    String
+  category       String
+  mode           SaleMode
+  // UNIT: number of pieces · WEIGHT: grams
+  quantity       Int
+  // price per piece (UNIT) or per kilogram (WEIGHT)
+  unitPriceCents Int
+  costCents      Int?
+  totalCents     Int
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+// optional photos of what was sold/shipped (bytes in the database, admin-only)
+model SalePhoto {
+  id        String   @id @default(cuid())
+  saleId    String
+  sale      Sale     @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  data      Bytes
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  @@index([saleId])
+}
+
+// ------------------------------------------------------------------ WhatsApp analytics
+
+// One row per click on a WhatsApp button. No personal data (no IP, no user agent).
+model WhatsAppClick {
+  id          String    @id @default(cuid())
+  // short code printed in the WhatsApp message so the admin can match the conversation
+  ref         String
+  source      String
+  path        String
+  productSlug String?
+  locale      String
+  createdAt   DateTime  @default(now())
+  confirmedAt DateTime?
+
+  @@unique([ref])
+  @@index([createdAt])
+  @@index([productSlug])
 }

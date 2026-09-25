@@ -1,9 +1,12 @@
 import { Controller, Get, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AnalyticsModule } from './analytics/analytics.module';
 import { AuthModule } from './auth/auth.module';
+import { FinanceModule } from './finance/finance.module';
 import { PrismaModule } from './prisma/prisma.service';
 import { ProductsModule } from './products/products.module';
+import { SalesModule } from './sales/sales.module';
 import { SettingsModule } from './settings/settings.module';
 import { TeamModule } from './team/team.module';
 
@@ -25,6 +28,9 @@ class HealthController {
     ProductsModule,
     SettingsModule,
     TeamModule,
+    SalesModule,
+    AnalyticsModule,
+    FinanceModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

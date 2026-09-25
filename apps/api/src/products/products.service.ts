@@ -9,6 +9,7 @@ import { config } from '../config';
 import { PrismaService } from '../prisma/prisma.service';
 import { detectImage } from './image-type';
 import { CreateProductDto, ListProductsQuery, UpdateProductDto } from './products.dto';
+import { likeSafe } from '../common/like';
 
 // NEVER select the image bytes here: listings must only carry ids (the bytes are served by GET /images/:id).
 const withImages = {
@@ -33,7 +34,12 @@ function slugify(text: string): string {
   );
 }
 
-export function serialize(p: ProductWithImages) {
+/**
+ * `admin = false` (public API): no cost and no exact stock — only whether the product can be bought.
+ * `admin = true`: everything the panel needs.
+ */
+export function serialize(p: ProductWithImages, admin = false) {
+  const inStock = p.saleMode === 'WEIGHT' ? p.stockGrams > 0 : p.stockQuantity > 0;
   return {
     id: p.id,
     slug: p.slug,
@@ -46,6 +52,9 @@ export function serialize(p: ProductWithImages) {
     origin: p.origin,
     featured: p.featured,
     status: p.status,
+    saleMode: p.saleMode,
+    inStock,
+    ...(admin ? { stockQuantity: p.stockQuantity, stockGrams: p.stockGrams, costCents: p.costCents } : {}),
     images: p.images.map((i) => ({ id: i.id, url: imageUrl(i.id) })),
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
@@ -64,13 +73,13 @@ export class ProductsService {
 
     const where: Prisma.ProductWhereInput = {
       status: opts.admin ? query.status : { in: PUBLIC_STATUSES },
-      category: query.category ? { equals: query.category, mode: 'insensitive' } : undefined,
+      category: query.category ? { equals: likeSafe(query.category), mode: 'insensitive' } : undefined,
       featured: query.featured ? true : undefined,
       OR: query.q
         ? [
-            { name: { contains: query.q, mode: 'insensitive' } },
-            { description: { contains: query.q, mode: 'insensitive' } },
-            { category: { contains: query.q, mode: 'insensitive' } },
+            { name: { contains: likeSafe(query.q), mode: 'insensitive' } },
+            { description: { contains: likeSafe(query.q), mode: 'insensitive' } },
+            { category: { contains: likeSafe(query.q), mode: 'insensitive' } },
           ]
         : undefined,
     };
@@ -86,7 +95,7 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return { items: items.map(serialize), total, page, pageSize };
+    return { items: items.map((p) => serialize(p, opts.admin)), total, page, pageSize };
   }
 
   async categories() {
@@ -132,7 +141,7 @@ export class ProductsService {
       images,
       availableValueCents: value._sum.priceCents ?? 0,
       categories: categories.map((c) => ({ name: c.category, count: c._count._all })),
-      recent: recent.map(serialize),
+      recent: recent.map((p) => serialize(p, true)),
     };
   }
 
@@ -148,7 +157,7 @@ export class ProductsService {
   async findById(id: string) {
     const p = await this.prisma.product.findUnique({ where: { id }, include: withImages });
     if (!p) throw new NotFoundException({ code: 'PRODUCT_NOT_FOUND', message: 'Product not found.' });
-    return serialize(p);
+    return serialize(p, true);
   }
 
   // ---------- escrita ----------
@@ -166,10 +175,14 @@ export class ProductsService {
         origin: dto.origin ?? null,
         featured: dto.featured ?? false,
         status: dto.status ?? 'AVAILABLE',
+        saleMode: dto.saleMode ?? 'UNIT',
+        stockQuantity: dto.stockQuantity ?? (dto.saleMode === 'WEIGHT' ? 0 : 1),
+        stockGrams: dto.stockGrams ?? 0,
+        costCents: dto.costCents ?? null,
       },
       include: withImages,
     });
-    return serialize(p);
+    return serialize(p, true);
   }
 
   async update(id: string, dto: UpdateProductDto) {
@@ -187,10 +200,14 @@ export class ProductsService {
         origin: dto.origin,
         featured: dto.featured,
         status: dto.status,
+        saleMode: dto.saleMode,
+        stockQuantity: dto.stockQuantity,
+        stockGrams: dto.stockGrams,
+        costCents: dto.costCents,
       },
       include: withImages,
     });
-    return serialize(p);
+    return serialize(p, true);
   }
 
   async remove(id: string) {
