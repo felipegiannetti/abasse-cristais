@@ -154,6 +154,21 @@ const adminRoutes = [
   ['POST', '/admin/team'],
   ['POST', '/admin/team/abc/delete'],
   ['POST', '/admin/team/abc/reset-password'],
+  ['GET', '/admin/sales'],
+  ['POST', '/admin/sales'],
+  ['GET', '/admin/sales/abc'],
+  ['PATCH', '/admin/sales/abc'],
+  ['POST', '/admin/sales/abc/photos'],
+  ['GET', '/admin/sales/photos/abcdefghijklmnopqrstu'],
+  ['DELETE', '/admin/sales/abc/photos/def'],
+  ['GET', '/admin/customers'],
+  ['POST', '/admin/customers'],
+  ['GET', '/admin/customers/abc'],
+  ['PATCH', '/admin/customers/abc'],
+  ['POST', '/admin/customers/abc/erase'],
+  ['GET', '/admin/analytics/clicks'],
+  ['POST', '/admin/analytics/confirm'],
+  ['GET', '/admin/finance/summary'],
   ['GET', '/admin/products/abc'],
   ['POST', '/admin/products'],
   ['PATCH', '/admin/products/abc'],
@@ -237,7 +252,7 @@ if (!PASS) {
     r = await login(USER, TEMP);
     ok('login with temp password → 200 mustChangePassword=true', r.status === 200 && r.json.mustChangePassword === true, JSON.stringify(r.json));
     const tempSession = r.cookie;
-    for (const [m, p] of [['GET', '/admin/products'], ['POST', '/admin/products'], ['GET', '/admin/products/categories'], ['GET', '/admin/products/stats'], ['GET', '/admin/team'], ['POST', '/admin/team'], ['PUT', '/admin/settings']]) {
+    for (const [m, p] of [['GET', '/admin/products'], ['POST', '/admin/products'], ['GET', '/admin/products/categories'], ['GET', '/admin/products/stats'], ['GET', '/admin/team'], ['POST', '/admin/team'], ['PUT', '/admin/settings'], ['GET', '/admin/sales'], ['POST', '/admin/sales'], ['GET', '/admin/customers'], ['GET', '/admin/finance/summary']]) {
       const res = await mut(m, p, tempSession, m === 'POST' || m === 'PUT' ? {} : undefined);
       ok(`forced first login: ${m} ${p} → 403 PASSWORD_CHANGE_REQUIRED`, res.status === 403 && res.json.code === 'PASSWORD_CHANGE_REQUIRED', JSON.stringify(res.json));
     }
@@ -477,6 +492,232 @@ if (!PASS) {
   ok('cleanup: delete test admin', r.status === 204, r.status);
   r = await call('GET', '/admin/team', { cookie: session });
   ok('cleanup: only real admins remain', !r.json.some((u) => u.username.startsWith('sectest-')), JSON.stringify(r.json.map((u) => u.username)));
+
+  // ---- Sales, stock, customers, finance, WhatsApp clicks ----
+  const tag = Date.now().toString(36);
+  const pc = await mut('POST', '/admin/products', session, { name: `Sec Piece ${tag}`, description: 'd', category: 'SecSales', priceCents: 10000, saleMode: 'UNIT', stockQuantity: 3, costCents: 4000 });
+  ok('create UNIT product with stock and cost', pc.status === 201 && pc.json.stockQuantity === 3 && pc.json.costCents === 4000 && pc.json.saleMode === 'UNIT', JSON.stringify(pc.json));
+  const P1 = pc.json;
+  const pw = await mut('POST', '/admin/products', session, { name: `Sec Kilo ${tag}`, description: 'd', category: 'SecSales', priceCents: 50000, saleMode: 'WEIGHT', stockGrams: 2000, costCents: 20000 });
+  ok('create WEIGHT product (price per kg, stock in grams)', pw.status === 201 && pw.json.stockGrams === 2000 && pw.json.saleMode === 'WEIGHT', JSON.stringify(pw.json));
+  const P2 = pw.json;
+  const pn = await mut('POST', '/admin/products', session, { name: `Sec NoPrice ${tag}`, description: 'd', category: 'SecSales', stockQuantity: 5 });
+  const P3 = pn.json;
+
+  // the cost and the exact stock must never reach the public API
+  r = await call('GET', `/products/${P1.slug}`);
+  ok('PUBLIC product payload never exposes costCents', !('costCents' in r.json), JSON.stringify(r.json).slice(0, 300));
+  ok('PUBLIC product payload never exposes the exact stock', !('stockQuantity' in r.json) && !('stockGrams' in r.json) && r.json.inStock === true && r.json.saleMode === 'UNIT', JSON.stringify(r.json).slice(0, 300));
+  r = await call('GET', '/products?category=SecSales');
+  ok('PUBLIC list never exposes cost or stock', r.json.items.every((p) => !('costCents' in p) && !('stockQuantity' in p) && !('stockGrams' in p)), JSON.stringify(r.json.items[0]).slice(0, 200));
+  r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
+  ok('admin payload includes cost and stock', r.json.costCents === 4000 && r.json.stockQuantity === 3);
+  for (const [name, body] of [['negative stock', { stockQuantity: -1 }], ['bad saleMode', { saleMode: 'BOX' }], ['stock as string', { stockGrams: '10; DROP' }], ['huge cost', { costCents: 10 ** 12 }]]) {
+    r = await mut('PATCH', `/admin/products/${P1.id}`, session, body);
+    ok(`product validation: ${name} → 400`, r.status === 400, r.status);
+  }
+
+  // customers
+  r = await mut('POST', '/admin/customers', session, { name: `Cust ${tag}`, email: 'not-an-email' });
+  ok('customer with an invalid e-mail → 400', r.status === 400, r.status);
+  r = await mut('POST', '/admin/customers', session, { name: `Cust ${tag}`, country: 'USA' });
+  ok('customer with a non ISO country → 400', r.status === 400, r.status);
+  r = await mut('POST', '/admin/customers', session, { name: `Cust ${tag}`, id: 'x', createdAt: '2000-01-01' });
+  ok('customer mass assignment (id/createdAt) → 400', r.status === 400, r.status);
+  r = await mut('POST', '/admin/customers', session, { name: `Cust ${tag}`, email: 'buyer@example.com', phone: '+1 555 123 4567', addressLine1: '1 Main St', city: 'Austin', region: 'TX', postalCode: '78701', country: 'us' });
+  ok('create customer (country normalized to ISO upper case)', r.status === 201 && r.json.country === 'US', JSON.stringify(r.json));
+  const C1 = r.json;
+
+  // a click that ends in a sale
+  const ref = 'K7M2QX';
+  r = await call('POST', '/track/click', { body: { ref, source: 'PRODUCT_PAGE', path: `/products/${P1.slug}`, productSlug: P1.slug, locale: 'es' }, headers: { origin: ORIGIN } });
+  ok('public click tracking accepts a valid click (204, no login)', r.status === 204, `${r.status} ${JSON.stringify(r.json)}`);
+
+  // registering a sale
+  const goodSale = { customerId: C1.id, paymentMethod: 'PIX', shippingMethod: 'DHL Express', shippingCostCents: 3000, discountCents: 1000, clickRef: ref, items: [{ productId: P1.id, quantity: 2 }, { productId: P2.id, quantity: 500 }] };
+  r = await mut('POST', '/admin/sales', session, { ...goodSale, totalCents: 1, subtotalCents: 1 });
+  ok('client-supplied totals are refused (server computes the money) → 400', r.status === 400, JSON.stringify(r.json).slice(0, 150));
+  r = await mut('POST', '/admin/sales', session, goodSale);
+  ok('register a sale → 201', r.status === 201, JSON.stringify(r.json).slice(0, 300));
+  const S1 = r.json;
+  ok('sale money is computed on the server: 2×100,00 + 0,5 kg×500,00 − 10,00 discount + 30,00 shipping', S1.subtotalCents === 45000 && S1.totalCents === 47000, `${S1.subtotalCents} ${S1.totalCents}`);
+  ok('sale keeps the customer name and the destination address as snapshots (worldwide: country US)', S1.customerName === `Cust ${tag}` && S1.shipTo?.country === 'US' && S1.shipTo?.city === 'Austin', JSON.stringify(S1.shipTo));
+  ok('sale items keep name, mode and per-line totals', S1.items.length === 2 && S1.items.some((i) => i.mode === 'WEIGHT' && i.quantity === 500 && i.totalCents === 25000) && S1.items.some((i) => i.mode === 'UNIT' && i.totalCents === 20000));
+  ok('sale has a human order number', Number.isInteger(S1.number) && S1.number > 0);
+  r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
+  const afterP1 = r.json;
+  r = await call('GET', `/admin/products/${P2.id}`, { cookie: session });
+  ok('stock is taken out automatically (pieces and grams)', afterP1.stockQuantity === 1 && r.json.stockGrams === 1500, `${afterP1.stockQuantity} ${r.json.stockGrams}`);
+  r = await mut('POST', '/admin/analytics/confirm', session, { ref });
+  ok('a sale linked to a WhatsApp code confirms that conversation', r.status === 200 && r.json.alreadyConfirmed === true, JSON.stringify(r.json));
+
+  // validation and business rules
+  const base = { customerId: C1.id, paymentMethod: 'PIX', items: [{ productId: P1.id, quantity: 1 }] };
+  for (const [name, body, status] of [
+    ['no items', { ...base, items: [] }, 400],
+    ['zero quantity', { ...base, items: [{ productId: P1.id, quantity: 0 }] }, 400],
+    ['negative quantity', { ...base, items: [{ productId: P1.id, quantity: -3 }] }, 400],
+    ['huge quantity', { ...base, items: [{ productId: P1.id, quantity: 10 ** 9 }] }, 400],
+    ['negative negotiated price', { ...base, items: [{ productId: P1.id, quantity: 1, unitPriceCents: -1 }] }, 400],
+    ['unknown product', { ...base, items: [{ productId: 'clx0000000000000000000000', quantity: 1 }] }, 404],
+    ['unknown payment method', { ...base, paymentMethod: 'BITCOIN' }, 400],
+    ['invalid WhatsApp reference', { ...base, clickRef: 'abc' }, 400],
+    ['sale starting cancelled', { ...base, status: 'CANCELLED' }, 400],
+    ['no customer at all', { paymentMethod: 'PIX', items: base.items }, 400],
+    ['unknown customer', { ...base, customerId: 'clx0000000000000000000000' }, 404],
+    ['discount above the subtotal', { ...base, discountCents: 999999 }, 400],
+    ['product without price and no override', { ...base, items: [{ productId: P3.id, quantity: 1 }] }, 400],
+    ['more than the stock', { ...base, items: [{ productId: P1.id, quantity: 5 }] }, 409],
+    ['weight above the stock', { ...base, items: [{ productId: P2.id, quantity: 999999 }] }, 409],
+    ['address with an invalid country', { ...base, shipTo: { line1: 'x', city: 'y', country: 'Brazil' } }, 400],
+    ['XSS-looking tracking code is data, not code (accepted)', { ...base, trackingCode: '<script>alert(1)</script>' }, 201],
+  ]) {
+    r = await mut('POST', '/admin/sales', session, body);
+    ok(`sale validation: ${name} → ${status}`, r.status === status, `${r.status} ${JSON.stringify(r.json).slice(0, 120)}`);
+  }
+  // that last accepted sale consumed 1 unit of P1 (the last one): restore the numbers for the next checks
+  r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
+  ok('a product that runs out flips to SOLD_OUT automatically', r.json.stockQuantity === 0 && r.json.status === 'SOLD_OUT', `${r.json.stockQuantity} ${r.json.status}`);
+  r = await call('GET', `/products/${P1.slug}`);
+  ok('public API shows it as sold out (inStock=false)', r.json.inStock === false && r.json.status === 'SOLD_OUT', JSON.stringify(r.json).slice(0, 200));
+
+  // no overselling under concurrency: 8 parallel sales for the 1500 g left → only the ones that fit succeed
+  const race = await Promise.all(Array.from({ length: 8 }, () => mut('POST', '/admin/sales', session, { customerId: C1.id, paymentMethod: 'PIX', items: [{ productId: P2.id, quantity: 400 }] })));
+  const okRaces = race.filter((x) => x.status === 201).length;
+  r = await call('GET', `/admin/products/${P2.id}`, { cookie: session });
+  ok('8 parallel sales of 400 g with 1500 g in stock → exactly 3 succeed (no overselling)', okRaces === 3 && r.json.stockGrams === 300, `ok=${okRaces} left=${r.json.stockGrams}`);
+  ok('the losers get a clean 409 INSUFFICIENT_STOCK', race.filter((x) => x.status !== 201).every((x) => x.status === 409 && x.json.code === 'INSUFFICIENT_STOCK'), race.map((x) => x.status).join());
+
+  // updating and cancelling
+  r = await mut('PATCH', `/admin/sales/${S1.id}`, session, { trackingCode: 'EE123456789BR', status: 'SHIPPED', shippingMethod: 'FedEx' });
+  ok('update tracking code, method and status', r.status === 200 && r.json.trackingCode === 'EE123456789BR' && r.json.status === 'SHIPPED', JSON.stringify(r.json).slice(0, 200));
+  r = await mut('PATCH', `/admin/sales/${S1.id}`, session, { totalCents: 1, items: [], customerName: 'x' });
+  ok('sale update mass assignment (totalCents/items/customerName) → 400', r.status === 400, r.status);
+  r = await mut('PATCH', `/admin/sales/${S1.id}`, session, { status: 'CANCELLED' });
+  ok('cancel a sale', r.status === 200 && r.json.status === 'CANCELLED', JSON.stringify(r.json).slice(0, 120));
+  r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
+  const cancelP1 = r.json;
+  r = await call('GET', `/admin/products/${P2.id}`, { cookie: session });
+  ok('cancelling gives the stock back (pieces + grams) and re-lists the product', cancelP1.stockQuantity === 2 && cancelP1.status === 'AVAILABLE' && r.json.stockGrams === 800, `${cancelP1.stockQuantity} ${cancelP1.status} ${r.json.stockGrams}`);
+  r = await mut('PATCH', `/admin/sales/${S1.id}`, session, { status: 'CANCELLED' });
+  r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
+  ok('cancelling twice does NOT restock twice', r.json.stockQuantity === 2, r.json.stockQuantity);
+  r = await mut('PATCH', `/admin/sales/${S1.id}`, session, { status: 'PAID' });
+  ok('a cancelled sale cannot be reopened → 409', r.status === 409 && r.json.code === 'SALE_CANCELLED', JSON.stringify(r.json));
+  r = await mut('PATCH', '/admin/sales/clx0000000000000000000000', session, { status: 'PAID' });
+  ok('update unknown sale → 404', r.status === 404, r.status);
+
+  // concurrent cancellation must give the stock back exactly once (double click / two admins)
+  r = await call('GET', `/admin/products/${P2.id}`, { cookie: session });
+  const gramsBefore = r.json.stockGrams;
+  const SR = (await mut('POST', '/admin/sales', session, { customerId: C1.id, paymentMethod: 'PIX', items: [{ productId: P2.id, quantity: 100 }] })).json;
+  const cancels = await Promise.all(Array.from({ length: 6 }, () => mut('PATCH', `/admin/sales/${SR.id}`, session, { status: 'CANCELLED' })));
+  r = await call('GET', `/admin/products/${P2.id}`, { cookie: session });
+  ok('6 parallel cancellations of one sale restock exactly once (no inventory inflation)', r.json.stockGrams === gramsBefore && cancels.every((x) => x.status === 200), `before=${gramsBefore} after=${r.json.stockGrams} ${cancels.map((x) => x.status).join()}`);
+
+  // absurd dates must be a clean 400, never a 500
+  for (const [name, body] of [
+    ['year 0000', { soldAt: '0000-01-01T00:00:00Z' }],
+    ['year 0001 with offset', { soldAt: '0001-01-01T00:00:00+14:00' }],
+    ['year 9999', { soldAt: '9999-12-31T23:59:59Z' }],
+    ['not a date', { soldAt: '2026-13-45' }],
+  ]) {
+    r = await mut('POST', '/admin/sales', session, { customerId: C1.id, paymentMethod: 'PIX', items: [{ productId: P3.id, quantity: 1, unitPriceCents: 100 }], ...body });
+    ok(`sale date ${name} → never 500`, r.status < 500, `${r.status} ${JSON.stringify(r.json).slice(0, 100)}`);
+    if (r.status === 201) await mut('PATCH', `/admin/sales/${r.json.id}`, session, { status: 'CANCELLED' });
+  }
+  for (const q of ['from=0000-01-01', 'to=9999-12-31', 'from=0001-01-01T00:00:00Z&to=0002-01-01T00:00:00Z']) {
+    r = await call('GET', `/admin/sales?${q}`, { cookie: session });
+    ok(`sales filter ${q.slice(0, 28)} → never 500`, r.status < 500, `${r.status} ${JSON.stringify(r.json).slice(0, 100)}`);
+  }
+
+  // photos of a sale
+  const S2 = (await mut('POST', '/admin/sales', session, { customerId: C1.id, paymentMethod: 'WISE', items: [{ productId: P1.id, quantity: 1, unitPriceCents: 9000 }] })).json;
+  ok('negotiated unit price is honoured', S2.items?.[0]?.unitPriceCents === 9000 && S2.totalCents === 9000, JSON.stringify(S2).slice(0, 200));
+  r = await mut('POST', `/admin/sales/${S2.id}/photos`, session, fileForm(Buffer.from('<?php system($_GET[0]); ?>........'), 'x.png', 'image/png'));
+  ok('sale photo: fake image → 415', r.status === 415, r.status);
+  r = await mut('POST', `/admin/sales/${S2.id}/photos`, session, fileForm(Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>'), 'x.svg', 'image/svg+xml'));
+  ok('sale photo: SVG → 415', r.status === 415, r.status);
+  r = await mut('POST', `/admin/sales/${S2.id}/photos`, session, png('../../evil.png'));
+  ok('sale photo: valid PNG → 201', r.status === 201 && /^\/api\/admin\/sales\/photos\/[a-z0-9]+$/.test(r.json.url), JSON.stringify(r.json));
+  const photo = r.json;
+  r = await call('GET', `/admin/sales/photos/${photo.id}`, { cookie: session });
+  ok('sale photo is served to the admin, private and sandboxed', r.status === 200 && r.headers.get('content-type') === 'image/png' && /no-store/.test(r.headers.get('cache-control') || '') && r.headers.get('x-content-type-options') === 'nosniff');
+  r = await call('GET', `/admin/sales/photos/${photo.id}`);
+  ok('sale photo is NOT reachable without a session → 401', r.status === 401, r.status);
+  r = await call('GET', `/images/${photo.id}`);
+  ok('sale photos are not exposed by the public image route → 404', r.status === 404, r.status);
+  r = await mut('DELETE', `/admin/sales/${S1.id}/photos/${photo.id}`, session);
+  ok("removing a photo through another sale → 404", r.status === 404, r.status);
+  let extra = 0;
+  for (let i = 0; i < 7; i++) if ((await mut('POST', `/admin/sales/${S2.id}/photos`, session, png())).status === 201) extra++;
+  ok('at most 6 photos per sale', extra === 5, `extra=${extra}`);
+
+  // finance
+  r = await call('GET', '/admin/finance/summary?range=30', { cookie: session });
+  ok('finance summary → 200 with the expected shape', r.status === 200 && ['revenueCents', 'orders', 'averageTicketCents', 'series', 'byCategory', 'topProducts', 'byCountry', 'funnel', 'costCoveragePct'].every((k) => k in r.json), JSON.stringify(Object.keys(r.json)));
+  const rev0 = r.json.revenueCents;
+  ok('cancelled sales do not count as revenue', typeof rev0 === 'number' && rev0 >= 9000, rev0);
+  r = await mut('PATCH', `/admin/sales/${S2.id}`, session, { status: 'CANCELLED' });
+  r = await call('GET', '/admin/finance/summary?range=30', { cookie: session });
+  ok('cancelling a sale removes it from the revenue', r.json.revenueCents === rev0 - 9000, `${rev0} → ${r.json.revenueCents}`);
+  r = await call('GET', '/admin/finance/summary?range=abc', { cookie: session });
+  ok('finance summary rejects an invalid range → 400', r.status === 400, r.status);
+  for (const range of ['7', '90', '365', 'all']) {
+    r = await call('GET', `/admin/finance/summary?range=${range}`, { cookie: session });
+    ok(`finance summary range=${range} works`, r.status === 200 && Array.isArray(r.json.series), r.status);
+  }
+
+  // WhatsApp click tracking: validation of the PUBLIC endpoint
+  for (const [name, body] of [
+    ['bad ref (ambiguous chars)', { ref: 'O0I1AB', source: 'MENU', path: '/', locale: 'en' }],
+    ['bad source', { ref: 'AAAAAA', source: 'EVIL', path: '/', locale: 'en' }],
+    ['path with a query string / script', { ref: 'AAAAAA', source: 'MENU', path: '/x?a=<script>', locale: 'en' }],
+    ['path not starting with a slash', { ref: 'AAAAAA', source: 'MENU', path: 'http://evil.example', locale: 'en' }],
+    ['bad locale', { ref: 'AAAAAA', source: 'MENU', path: '/', locale: 'xx' }],
+    ['bad slug', { ref: 'AAAAAA', source: 'MENU', path: '/', locale: 'en', productSlug: '../../etc' }],
+    ['extra fields (ip / userAgent / email)', { ref: 'AAAAAA', source: 'MENU', path: '/', locale: 'en', ip: '1.2.3.4', email: 'a@b.c' }],
+  ]) {
+    r = await call('POST', '/track/click', { body, headers: { origin: ORIGIN } });
+    ok(`click tracking rejects: ${name} → 400`, r.status === 400, `${r.status} ${JSON.stringify(r.json).slice(0, 100)}`);
+  }
+  r = await call('POST', '/track/click', { body: { ref: 'ZZZZ22', source: 'MENU', path: '/', locale: 'pt' }, headers: { origin: 'https://evil.example' } });
+  ok('click tracking refuses a foreign Origin → 403', r.status === 403, r.status);
+  const DUP_REF = Array.from({ length: 6 }, () => '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 32)]).join('');
+  for (let i = 0; i < 2; i++) await call('POST', '/track/click', { body: { ref: DUP_REF, source: 'HERO', path: '/', locale: 'en' }, headers: { origin: ORIGIN } });
+  r = await call('GET', '/admin/analytics/clicks?days=30', { cookie: session });
+  ok('click summary → totals, by source, daily; duplicates count once', r.status === 200 && r.json.total >= 2 && Array.isArray(r.json.bySource) && Array.isArray(r.json.daily), JSON.stringify(r.json).slice(0, 200));
+  ok('click summary exposes no personal data (no ip / user agent)', !/"ip"|userAgent|user-agent/i.test(JSON.stringify(r.json)));
+  r = await mut('POST', '/admin/analytics/confirm', session, { ref: DUP_REF });
+  ok('confirm a conversation by its reference code', r.status === 200 && r.json.alreadyConfirmed === false, JSON.stringify(r.json));
+  r = await mut('POST', '/admin/analytics/confirm', session, { ref: DUP_REF });
+  ok('confirming again is idempotent', r.status === 200 && r.json.alreadyConfirmed === true);
+  r = await mut('POST', '/admin/analytics/confirm', session, { ref: 'NOPE22' });
+  ok('confirm unknown code → 404', r.status === 404, r.status);
+  r = await mut('POST', '/admin/analytics/confirm', session, { ref: '<script>' });
+  ok('confirm malformed code → 400', r.status === 400, r.status);
+
+  // customers: history and erasure of personal data
+  r = await call('GET', '/admin/customers?q=' + encodeURIComponent(`Cust ${tag}`), { cookie: session });
+  ok('customer list shows orders and total spent (cancelled excluded)', r.status === 200 && r.json.items[0]?.id === C1.id && typeof r.json.items[0].spentCents === 'number', JSON.stringify(r.json.items[0]).slice(0, 200));
+  r = await call('GET', `/admin/customers/${C1.id}`, { cookie: session });
+  ok('customer detail lists their sales', r.status === 200 && r.json.sales.length >= 2, JSON.stringify(r.json.sales?.length));
+  r = await mut('PATCH', `/admin/customers/${C1.id}`, session, { city: 'Dallas' });
+  ok('update a customer', r.status === 200 && r.json.city === 'Dallas', JSON.stringify(r.json).slice(0, 100));
+  r = await mut('POST', `/admin/customers/${C1.id}/erase`, session, { currentPassword: 'wrong-password' });
+  ok('erasing personal data needs the admin password → 400', r.status === 400 && r.json.code === 'WRONG_CURRENT_PASSWORD', JSON.stringify(r.json));
+  r = await mut('POST', `/admin/customers/${C1.id}/erase`, session, { currentPassword: PASS });
+  ok('erase the customer → 204', r.status === 204, r.status);
+  r = await call('GET', `/admin/customers/${C1.id}`, { cookie: session });
+  ok('the customer no longer exists → 404', r.status === 404, r.status);
+  r = await call('GET', `/admin/sales/${S1.id}`, { cookie: session });
+  ok('the sale history survives, anonymized (no name, no address)', r.status === 200 && r.json.customerName === '(personal data erased)' && r.json.shipTo === null && r.json.customerId === null && r.json.totalCents === 47000, JSON.stringify(r.json).slice(0, 200));
+  ok('erasure also blanks the free-text notes and the tracking code of the erased customer sales', r.json.notes === null && r.json.trackingCode === null, `${r.json.notes} ${r.json.trackingCode}`);
+
+  // cleanup: products (sales keep their snapshots)
+  for (const p of [P1, P2, P3]) await mut('DELETE', `/admin/products/${p.id}`, session);
+  r = await call('GET', `/admin/sales/${S1.id}`, { cookie: session });
+  ok('deleting a product keeps the sale history readable', r.status === 200 && r.json.items.every((i) => i.productName.startsWith('Sec ')), JSON.stringify(r.json.items?.map((i) => i.productName)));
 
   // Logout revokes the token server-side (a stolen cookie stops working)
   r = await login(USER, PASS);
