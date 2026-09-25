@@ -9,7 +9,8 @@ services:
       POSTGRES_PASSWORD: abasse
       POSTGRES_DB: abasse
     ports:
-      - "5432:5432"
+      # somente localhost: o banco de desenvolvimento não deve ficar exposto na rede
+      - "127.0.0.1:5432:5432"
     volumes:
       - abasse-pgdata:/var/lib/postgresql/data
 
