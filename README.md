@@ -15,6 +15,9 @@ O navegador só conversa com o próprio site: o Next repassa `/api/*` para o Nes
 - Depois de logar, o admin vai para `/admin`. A sessão dura **60 dias** no mesmo computador (cookie persistente).
 - Usuário padrão: `admin` (criado pelo seed). A senha inicial é **temporária**: no primeiro login o sistema obriga a criar uma senha nova (mín. 12 caracteres, maiúscula, minúscula e número) antes de liberar qualquer outra tela.
 - Para trocar o endereço secreto: mude `ADMIN_LOGIN_TOKEN` e faça novo deploy do web.
+- **Telas do painel** (`/admin`): *Visão geral* (números animados, situação do catálogo, categorias), *Produtos* (grade/lista, abas por situação, arrastar para reordenar fotos, pré-visualização ao vivo), *Equipe*, *Configurações* e *Alterar senha*. `Ctrl/⌘ + K` abre a paleta de comandos (ir para qualquer tela, buscar produto).
+- **WhatsApp do site** (*Configurações*): o admin cola o número (com código do país) ou um link `wa.me` e **todos os botões do site** passam a usar esse número na hora. Só os dígitos são salvos (o link `wa.me` é montado pelo site), então ninguém consegue colocar uma URL arbitrária atrás dos botões. A variável `NEXT_PUBLIC_WHATSAPP_NUMBER` vira apenas o valor padrão enquanto nada foi configurado.
+- **Equipe** (*Equipe*): qualquer admin pode criar outras contas de admin (mesmas permissões). O sistema gera uma **senha temporária mostrada uma única vez** (com o endereço de login para copiar); a pessoa é obrigada a trocá-la no primeiro acesso. Também é possível **redefinir a senha** (derruba as sessões da pessoa) e **remover** um admin (não dá para remover a si mesmo nem o último admin). Criar, remover e redefinir senha exigem **digitar novamente a sua própria senha** (reautenticação), porque a sessão dura 60 dias.
 - Esqueceu a senha? `ADMIN_USERNAME=admin npm run admin:reset` (com `DATABASE_URL` de produção) gera uma nova senha temporária, destrava a conta e derruba sessões.
 
 ## Idiomas (inglês principal + português)
