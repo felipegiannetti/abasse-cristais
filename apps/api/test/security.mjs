@@ -147,6 +147,13 @@ ok('/admin/* is Cache-Control: no-store', /no-store/.test(r.headers.get('cache-c
 const adminRoutes = [
   ['GET', '/admin/products'],
   ['GET', '/admin/products/categories'],
+  ['GET', '/admin/products/stats'],
+  ['GET', '/admin/settings'],
+  ['PUT', '/admin/settings'],
+  ['GET', '/admin/team'],
+  ['POST', '/admin/team'],
+  ['POST', '/admin/team/abc/delete'],
+  ['POST', '/admin/team/abc/reset-password'],
   ['GET', '/admin/products/abc'],
   ['POST', '/admin/products'],
   ['PATCH', '/admin/products/abc'],
@@ -230,8 +237,8 @@ if (!PASS) {
     r = await login(USER, TEMP);
     ok('login with temp password → 200 mustChangePassword=true', r.status === 200 && r.json.mustChangePassword === true, JSON.stringify(r.json));
     const tempSession = r.cookie;
-    for (const [m, p] of [['GET', '/admin/products'], ['POST', '/admin/products'], ['GET', '/admin/products/categories']]) {
-      const res = await mut(m, p, tempSession, m === 'POST' ? {} : undefined);
+    for (const [m, p] of [['GET', '/admin/products'], ['POST', '/admin/products'], ['GET', '/admin/products/categories'], ['GET', '/admin/products/stats'], ['GET', '/admin/team'], ['POST', '/admin/team'], ['PUT', '/admin/settings']]) {
+      const res = await mut(m, p, tempSession, m === 'POST' || m === 'PUT' ? {} : undefined);
       ok(`forced first login: ${m} ${p} → 403 PASSWORD_CHANGE_REQUIRED`, res.status === 403 && res.json.code === 'PASSWORD_CHANGE_REQUIRED', JSON.stringify(res.json));
     }
     r = await mut('POST', '/auth/change-password', tempSession, { currentPassword: TEMP, newPassword: 'short' });
@@ -258,6 +265,11 @@ if (!PASS) {
 
   r = await call('GET', '/auth/me', { cookie: session });
   ok('GET /auth/me with session → 200', r.status === 200 && r.json.username === USER, JSON.stringify(r.json));
+
+  // Dashboard stats: admin-only, aggregate numbers, never image bytes
+  r = await call('GET', '/admin/products/stats', { cookie: session });
+  ok('GET /admin/products/stats → 200 with aggregate numbers', r.status === 200 && typeof r.json.total === 'number' && r.json.byStatus && Array.isArray(r.json.recent), JSON.stringify(r.json).slice(0, 200));
+  ok('stats payload is small (no image bytes)', JSON.stringify(r.json).length < 20000, JSON.stringify(r.json).length);
 
   // Mass assignment / validation
   r = await mut('POST', '/admin/products', session, { name: 'Sec Test Piece', description: 'd', category: 'SecTest', priceCents: 1000 });
@@ -367,6 +379,104 @@ if (!PASS) {
   }
   r = await call('GET', `/images/${imgA.id}`);
   ok("deleting a product cascades to its image bytes → 404", r.status === 404, r.status);
+
+  // ---- Site settings (WhatsApp) ----
+  r = await call('GET', '/settings/public');
+  ok('GET /settings/public is open and exposes only the whatsapp number', r.status === 200 && Object.keys(r.json).join() === 'whatsapp', JSON.stringify(r.json));
+  r = await call('GET', '/admin/settings', { cookie: session });
+  const originalWa = r.json.whatsapp;
+  ok('GET /admin/settings → 200', r.status === 200 && typeof originalWa === 'string', JSON.stringify(r.json));
+  for (const [input, expected] of [['+55 (11) 99999-9999', '5511999999999'], ['5511988887777', '5511988887777'], ['https://wa.me/5511977776666', '5511977776666'], ['https://api.whatsapp.com/send?phone=5511966665555&text=hi', '5511966665555']]) {
+    r = await mut('PUT', '/admin/settings', session, { whatsapp: input });
+    ok(`whatsapp "${input.slice(0, 32)}" is normalized to digits only`, r.status === 200 && r.json.whatsapp === expected, JSON.stringify(r.json));
+  }
+  r = await call('GET', '/settings/public');
+  ok('the public endpoint reflects the saved number (whole site follows it)', r.json.whatsapp === '5511966665555', JSON.stringify(r.json));
+  for (const bad of ['https://evil.example/5511999999999', 'http://wa.me.evil.example/5511999999999', 'javascript:alert(1)', 'data:text/html,<script>1</script>', '<script>alert(1)</script>', '123', '0123456789012', '55119999999999999999', 'call me maybe', 'https://wa.me/', 'ftp://wa.me/5511999999999']) {
+    r = await mut('PUT', '/admin/settings', session, { whatsapp: bad });
+    ok(`whatsapp rejected: ${bad.slice(0, 40)}`, r.status === 400, `${r.status} ${JSON.stringify(r.json).slice(0, 120)}`);
+  }
+  r = await mut('PUT', '/admin/settings', session, { whatsapp: 'x'.repeat(500) });
+  ok('oversized whatsapp value → 400', r.status === 400, r.status);
+  r = await mut('PUT', '/admin/settings', session, { whatsapp: '5511999999999', evil: 1 });
+  ok('unknown settings field rejected (mass assignment) → 400', r.status === 400, r.status);
+  r = await call('GET', '/settings/public');
+  ok('rejected inputs did not change the saved number', r.json.whatsapp === '5511966665555', JSON.stringify(r.json));
+  await mut('PUT', '/admin/settings', session, { whatsapp: originalWa });
+
+  // ---- Team: admins creating admins (same permissions) with step-up authentication ----
+  r = await call('GET', '/admin/team', { cookie: session });
+  ok('GET /admin/team lists admins, marks the current one, exposes no hashes', r.status === 200 && r.json.some((u) => u.isYou && u.username === USER) && !/hash|password/i.test(JSON.stringify(r.json).replace(/mustChangePassword/g, '')), JSON.stringify(r.json).slice(0, 200));
+  const t1name = `sectest-a-${Date.now().toString(36)}`;
+  const t2name = `sectest-b-${Date.now().toString(36)}`;
+  r = await mut('POST', '/admin/team', session, { username: t1name, currentPassword: 'wrong-password' });
+  ok('create admin with a WRONG current password → 400 (step-up auth)', r.status === 400 && r.json.code === 'WRONG_CURRENT_PASSWORD', JSON.stringify(r.json));
+  r = await mut('POST', '/admin/team', session, { username: t1name });
+  ok('create admin without the current password → 400', r.status === 400, r.status);
+  for (const bad of ['a', 'ab', 'A B', '../etc', 'x'.repeat(40), '-start', 'name;drop', '<b>x</b>']) {
+    r = await mut('POST', '/admin/team', session, { username: bad, currentPassword: PASS });
+    ok(`invalid username rejected: ${bad.slice(0, 20)}`, r.status === 400, `${r.status} ${JSON.stringify(r.json).slice(0, 100)}`);
+  }
+  r = await mut('POST', '/admin/team', session, { username: t1name, currentPassword: PASS, role: 'superadmin', mustChangePassword: false, passwordHash: 'x' });
+  ok('mass assignment on admin creation (role/mustChangePassword/passwordHash) → 400', r.status === 400, JSON.stringify(r.json));
+  r = await mut('POST', '/admin/team', session, { username: t1name.toUpperCase(), currentPassword: PASS });
+  ok('create admin → 201 with a one-time temporary password', r.status === 201 && typeof r.json.temporaryPassword === 'string' && r.json.temporaryPassword.length >= 16 && r.json.user.username === t1name && !('passwordHash' in r.json.user), JSON.stringify(r.json).slice(0, 200));
+  const T1 = r.json.user;
+  const T1temp = r.json.temporaryPassword;
+  r = await mut('POST', '/admin/team', session, { username: t1name, currentPassword: PASS });
+  ok('duplicate username → 409 USERNAME_TAKEN', r.status === 409 && r.json.code === 'USERNAME_TAKEN', JSON.stringify(r.json));
+
+  // the new admin goes through the forced first-login flow
+  r = await login(t1name, T1temp);
+  ok('new admin can log in with the temporary password (mustChangePassword)', r.status === 200 && r.json.mustChangePassword === true, JSON.stringify(r.json));
+  let t1session = r.cookie;
+  r = await call('GET', '/admin/team', { cookie: t1session });
+  ok('new admin is blocked from admin routes until the password is changed → 403', r.status === 403 && r.json.code === 'PASSWORD_CHANGE_REQUIRED', JSON.stringify(r.json));
+  const T1pass = 'Ne3wAdmin-Passw0rd!';
+  r = await mut('POST', '/auth/change-password', t1session, { currentPassword: T1temp, newPassword: T1pass });
+  ok('new admin sets a permanent password', r.status === 200, JSON.stringify(r.json));
+  t1session = r.cookie;
+  r = await call('GET', '/admin/products/stats', { cookie: t1session });
+  ok('new admin then has the same permissions (products/stats → 200)', r.status === 200, r.status);
+  r = await mut('POST', '/admin/team', t1session, { username: t2name, currentPassword: T1pass });
+  ok('an admin created by an admin can create admins too (same permissions) → 201', r.status === 201, JSON.stringify(r.json).slice(0, 120));
+  const T2 = r.json.user;
+  r = await call('GET', '/admin/team', { cookie: session });
+  ok('team list shows who created whom', r.json.find((u) => u.username === t2name)?.createdBy === t1name, JSON.stringify(r.json.map((u) => [u.username, u.createdBy])));
+
+  // deleting
+  r = await mut('POST', `/admin/team/${T1.id}/delete`, t1session, { currentPassword: T1pass });
+  ok('an admin cannot delete their own account → 400 CANNOT_DELETE_SELF', r.status === 400 && r.json.code === 'CANNOT_DELETE_SELF', JSON.stringify(r.json));
+  r = await mut('POST', `/admin/team/${T2.id}/delete`, session, { currentPassword: 'wrong-password' });
+  ok('delete with a wrong current password → 400 and nothing is deleted', r.status === 400, r.status);
+  r = await mut('POST', '/admin/team/clx0000000000000000000000/delete', session, { currentPassword: PASS });
+  ok('delete unknown admin → 404', r.status === 404, r.status);
+  r = await mut('POST', `/admin/team/${T2.id}/delete`, session, { currentPassword: PASS });
+  ok('delete another admin with the right password → 204', r.status === 204, r.status);
+  r = await login(t2name, 'anything');
+  ok('the deleted admin can no longer log in', r.status === 401, r.status);
+
+  // resetting passwords
+  r = await mut('POST', `/admin/team/${T1.id}/reset-password`, session, { currentPassword: 'wrong-password' });
+  ok('reset password with a wrong current password → 400', r.status === 400, r.status);
+  r = await mut('POST', `/admin/team/${T1.id}/reset-password`, session, { currentPassword: PASS });
+  ok('reset another admin password → 200 with a new temporary password', r.status === 200 && r.json.temporaryPassword?.length >= 16, JSON.stringify(r.json));
+  const T1temp2 = r.json.temporaryPassword;
+  r = await call('GET', '/admin/products/stats', { cookie: t1session });
+  ok("the reset admin's existing session is revoked → 401", r.status === 401, r.status);
+  r = await login(t1name, T1pass);
+  ok('the old password stops working after a reset', r.status === 401, r.status);
+  r = await login(t1name, T1temp2);
+  ok('the new temporary password works and forces a password change again', r.status === 200 && r.json.mustChangePassword === true, JSON.stringify(r.json));
+  const myId = (await call('GET', '/admin/team', { cookie: session })).json.find((u) => u.isYou).id;
+  r = await mut('POST', `/admin/team/${myId}/reset-password`, session, { currentPassword: PASS });
+  ok('resetting your own password through the team route is refused → 400', r.status === 400 && r.json.code === 'USE_CHANGE_PASSWORD', JSON.stringify(r.json));
+
+  // cleanup
+  r = await mut('POST', `/admin/team/${T1.id}/delete`, session, { currentPassword: PASS });
+  ok('cleanup: delete test admin', r.status === 204, r.status);
+  r = await call('GET', '/admin/team', { cookie: session });
+  ok('cleanup: only real admins remain', !r.json.some((u) => u.username.startsWith('sectest-')), JSON.stringify(r.json.map((u) => u.username)));
 
   // Logout revokes the token server-side (a stolen cookie stops working)
   r = await login(USER, PASS);
