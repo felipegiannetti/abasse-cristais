@@ -3,7 +3,7 @@
 Site de catálogo de cristais: o cliente escolhe a peça e é levado ao **WhatsApp** com a mensagem pronta (não há carrinho nem pagamento no site). O admin cadastra produtos, fotos, descrição e valor num painel protegido.
 
 - **`apps/web`** — Next.js 15 (App Router) + React 19 + Tailwind 4 + Motion + three.js (cristal 3D interativo na home)
-- **`apps/api`** — NestJS 11 + Prisma + PostgreSQL + Vercel Blob (imagens)
+- **`apps/api`** — NestJS 11 + Prisma + PostgreSQL (as **fotos dos produtos ficam no próprio banco**, como bytes)
 - Tudo em TypeScript, deploy na Vercel como **dois projetos** (web e api).
 
 O navegador só conversa com o próprio site: o Next repassa `/api/*` para o NestJS. Assim o cookie de sessão do admin é *same-origin* (`HttpOnly`, `Secure`, `SameSite=Lax`), sem CORS.
@@ -43,22 +43,27 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env.local
 ```
 
-Edite `apps/web/.env.local`: defina `NEXT_PUBLIC_WHATSAPP_NUMBER` e gere o `ADMIN_LOGIN_TOKEN`:
+Gere o `ADMIN_LOGIN_TOKEN` e o `JWT_SECRET`, e defina `NEXT_PUBLIC_WHATSAPP_NUMBER` em `apps/web/.env.local`. **O mesmo `ADMIN_LOGIN_TOKEN` precisa estar em `apps/web/.env.local` e em `apps/api/.env`** (a API só aceita login de quem conhece o endereço secreto):
 
 ```bash
-node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
+node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"   # ADMIN_LOGIN_TOKEN
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"   # JWT_SECRET
 ```
 
 Depois:
 
 ```bash
 npm run db:deploy        # aplica as migrations
-npm run db:seed          # cria o admin (senha inicial: ADMIN_INITIAL_PASSWORD, ou "Abasse@Inicial1" em dev)
+npm run db:seed          # cria o admin. Senha inicial: ADMIN_INITIAL_PASSWORD, ou uma senha aleatória exibida UMA vez (não existe senha padrão)
 npm run dev:api          # http://localhost:4000
 npm run dev:web          # http://localhost:3000  → login em http://localhost:3000/<ADMIN_LOGIN_TOKEN>
 ```
 
-Sem `BLOB_READ_WRITE_TOKEN`, em desenvolvimento as fotos são gravadas em `apps/api/uploads`.
+### Fotos no banco de dados
+
+As fotos são gravadas como **bytes** (`bytea`) na tabela `ProductImage` e servidas por `GET /images/:id` (no site: `/api/images/<id>`), com `Content-Type` fixo (JPG/PNG/WebP), `nosniff` e cache imutável de 1 ano; o otimizador do Next redimensiona e converte para AVIF/WebP. Não há Vercel Blob nem pasta de uploads. Excluir um produto apaga as fotos junto (`ON DELETE CASCADE`). Cada foto tem no máximo 4 MB (o navegador já comprime antes de enviar) e cada produto até 10 fotos. Planeje o tamanho do banco: 100 produtos × 5 fotos × ~0,5 MB ≈ 250 MB (o plano gratuito do Neon tem 0,5 GB).
+
+> ⚠️ **A migration `20260925120000_store_images_in_db` APAGA todas as linhas de `ProductImage`** (fotos que estavam em outro armazenamento não podem ser convertidas em bytes) e remove a coluna `url`. Se você já tinha um banco com fotos enviadas antes desta versão, **não aplique em produção sem antes exportar as fotos** e reenviá-las pelo painel depois. Em um banco novo não há impacto.
 
 ## Deploy na Vercel
 
@@ -66,18 +71,19 @@ Crie **dois projetos** a partir deste mesmo repositório.
 
 ### 1) API (`apps/api`)
 - *Root Directory*: `apps/api` (framework NestJS é detectado).
-- Banco: adicione **Neon Postgres** pelo Vercel Marketplace (ou outro Postgres). Adicione também **Vercel Blob** ao projeto (gera `BLOB_READ_WRITE_TOKEN`).
+- Banco: adicione **Neon Postgres** pelo Vercel Marketplace (ou outro Postgres). As fotos ficam no próprio Postgres, então **não é preciso Vercel Blob**.
 - Variáveis:
 
 | Variável | Valor |
 |---|---|
 | `DATABASE_URL` | conexão *pooled* |
 | `DIRECT_URL` | conexão direta (usada nas migrations) |
-| `JWT_SECRET` | 48+ caracteres aleatórios (obrigatório em produção) |
+| `JWT_SECRET` | 48+ caracteres aleatórios (obrigatório; placeholders são rejeitados e a API não sobe) |
+| `ADMIN_LOGIN_TOKEN` | **o mesmo token do site.** Sem ele o login fica desativado |
+| `TRUST_PROXY_HOPS` | `1` (a API fica atrás da Vercel; nunca use um valor maior que o real) |
 | `ADMIN_USERNAME` | `admin` |
-| `ADMIN_INITIAL_PASSWORD` | senha temporária (será trocada no 1º login) |
+| `ADMIN_INITIAL_PASSWORD` | senha temporária (opcional; será trocada no 1º login) |
 | `WEB_ORIGIN` | URL do site, ex. `https://abassecrystal.com.br` |
-| `BLOB_READ_WRITE_TOKEN` | fornecido pelo Vercel Blob |
 
 - Uma vez, com as variáveis de produção no seu terminal: `npm run db:deploy` e `npm run db:seed` (o script `vercel-build` também roda `prisma migrate deploy` no build).
 
@@ -99,18 +105,39 @@ Crie **dois projetos** a partir deste mesmo repositório.
 - **Cores**: tokens em `apps/web/src/app/globals.css` (`@theme`).
 - **Tipos de cristal do 3D da home**: cores em `CRYSTAL_VARIANTS` (`src/components/CrystalScene.tsx`) e nomes em `home.hero.variants` nos dicionários.
 
-## Segurança (resumo)
+## Segurança
 
-- Senhas com bcrypt (custo 12); troca obrigatória da senha inicial imposta **no servidor** (todas as rotas do admin retornam 403 até a troca).
-- Sessão JWT em cookie `HttpOnly`/`Secure`/`SameSite=Lax`; a cada requisição o servidor confere o banco, então trocar a senha derruba as outras sessões.
-- Bloqueio por conta após 5 tentativas erradas (15 min) + rate limit; mensagens de erro idênticas para usuário inexistente ou senha errada.
-- Proteção CSRF por `SameSite` + checagem de `Origin` em métodos que alteram dados.
-- Upload validado pelos **bytes reais** do arquivo (JPG/PNG/WebP), máx. 4 MB e 10 fotos por produto; as fotos são redimensionadas/comprimidas no navegador antes do envio.
-- Validação de entrada com `class-validator` (`whitelist` + `forbidNonWhitelisted`), Helmet e cabeçalhos de segurança no Next.
-- Como o login vive num endereço secreto, trate a URL como uma senha extra — mas ela **não substitui** a senha do admin.
+Uma revisão de segurança completa foi feita e os testes de regressão ficam em `apps/api/test/security.mjs`:
+
+```bash
+# com a API e o Postgres locais no ar (a suíte recusa rodar fora de localhost: cria/apaga produtos e pode travar o admin)
+ADMIN_TEST_PASSWORD='<senha permanente do admin local>' npm run test:security -w apps/api
+```
+
+Sem `ADMIN_TEST_PASSWORD` roda só a parte sem autenticação; com `ADMIN_TEMP_PASSWORD` (após `admin:reset`) também testa o primeiro login forçado; `TEST_LOCKOUT=1` testa o bloqueio por força bruta.
+
+**Autenticação e sessão**
+- Senhas com bcrypt (custo 12); limite de 72 **bytes** validado (bcrypt truncaria em silêncio). Troca da senha inicial imposta **no servidor**: todas as rotas do admin retornam 403 até a troca. Não existe senha padrão: sem `ADMIN_INITIAL_PASSWORD` o seed gera uma aleatória.
+- **O login só é aceito com o token do endereço secreto** (cabeçalho `X-Admin-Login-Token`, comparado em tempo constante). Quem não o conhece recebe 404 num *middleware* que roda antes de tudo (antes do rate limit e do banco): não dá para fazer força bruta, travar a conta nem esgotar o limite de tentativas do admin com requisições sem token.
+- Sessão JWT (HS256 fixo, `iss`/`aud` validados, 60 dias) em cookie `HttpOnly`/`Secure`/`SameSite=Lax` (`__Host-` em produção). A cada requisição o servidor confere o banco: trocar a senha **ou sair (logout) revoga a sessão no servidor** — um cookie roubado deixa de funcionar.
+- Bloqueio por conta após 5 tentativas erradas (15 min), rate limit por IP com `trust proxy` de saltos fixos (nunca `true`), erro idêntico para usuário inexistente e senha errada, hash falso para igualar o tempo de resposta.
+- `JWT_SECRET` obrigatório e validado em produção; em desenvolvimento sem segredo, a API usa um segredo aleatório por processo (nunca um valor fixo).
+
+**Requisições e dados**
+- CSRF: `SameSite` + checagem de `Origin` em métodos que alteram dados. Validação com `class-validator` (`whitelist` + `forbidNonWhitelisted`, sem mass assignment). Prisma parametrizado, sem SQL bruto com entrada do usuário (o único `$queryRaw` usa parâmetros).
+- Upload: formato validado pelos **bytes reais** (só JPG/PNG/WebP; SVG/GIF/HTML são recusados), 4 MB, 10 fotos por produto (com trava de linha para valer sob concorrência), nome sempre gerado pelo servidor. Fotos servidas com `Content-Type` fixo, `nosniff` e CSP `sandbox`. **Fotos de produtos ocultos (`HIDDEN`) só são entregues ao admin logado** (e nunca ficam em cache compartilhado); as demais têm cache público de 1 dia.
+- Respostas de `/admin/*` e `/auth/*` saem com `Cache-Control: no-store`. As rotas do admin não usam rate limit por IP (atrás do proxy da Vercel todos compartilhariam o mesmo IP e um estranho poderia bloquear o admin); elas exigem sessão e a senha é protegida pelo bloqueio por conta.
+- `revalidateCatalog` (Server Action) exige sessão de admin válida (senão qualquer um poderia esvaziar o cache do site em loop).
+
+**Navegador**
+- Cabeçalhos: CSP, HSTS, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `Referrer-Policy`, `Permissions-Policy`, COOP. `/admin` responde `Cache-Control: no-store`.
+
+**Infra**
+- O Postgres do `docker-compose` escuta só em `127.0.0.1`. O `.env` e os segredos ficam fora do Git.
 
 ## Observações
 
 - O limite de corpo das funções da Vercel é ~4,5 MB; por isso cada foto é enviada em uma requisição separada.
+- **Riscos conhecidos/aceitos:** (1) o CSP usa `'unsafe-inline'` em scripts porque o Next injeta scripts de hidratação e um CSP com *nonce* desligaria o cache/ISR; (2) o URL secreto do login aparece nos logs de acesso da hospedagem e no histórico do navegador; (3) `npm audit` aponta 3 alertas na cadeia do CLI do Prisma (`deepmerge-ts`), que só roda em build e não recebe entrada de usuários; (4) a sessão de 60 dias é absoluta (sem renovação deslizante).
 - O contador do rate limit é por instância (serverless); a proteção principal do login é o bloqueio por conta no banco.
 - Um bloqueio por conta significa que alguém que descubra o endereço do login poderia travar o admin por 15 min com tentativas erradas; o `admin:reset` também destrava.
