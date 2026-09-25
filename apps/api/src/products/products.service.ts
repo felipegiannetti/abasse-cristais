@@ -108,6 +108,34 @@ export class ProductsService {
     return rows.map((r) => r.category);
   }
 
+  /** Numbers for the admin dashboard (admin-only route). */
+  async stats() {
+    const [total, byStatus, featured, images, categories, recent, value] = await Promise.all([
+      this.prisma.product.count(),
+      this.prisma.product.groupBy({ by: ['status'], _count: { _all: true } }),
+      this.prisma.product.count({ where: { featured: true } }),
+      this.prisma.productImage.count(),
+      this.prisma.product.groupBy({
+        by: ['category'],
+        _count: { _all: true },
+        orderBy: { _count: { category: 'desc' } },
+        take: 6,
+      }),
+      this.prisma.product.findMany({ include: withImages, orderBy: { createdAt: 'desc' }, take: 5 }),
+      this.prisma.product.aggregate({ where: { status: 'AVAILABLE' }, _sum: { priceCents: true } }),
+    ]);
+    const count = (s: ProductStatus) => byStatus.find((r) => r.status === s)?._count._all ?? 0;
+    return {
+      total,
+      byStatus: { AVAILABLE: count('AVAILABLE'), SOLD_OUT: count('SOLD_OUT'), HIDDEN: count('HIDDEN') },
+      featured,
+      images,
+      availableValueCents: value._sum.priceCents ?? 0,
+      categories: categories.map((c) => ({ name: c.category, count: c._count._all })),
+      recent: recent.map(serialize),
+    };
+  }
+
   async findBySlug(slug: string) {
     const p = await this.prisma.product.findFirst({
       where: { slug, status: { in: PUBLIC_STATUSES } },

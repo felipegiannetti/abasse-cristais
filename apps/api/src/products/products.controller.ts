@@ -63,6 +63,11 @@ export class AdminProductsController {
     return this.products.allCategoryNames();
   }
 
+  @Get('stats')
+  stats() {
+    return this.products.stats();
+  }
+
   @Get(':id')
   get(@Param('id') id: string) {
     return this.products.findById(id);
