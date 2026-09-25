@@ -15,20 +15,31 @@ O navegador só conversa com o próprio site: o Next repassa `/api/*` para o Nes
 - Depois de logar, o admin vai para `/admin`. A sessão dura **60 dias** no mesmo computador (cookie persistente).
 - Usuário padrão: `admin` (criado pelo seed). A senha inicial é **temporária**: no primeiro login o sistema obriga a criar uma senha nova (mín. 12 caracteres, maiúscula, minúscula e número) antes de liberar qualquer outra tela.
 - Para trocar o endereço secreto: mude `ADMIN_LOGIN_TOKEN` e faça novo deploy do web.
-- **Telas do painel** (`/admin`): *Visão geral* (números animados, situação do catálogo, categorias), *Produtos* (grade/lista, abas por situação, arrastar para reordenar fotos, pré-visualização ao vivo), *Equipe*, *Configurações* e *Alterar senha*. `Ctrl/⌘ + K` abre a paleta de comandos (ir para qualquer tela, buscar produto).
+- **Telas do painel** (`/admin`): *Visão geral* (números animados, situação do catálogo, categorias), *Vendas*, *Clientes*, *Financeiro*, *Produtos* (grade/lista, abas por situação, arrastar para reordenar fotos, pré-visualização ao vivo), *Equipe*, *Configurações* e *Alterar senha*. `Ctrl/⌘ + K` abre a paleta de comandos (ir para qualquer tela, buscar produto).
 - **WhatsApp do site** (*Configurações*): o admin cola o número (com código do país) ou um link `wa.me` e **todos os botões do site** passam a usar esse número na hora. Só os dígitos são salvos (o link `wa.me` é montado pelo site), então ninguém consegue colocar uma URL arbitrária atrás dos botões. A variável `NEXT_PUBLIC_WHATSAPP_NUMBER` vira apenas o valor padrão enquanto nada foi configurado.
 - **Equipe** (*Equipe*): qualquer admin pode criar outras contas de admin (mesmas permissões). O sistema gera uma **senha temporária mostrada uma única vez** (com o endereço de login para copiar); a pessoa é obrigada a trocá-la no primeiro acesso. Também é possível **redefinir a senha** (derruba as sessões da pessoa) e **remover** um admin (não dá para remover a si mesmo nem o último admin). Criar, remover e redefinir senha exigem **digitar novamente a sua própria senha** (reautenticação), porque a sessão dura 60 dias.
 - Esqueceu a senha? `ADMIN_USERNAME=admin npm run admin:reset` (com `DATABASE_URL` de produção) gera uma nova senha temporária, destrava a conta e derruba sessões.
 
-## Idiomas (inglês principal + português)
+## Vendas, estoque, clientes e financeiro
 
-- **Inglês é o idioma principal** e não tem prefixo na URL (`/`, `/products`). O **português** fica sob `/pt` (`/pt`, `/pt/products`). Cada idioma tem URL própria, `hreflang` e entradas no `sitemap.xml`.
-- O botão **EN | PT** (topo, rodapé e painel admin) troca o idioma **sem recarregar a página**: navegação do lado do cliente, mantendo rolagem, filtros (`?category=…`) e `#âncora`. A escolha é lembrada no cookie `NEXT_LOCALE`; quem já escolheu português e abre uma URL sem prefixo é levado ao `/pt` correspondente.
-- Todos os textos ficam em **`apps/web/src/i18n/messages/en.ts`** e **`pt.ts`** (site, painel admin e mensagens de erro). O `pt.ts` é tipado pelo `en.ts`: se faltar uma chave, o TypeScript avisa. Para um novo idioma, crie o dicionário e inclua-o em `src/i18n/config.ts`.
+Além do catálogo, o painel controla o negócio (tudo **só para admin logado**; valores calculados **no servidor**, em centavos inteiros):
+
+- **Venda por peça ou por quilo.** No produto (*Venda e estoque*): modo *por peça* (preço e estoque em unidades) ou *por quilo* (preço por kg, estoque em kg/gramas). O **custo** é opcional e **nunca aparece no site público**.
+- **Vendas** (`/admin/sales`): registra pedra(s), quantidade ou peso, valor, desconto, frete, forma de pagamento, método de envio, código de rastreio, situação (pendente → paga → enviada → entregue / cancelada), data, cliente, endereço de entrega (**qualquer país**) e **foto opcional** da pedra. Cada venda guarda uma cópia do nome/preço/endereço da época. Registrar baixa o estoque sozinho (com trava de linha: duas vendas simultâneas nunca vendem a mesma peça duas vezes) e **cancelar devolve o estoque** uma única vez. Venda cancelada não reabre.
+- **Clientes** (`/admin/customers`): contato, endereço e **histórico de tudo o que cada um comprou**. Há botão de **apagar dados pessoais** (LGPD/GDPR), que pede a senha do admin e mantém as vendas no financeiro de forma anônima.
+- **Financeiro** (`/admin/finance`): faturamento (7/30/90 dias, 1 ano, tudo) com gráfico, comparação com o período anterior, ticket médio, peças e peso vendidos, lucro e margem (quando há custo cadastrado), categorias, pedras mais vendidas, países, formas de pagamento e o **funil** cliques no WhatsApp → conversas confirmadas → vendas. Faturamento conta vendas *paga, enviada e entregue*; datas seguem o horário de Brasília.
+- **Cliques no WhatsApp:** todo botão de WhatsApp do site registra um clique **anônimo** (sem IP, sem user-agent) e acrescenta à mensagem uma linha `Ref: K7M2QX · Enviado de: página do produto` (no idioma da versão). **O site só consegue contar o clique**: depois que o WhatsApp abre, ele não sabe se a mensagem foi enviada. O admin confirma a conversa digitando o código *Ref* no Financeiro, ou informando o código ao registrar a venda (a conversa é confirmada automaticamente e a venda fica ligada à origem). Para saber automaticamente quando a mensagem chegou, seria preciso a API oficial do WhatsApp Business.
+- **Envio para o mundo todo:** aviso na home, no hero, no rodapé e na página do produto. Os preços continuam em reais (R$).
+
+## Idiomas (inglês, português e espanhol)
+
+- **Inglês é o idioma principal** e não tem prefixo na URL (`/`, `/products`). O **português** fica sob `/pt` e o **espanhol** sob `/es` (`/pt/products`, `/es/products`). Cada idioma tem URL própria, `hreflang` e entradas no `sitemap.xml`.
+- O botão **EN | PT | ES** (topo e rodapé do site) troca o idioma **sem recarregar a página**: navegação do lado do cliente, mantendo rolagem, filtros (`?category=…`) e `#âncora`. A escolha é lembrada no cookie `NEXT_LOCALE`; quem já escolheu português e abre uma URL sem prefixo é levado ao `/pt` correspondente.
+- O **site público** fica em **`en.ts`**, **`pt.ts`** e **`es.ts`** (`apps/web/src/i18n/messages/`); `pt.ts` e `es.ts` são tipados pelo `en.ts` (se faltar uma chave, o TypeScript avisa). O **painel admin é só em português** (`admin.ts`), porque o administrador é brasileiro; ele ignora o prefixo de idioma da URL. Para um novo idioma, crie o dicionário e inclua-o em `src/i18n/config.ts`.
 - A API responde erros em inglês com um `code` estável (ex.: `INVALID_CREDENTIALS`); o painel traduz pelo `code`.
-- Rotas: `/products`, `/products/<slug>`, `/admin`, `/admin/products/new`, `/admin/change-password` (mesmos caminhos nos dois idiomas, mais o prefixo `/pt`).
+- Rotas: `/products`, `/products/<slug>`, `/admin`, `/admin/products/new`, `/admin/sales`, `/admin/customers`, `/admin/finance`, `/admin/change-password` (mesmos caminhos em todos os idiomas, mais o prefixo `/pt` ou `/es`).
 - **Nome, descrição e categoria dos produtos** são digitados pelo admin em um único idioma e aparecem iguais nas duas versões do site; só a interface é traduzida.
-- Valores continuam em **reais (R$)**; só o formato muda (`R$ 159,90` em português, `R$159.90` em inglês).
+- Valores continuam em **reais (R$)**; só o formato muda (`R$ 159,90` em português/espanhol, `R$159.90` em inglês).
 
 ## Rodando localmente
 
@@ -104,7 +115,7 @@ Crie **dois projetos** a partir deste mesmo repositório.
 ## Personalização
 
 - **Logo**: substitua `apps/web/public/logo.svg` (proporção ~4:1, versão clara, fundo transparente) e o ícone `apps/web/src/app/icon.svg`. O componente é `src/components/Logo.tsx`.
-- **Textos** (história, "como comprar", nomes na faixa animada, botões, painel): `apps/web/src/i18n/messages/en.ts` e `pt.ts`. **O texto da história é provisório** — troque pelo real nos dois idiomas. Nome da marca, URL, WhatsApp e Instagram: `apps/web/src/content/site.ts`.
+- **Textos** (história, "como comprar", nomes na faixa animada, botões): `apps/web/src/i18n/messages/en.ts`, `pt.ts` e `es.ts`; painel em `admin.ts`. **O texto da história é provisório** — troque pelo real nos três idiomas. Nome da marca, URL, WhatsApp e Instagram: `apps/web/src/content/site.ts`.
 - **Cores**: tokens em `apps/web/src/app/globals.css` (`@theme`).
 - **Tipos de cristal do 3D da home**: cores em `CRYSTAL_VARIANTS` (`src/components/CrystalScene.tsx`) e nomes em `home.hero.variants` nos dicionários.
 
@@ -131,6 +142,12 @@ Sem `ADMIN_TEST_PASSWORD` roda só a parte sem autenticação; com `ADMIN_TEMP_P
 - Upload: formato validado pelos **bytes reais** (só JPG/PNG/WebP; SVG/GIF/HTML são recusados), 4 MB, 10 fotos por produto (com trava de linha para valer sob concorrência), nome sempre gerado pelo servidor. Fotos servidas com `Content-Type` fixo, `nosniff` e CSP `sandbox`. **Fotos de produtos ocultos (`HIDDEN`) só são entregues ao admin logado** (e nunca ficam em cache compartilhado); as demais têm cache público de 1 dia.
 - Respostas de `/admin/*` e `/auth/*` saem com `Cache-Control: no-store`. As rotas do admin não usam rate limit por IP (atrás do proxy da Vercel todos compartilhariam o mesmo IP e um estranho poderia bloquear o admin); elas exigem sessão e a senha é protegida pelo bloqueio por conta.
 - `revalidateCatalog` (Server Action) exige sessão de admin válida (senão qualquer um poderia esvaziar o cache do site em loop).
+
+**Vendas, clientes e cliques**
+- Todas as rotas `/admin/sales`, `/admin/customers`, `/admin/finance` e `/admin/analytics` exigem sessão; validação estrita (sem mass assignment), limites de valor/quantidade, estoque nunca fica negativo (`SELECT … FOR UPDATE`), fotos de venda só para admin e com validação por bytes.
+- O contador `POST /track/click` é público, mas só aceita código/origem/idioma no formato esperado, tem limite por IP, exige `Origin` do site, não grava IP nem user-agent e ignora repetições do mesmo código.
+- Apagar dados pessoais de um cliente exige a senha do admin.
+- A busca escapa a barra invertida (sem isso o Postgres devolvia erro 500 com `LIKE` terminado em escape).
 
 **Navegador**
 - Cabeçalhos: CSP, HSTS, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, `Referrer-Policy`, `Permissions-Policy`, COOP. `/admin` responde `Cache-Control: no-store`.
