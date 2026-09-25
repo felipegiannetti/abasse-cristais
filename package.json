@@ -1,0 +1,23 @@
+{
+  "name": "abasse-crystal",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Abasse Crystal — catálogo de cristais com pedido via WhatsApp",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:api": "npm run start:dev -w apps/api",
+    "dev:web": "npm run dev -w apps/web",
+    "build:api": "npm run build -w apps/api",
+    "build:web": "npm run build -w apps/web",
+    "db:up": "docker compose up -d",
+    "db:migrate": "npm run db:migrate -w apps/api",
+    "db:deploy": "npm run db:deploy -w apps/api",
+    "db:seed": "npm run db:seed -w apps/api",
+    "admin:reset": "npm run admin:reset -w apps/api"
+  }
+}

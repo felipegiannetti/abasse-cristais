@@ -1,0 +1,17 @@
+# Postgres local apenas para desenvolvimento.
+# Em produção use o Neon (Vercel Marketplace) ou outro Postgres gerenciado.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: abasse
+      POSTGRES_PASSWORD: abasse
+      POSTGRES_DB: abasse
+    ports:
+      - "5432:5432"
+    volumes:
+      - abasse-pgdata:/var/lib/postgresql/data
+
+volumes:
+  abasse-pgdata:

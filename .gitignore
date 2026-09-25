@@ -1,0 +1,19 @@
+node_modules
+dist
+.next
+out
+.vercel
+.turbo
+*.tsbuildinfo
+next-env.d.ts
+
+# env
+.env
+.env.*
+!.env.example
+
+# uploads locais (só usados em desenvolvimento)
+apps/api/uploads
+
+.DS_Store
+npm-debug.log*
