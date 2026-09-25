@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { localePath, type Locale } from './config';
-import type { Messages } from './messages/en';
+import type { Messages } from './messages/types';
 
 interface I18n {
   locale: Locale;

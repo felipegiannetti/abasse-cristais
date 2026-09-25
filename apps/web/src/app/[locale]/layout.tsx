@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Cormorant_Garamond, Manrope } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { site } from '@/content/site';
-import { getMessages, htmlLang, isLocale, locales, ogLocale } from '@/i18n';
+import { getMessages, getPublicMessages, htmlLang, isLocale, locales, ogLocale } from '@/i18n';
 import { I18nProvider } from '@/i18n/provider';
 import { fetchWhatsapp } from '@/lib/api';
 import '../globals.css';
@@ -21,7 +21,7 @@ const sans = Manrope({
   display: 'swap',
 });
 
-// Only /en (served at "/") and /pt exist.
+// Only /en (served at "/"), /pt and /es exist.
 export const dynamicParams = false;
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
@@ -59,7 +59,7 @@ export default async function LocaleLayout({
   return (
     <html lang={htmlLang[locale]} className={`${display.variable} ${sans.variable}`}>
       <body className="min-h-dvh antialiased">
-        <I18nProvider locale={locale} messages={getMessages(locale)} whatsapp={whatsapp}>
+        <I18nProvider locale={locale} messages={getPublicMessages(locale)} whatsapp={whatsapp}>
           {children}
         </I18nProvider>
       </body>

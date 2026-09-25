@@ -7,6 +7,7 @@ export function alternates(locale: Locale, path: string) {
     languages: {
       en: localePath('en', path),
       'pt-BR': localePath('pt', path),
+      es: localePath('es', path),
       'x-default': localePath('en', path),
     },
   };

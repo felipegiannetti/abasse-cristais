@@ -9,6 +9,7 @@ import { useI18n } from '@/i18n/provider';
 const LABEL: Record<Locale, { short: string; full: string }> = {
   en: { short: 'EN', full: 'English' },
   pt: { short: 'PT', full: 'Português' },
+  es: { short: 'ES', full: 'Español' },
 };
 
 /**

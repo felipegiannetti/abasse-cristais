@@ -57,9 +57,10 @@ const nextConfig: NextConfig = {
     ];
     return [
       { source: '/:path*', headers: securityHeaders },
-      // Área administrativa nunca deve ser guardada em cache nem indexada (EN e PT).
+      // Área administrativa nunca deve ser guardada em cache nem indexada (EN, PT e ES).
       { source: '/admin/:path*', headers: noCache },
       { source: '/pt/admin/:path*', headers: noCache },
+      { source: '/es/admin/:path*', headers: noCache },
     ];
   },
 };
