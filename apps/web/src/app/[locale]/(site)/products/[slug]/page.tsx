@@ -3,12 +3,13 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ProductGallery } from '@/components/ProductGallery';
 import { Reveal } from '@/components/Reveal';
-import { WhatsAppIcon } from '@/components/icons';
+import { GlobeIcon, WhatsAppIcon } from '@/components/icons';
 import { site } from '@/content/site';
 import { formatPrice, getMessages, isLocale, localePath, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchProduct, fetchWhatsapp } from '@/lib/api';
-import { productMessage, whatsappUrl } from '@/lib/whatsapp';
+import { fetchProduct } from '@/lib/api';
+import { productMessage } from '@/lib/whatsapp';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export const revalidate = 60;
 
@@ -30,14 +31,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const whatsapp = await fetchWhatsapp();
   const { locale: raw, slug } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
   const m = getMessages(locale);
   const p = await fetchProduct(slug);
   if (!p) notFound();
 
-  const soldOut = p.status === 'SOLD_OUT';
+  const soldOut = p.status === 'SOLD_OUT' || !p.inStock;
   const specs = [
     { label: m.product.specs.category, value: p.category },
     { label: m.product.specs.origin, value: p.origin },
@@ -84,7 +84,7 @@ export default async function ProductPage({ params }: Props) {
           <p className="eyebrow">{p.category}</p>
           <h1 className="mt-4 font-display text-5xl font-medium leading-[1.05] text-pearl sm:text-6xl">{p.name}</h1>
           <p className={`mt-5 text-3xl font-semibold ${p.priceCents == null ? 'text-pearl/60' : 'text-gold-300'}`}>
-            {formatPrice(p.priceCents, locale, m)}
+            {formatPrice(p.priceCents, locale, m, p.saleMode)}
           </p>
 
           <div className="mt-8 h-px bg-gradient-to-r from-gold-400/50 via-white/10 to-transparent" />
@@ -103,16 +103,18 @@ export default async function ProductPage({ params }: Props) {
           )}
 
           <div className="mt-10">
-            <a
-              href={whatsappUrl(productMessage(p, locale, m), whatsapp)}
-              target="_blank"
-              rel="noopener noreferrer"
+            <WhatsAppLink
+              message={productMessage(p, locale, m)} source="PRODUCT_PAGE" productSlug={p.slug}
               className="btn btn-primary w-full py-4 text-base sm:w-auto"
             >
               <WhatsAppIcon className="h-5 w-5" />
               {soldOut ? m.product.askSimilarLong : m.product.wantLong}
-            </a>
-            <p className="mt-4 text-sm text-pearl/45">{m.product.disclaimer}</p>
+            </WhatsAppLink>
+            {p.saleMode === 'WEIGHT' && <p className="mt-4 text-sm font-medium text-gold-300">{m.product.byWeight}</p>}
+            <p className="mt-4 flex items-start gap-2 text-sm text-pearl/70">
+              <GlobeIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-300" /> {m.shipping.note}
+            </p>
+            <p className="mt-3 text-sm text-pearl/45">{m.product.disclaimer}</p>
           </div>
         </Reveal>
       </div>

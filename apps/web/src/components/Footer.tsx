@@ -3,13 +3,14 @@
 import Link from 'next/link';
 import { site } from '@/content/site';
 import { useI18n } from '@/i18n/provider';
-import { generalMessage, whatsappUrl } from '@/lib/whatsapp';
+import { generalMessage } from '@/lib/whatsapp';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Logo } from './Logo';
-import { WhatsAppIcon } from './icons';
+import { GlobeIcon, WhatsAppIcon } from './icons';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export function Footer() {
-  const { m, href, whatsapp } = useI18n();
+  const { m, href } = useI18n();
   return (
     <footer className="relative mt-32 border-t border-white/[0.07]">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
@@ -31,9 +32,12 @@ export function Footer() {
 
         <div className="text-sm">
           <p className="eyebrow mb-4">{m.footer.contact}</p>
-          <a href={whatsappUrl(generalMessage(m), whatsapp)} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+          <p className="mb-4 flex items-center gap-2 text-pearl/70">
+            <GlobeIcon className="h-4 w-4 text-gold-300" /> {m.shipping.short}
+          </p>
+          <WhatsAppLink message={generalMessage(m)} source="FOOTER" className="btn btn-ghost btn-sm">
             <WhatsAppIcon className="h-4 w-4" /> {m.footer.chat}
-          </a>
+          </WhatsAppLink>
           {site.instagram && (
             <p className="mt-4">
               <a className="text-pearl/70 hover:text-gold-300" href={site.instagram} target="_blank" rel="noopener noreferrer">

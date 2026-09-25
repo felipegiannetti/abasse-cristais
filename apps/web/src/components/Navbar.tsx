@@ -6,14 +6,15 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { stripLocale } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
-import { generalMessage, whatsappUrl } from '@/lib/whatsapp';
+import { generalMessage } from '@/lib/whatsapp';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Logo } from './Logo';
 import { WhatsAppIcon } from './icons';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { m, href, whatsapp } = useI18n();
+  const { m, href } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -66,15 +67,13 @@ export function Navbar() {
 
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          <a
-            href={whatsappUrl(generalMessage(m), whatsapp)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <WhatsAppLink
+            message={generalMessage(m)} source="MENU"
             className="btn btn-primary btn-sm hidden sm:inline-flex"
           >
             <WhatsAppIcon className="h-4 w-4" />
             {m.nav.contactUs}
-          </a>
+          </WhatsAppLink>
           <button
             type="button"
             aria-label={open ? m.nav.closeMenu : m.nav.openMenu}
@@ -107,14 +106,12 @@ export function Navbar() {
                   {l.label}
                 </Link>
               ))}
-              <a
-                href={whatsappUrl(generalMessage(m), whatsapp)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <WhatsAppLink
+                message={generalMessage(m)} source="MENU"
                 className="btn btn-primary mt-3"
               >
                 <WhatsAppIcon /> {m.nav.chatWhatsapp}
-              </a>
+              </WhatsAppLink>
             </div>
           </motion.nav>
         )}

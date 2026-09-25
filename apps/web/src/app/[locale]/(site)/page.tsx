@@ -4,11 +4,13 @@ import { CrystalHero } from '@/components/CrystalHero';
 import { Marquee } from '@/components/Marquee';
 import { ProductCard } from '@/components/ProductCard';
 import { Reveal } from '@/components/Reveal';
+import { ShippingBanner } from '@/components/ShippingBanner';
 import { ArrowIcon, GemIcon, WhatsAppIcon } from '@/components/icons';
 import { getMessages, isLocale, localePath, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchProducts, fetchWhatsapp } from '@/lib/api';
-import { generalMessage, whatsappUrl } from '@/lib/whatsapp';
+import { fetchProducts } from '@/lib/api';
+import { generalMessage } from '@/lib/whatsapp';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export const revalidate = 60;
 
@@ -20,7 +22,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function HomePage({ params }: Props) {
-  const whatsapp = await fetchWhatsapp();
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
   const m = getMessages(locale);
@@ -122,6 +123,8 @@ export default async function HomePage({ params }: Props) {
         </div>
       </section>
 
+      <ShippingBanner m={m} />
+
       {/* ------------------------------ Final CTA ------------------------------ */}
       <section className="mx-auto max-w-5xl px-5 sm:px-8">
         <Reveal className="glass relative overflow-hidden rounded-[2rem] px-6 py-16 text-center sm:px-14 sm:py-20">
@@ -131,14 +134,12 @@ export default async function HomePage({ params }: Props) {
             {m.home.cta.titleA} <span className="text-shimmer italic">{m.home.cta.titleB}</span>
           </h2>
           <p className="relative mx-auto mt-5 max-w-lg text-pearl/65">{m.home.cta.text}</p>
-          <a
-            href={whatsappUrl(generalMessage(m), whatsapp)}
-            target="_blank"
-            rel="noopener noreferrer"
+          <WhatsAppLink
+            message={generalMessage(m)} source="HOME_CTA"
             className="btn btn-primary relative mt-9"
           >
             <WhatsAppIcon /> {m.home.cta.button}
-          </a>
+          </WhatsAppLink>
         </Reveal>
       </section>
     </>

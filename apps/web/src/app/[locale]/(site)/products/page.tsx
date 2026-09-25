@@ -5,8 +5,9 @@ import { Reveal } from '@/components/Reveal';
 import { ArrowIcon, GemIcon, WhatsAppIcon } from '@/components/icons';
 import { getMessages, isLocale, localePath, plural, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchCategories, fetchProducts, fetchWhatsapp } from '@/lib/api';
-import { generalMessage, whatsappUrl } from '@/lib/whatsapp';
+import { fetchCategories, fetchProducts } from '@/lib/api';
+import { generalMessage } from '@/lib/whatsapp';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export const revalidate = 60;
 
@@ -28,7 +29,6 @@ export async function generateMetadata({ params }: Pick<Props, 'params'>): Promi
 }
 
 export default async function CatalogPage({ params, searchParams }: Props) {
-  const whatsapp = await fetchWhatsapp();
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
   const m = getMessages(locale);
@@ -141,9 +141,9 @@ export default async function CatalogPage({ params, searchParams }: Props) {
                 {c.clearFilters}
               </Link>
             )}
-            <a href={whatsappUrl(generalMessage(m), whatsapp)} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+            <WhatsAppLink message={generalMessage(m)} source="CATALOG" className="btn btn-primary">
               <WhatsAppIcon className="h-4 w-4" /> {m.home.hero.whatsapp}
-            </a>
+            </WhatsAppLink>
           </div>
         </div>
       )}

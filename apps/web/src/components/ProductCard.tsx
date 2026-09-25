@@ -5,13 +5,14 @@ import { fmt } from '@/i18n/config';
 import { formatPrice } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import type { Product } from '@/lib/types';
-import { productMessage, whatsappUrl } from '@/lib/whatsapp';
+import { productMessage } from '@/lib/whatsapp';
 import { ProductImage } from './ProductImage';
 import { WhatsAppIcon } from './icons';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
-  const { locale, m, href, whatsapp } = useI18n();
-  const soldOut = product.status === 'SOLD_OUT';
+  const { locale, m, href } = useI18n();
+  const soldOut = product.status === 'SOLD_OUT' || !product.inStock;
   const cover = product.images[0]?.url;
   const second = product.images[1]?.url;
 
@@ -48,21 +49,19 @@ export function ProductCard({ product, priority = false }: { product: Product; p
         <div className="flex flex-1 flex-col gap-1 p-5 pb-3">
           <h3 className="font-display text-2xl font-semibold leading-tight text-pearl">{product.name}</h3>
           <p className={`text-lg font-semibold ${product.priceCents == null ? 'text-pearl/60' : 'text-gold-300'}`}>
-            {formatPrice(product.priceCents, locale, m)}
+            {formatPrice(product.priceCents, locale, m, product.saleMode)}
           </p>
         </div>
       </Link>
 
       <div className="p-5 pt-2">
-        <a
-          href={whatsappUrl(productMessage(product, locale, m), whatsapp)}
-          target="_blank"
-          rel="noopener noreferrer"
+        <WhatsAppLink
+          message={productMessage(product, locale, m)} source="PRODUCT_CARD" productSlug={product.slug}
           className={`btn w-full ${soldOut ? 'btn-ghost' : 'btn-primary'}`}
         >
           <WhatsAppIcon className="h-4 w-4" />
           {soldOut ? m.product.askSimilar : m.product.want}
-        </a>
+        </WhatsAppLink>
       </div>
     </article>
   );

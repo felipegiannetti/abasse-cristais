@@ -6,8 +6,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Component, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { site } from '@/content/site';
 import { useI18n } from '@/i18n/provider';
-import { generalMessage, whatsappUrl } from '@/lib/whatsapp';
-import { ArrowIcon, WhatsAppIcon } from './icons';
+import { generalMessage } from '@/lib/whatsapp';
+import { ArrowIcon, GlobeIcon, WhatsAppIcon } from './icons';
+import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 // three.js only loads in the browser, after first paint (large bundle).
 const CrystalScene = dynamic(() => import('./CrystalScene'), { ssr: false });
@@ -53,7 +54,7 @@ function hasWebGL() {
 }
 
 export function CrystalHero() {
-  const { m, href, whatsapp } = useI18n();
+  const { m, href } = useI18n();
   const h = m.home.hero;
   const sectionRef = useRef<HTMLElement>(null);
   const [supported, setSupported] = useState(true);
@@ -159,10 +160,18 @@ export function CrystalHero() {
             <Link href={href('/products')} className="btn btn-primary">
               {h.explore} <ArrowIcon />
             </Link>
-            <a href={whatsappUrl(generalMessage(m), whatsapp)} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+            <WhatsAppLink message={generalMessage(m)} source="HERO" className="btn btn-ghost">
               <WhatsAppIcon className="h-4 w-4" /> {h.whatsapp}
-            </a>
+            </WhatsAppLink>
           </motion.div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.9, delay: 1.1 }}
+            className="mt-5 flex items-center gap-2 text-sm text-pearl/60"
+          >
+            <GlobeIcon className="h-4 w-4 text-gold-300" /> {m.shipping.short}
+          </motion.p>
         </div>
       </div>
 
