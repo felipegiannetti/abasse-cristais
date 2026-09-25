@@ -60,6 +60,10 @@ export class AuthService {
       await this.registerFailure(user.id);
       throw new BadRequestException({ code: 'WRONG_CURRENT_PASSWORD', message: 'Current password is incorrect.' });
     }
+    // bcrypt only uses the first 72 BYTES: longer inputs (multi-byte chars) would be silently truncated
+    if (Buffer.byteLength(newPassword, 'utf8') > 72) {
+      throw new BadRequestException({ code: 'PASSWORD_TOO_LONG', message: 'The new password is too long (max 72 bytes).' });
+    }
     if (newPassword === currentPassword) {
       throw new BadRequestException({ code: 'SAME_PASSWORD', message: 'The new password must be different from the current one.' });
     }
@@ -81,6 +85,24 @@ export class AuthService {
     return { token: await this.sign(updated.id, updated.tokenVersion), user: this.publicUser(updated) };
   }
 
+  /** Revokes the presented session (and any other copy of it) by bumping the token version. */
+  async logout(token: string | undefined): Promise<void> {
+    if (!token) return;
+    try {
+      const p = await this.jwt.verifyAsync<{ sub: string; tv: number }>(token, {
+        algorithms: ['HS256'],
+        issuer: config.jwtIssuer,
+        audience: config.jwtAudience,
+      });
+      await this.prisma.adminUser.updateMany({
+        where: { id: p.sub, tokenVersion: p.tv },
+        data: { tokenVersion: { increment: 1 } },
+      });
+    } catch {
+      // invalid/expired token: nothing to revoke
+    }
+  }
+
   private async registerFailure(userId: string) {
     const u = await this.prisma.adminUser.update({
       where: { id: userId },
@@ -100,7 +122,12 @@ export class AuthService {
   private sign(userId: string, tokenVersion: number) {
     return this.jwt.signAsync(
       { sub: userId, tv: tokenVersion },
-      { algorithm: 'HS256', expiresIn: `${config.sessionDays}d` },
+      {
+        algorithm: 'HS256',
+        expiresIn: `${config.sessionDays}d`,
+        issuer: config.jwtIssuer,
+        audience: config.jwtAudience,
+      },
     );
   }
 

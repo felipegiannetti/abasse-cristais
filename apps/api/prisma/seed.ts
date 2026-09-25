@@ -8,23 +8,19 @@ const prisma = new PrismaClient();
 // A senha inicial é temporária: o admin é forçado a trocá-la no primeiro login.
 async function main() {
   const username = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
-  const isProd = process.env.NODE_ENV === 'production';
-
   const existing = await prisma.adminUser.findUnique({ where: { username } });
   if (existing) {
     console.log(`Admin "${username}" já existe — nada a fazer.`);
     return;
   }
 
+  // Never fall back to a fixed password (it would be public in the repository): if none is provided,
+  // generate a random one, in every environment.
   let password = process.env.ADMIN_INITIAL_PASSWORD;
   let generated = false;
   if (!password) {
-    if (isProd) {
-      password = randomBytes(15).toString('base64url');
-      generated = true;
-    } else {
-      password = 'Abasse@Inicial1';
-    }
+    password = randomBytes(15).toString('base64url');
+    generated = true;
   }
 
   await prisma.adminUser.create({

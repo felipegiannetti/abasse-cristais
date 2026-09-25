@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
 import { config } from '../config';
 import { AdminGuard } from './admin.guard';
@@ -37,11 +37,14 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(204)
-  logout(@Res({ passthrough: true }) res: Response) {
+  @SkipThrottle() // authenticated-only effect; unauthenticated spam must not burn a bucket shared behind the proxy
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    await this.auth.logout(req.cookies?.[config.cookieName]);
     res.clearCookie(config.cookieName, cookieOptions());
   }
 
   @Get('me')
+  @SkipThrottle()
   @UseGuards(AdminGuard)
   @AllowWhenPasswordChangeRequired()
   me(@Req() req: AdminRequest) {
@@ -52,7 +55,9 @@ export class AuthController {
   @HttpCode(200)
   @UseGuards(AdminGuard)
   @AllowWhenPasswordChangeRequired()
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  // Brute force of the current password is stopped by the per-account lockout in the database
+  // (a per-IP limiter here could be exhausted by outsiders behind the same proxy IP).
+  @SkipThrottle()
   async changePassword(
     @Req() req: AdminRequest,
     @Body() dto: ChangePasswordDto,
