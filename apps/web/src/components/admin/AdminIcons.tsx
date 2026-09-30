@@ -182,3 +182,15 @@ export const IconContact = (p: P) => (
     <path d="M5.5 17c.6-2 2-3 3.5-3s2.9 1 3.5 3M15 9h3.5M15 12.5h3.5" />
   </svg>
 );
+export const IconSms = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z" />
+    <path d="M8 10.5h.01M12 10.5h.01M16 10.5h.01" strokeWidth={2.3} />
+  </svg>
+);
+export const IconMail = (p: P) => (
+  <svg {...base(p)}>
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path d="m4 7 8 6 8-6" />
+  </svg>
+);
