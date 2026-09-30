@@ -3,6 +3,8 @@
 Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 
 > **Atualização:** os itens 1 a 4 abaixo foram **implementados** (mensagem com origem + código Ref em EN/PT/ES, contador de cliques, vendas com estoque, clientes e painel financeiro). O que sobrou está indicado como pendente. Detalhes no `README.md` (seção *Vendas, estoque, clientes e financeiro*).
+>
+> **Atualização (30/09):** SMS e e-mail como contato alternativo ao WhatsApp foram **implementados** (produto e catálogo, com mensagem pronta no idioma da página; número/e-mail configuráveis em *Configurações*, cada um opcional e oculto se vazio). Não entram no contador de cliques nem no funil do Financeiro (item 2) — isso segue pendente caso se queira estender.
 
 ---
 
