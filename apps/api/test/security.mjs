@@ -395,12 +395,20 @@ if (!PASS) {
   r = await call('GET', `/images/${imgA.id}`);
   ok("deleting a product cascades to its image bytes → 404", r.status === 404, r.status);
 
-  // ---- Site settings (WhatsApp) ----
+  // ---- Site settings (WhatsApp, SMS, Email) ----
   r = await call('GET', '/settings/public');
-  ok('GET /settings/public is open and exposes only the whatsapp number', r.status === 200 && Object.keys(r.json).join() === 'whatsapp', JSON.stringify(r.json));
+  ok(
+    'GET /settings/public is open and exposes exactly whatsapp+sms+email (no admin-only fields)',
+    r.status === 200 && Object.keys(r.json).sort().join() === 'email,sms,whatsapp',
+    JSON.stringify(r.json),
+  );
   r = await call('GET', '/admin/settings', { cookie: session });
-  const originalWa = r.json.whatsapp;
-  ok('GET /admin/settings → 200', r.status === 200 && typeof originalWa === 'string', JSON.stringify(r.json));
+  const original = { whatsapp: r.json.whatsapp, sms: r.json.sms, email: r.json.email };
+  ok(
+    'GET /admin/settings → 200',
+    r.status === 200 && typeof original.whatsapp === 'string' && typeof original.sms === 'string' && typeof original.email === 'string',
+    JSON.stringify(r.json),
+  );
   for (const [input, expected] of [['+55 (11) 99999-9999', '5511999999999'], ['5511988887777', '5511988887777'], ['https://wa.me/5511977776666', '5511977776666'], ['https://api.whatsapp.com/send?phone=5511966665555&text=hi', '5511966665555']]) {
     r = await mut('PUT', '/admin/settings', session, { whatsapp: input });
     ok(`whatsapp "${input.slice(0, 32)}" is normalized to digits only`, r.status === 200 && r.json.whatsapp === expected, JSON.stringify(r.json));
@@ -413,11 +421,36 @@ if (!PASS) {
   }
   r = await mut('PUT', '/admin/settings', session, { whatsapp: 'x'.repeat(500) });
   ok('oversized whatsapp value → 400', r.status === 400, r.status);
+
+  // SMS phone: same digits-only rule as WhatsApp, but no wa.me link accepted (a plain phone number)
+  for (const [input, expected] of [['+55 (11) 98888-7777', '5511988887777'], ['5511977776666', '5511977776666']]) {
+    r = await mut('PUT', '/admin/settings', session, { sms: input });
+    ok(`sms "${input}" is normalized to digits only`, r.status === 200 && r.json.sms === expected, JSON.stringify(r.json));
+  }
+  for (const bad of ['https://wa.me/5511999999999', 'javascript:alert(1)', '123', '55119999999999999999', 'call me maybe']) {
+    r = await mut('PUT', '/admin/settings', session, { sms: bad });
+    ok(`sms rejected: ${bad.slice(0, 40)}`, r.status === 400, `${r.status} ${JSON.stringify(r.json).slice(0, 120)}`);
+  }
+  r = await mut('PUT', '/admin/settings', session, { sms: '' });
+  ok('empty sms clears the field (hides the button) → 200', r.status === 200 && r.json.sms === '', JSON.stringify(r.json));
+
+  // Contact email
+  for (const good of ['loja@abassecrystal.com', 'Loja@AbasseCrystal.com']) {
+    r = await mut('PUT', '/admin/settings', session, { email: good });
+    ok(`email "${good}" accepted and lower-cased`, r.status === 200 && r.json.email === good.toLowerCase(), JSON.stringify(r.json));
+  }
+  for (const bad of ['not-an-email', 'javascript:alert(1)', '<script>alert(1)</script>@x.com', 'a@b', 'x'.repeat(260) + '@x.com']) {
+    r = await mut('PUT', '/admin/settings', session, { email: bad });
+    ok(`email rejected: ${bad.slice(0, 40)}`, r.status === 400, `${r.status} ${JSON.stringify(r.json).slice(0, 120)}`);
+  }
+  r = await mut('PUT', '/admin/settings', session, { email: '' });
+  ok('empty email clears the field (hides the button) → 200', r.status === 200 && r.json.email === '', JSON.stringify(r.json));
+
   r = await mut('PUT', '/admin/settings', session, { whatsapp: '5511999999999', evil: 1 });
   ok('unknown settings field rejected (mass assignment) → 400', r.status === 400, r.status);
   r = await call('GET', '/settings/public');
   ok('rejected inputs did not change the saved number', r.json.whatsapp === '5511966665555', JSON.stringify(r.json));
-  await mut('PUT', '/admin/settings', session, { whatsapp: originalWa });
+  await mut('PUT', '/admin/settings', session, original);
 
   // ---- Team: admins creating admins (same permissions) with step-up authentication ----
   r = await call('GET', '/admin/team', { cookie: session });
