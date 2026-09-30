@@ -84,6 +84,10 @@ model SiteSettings {
   id        String   @id @default("main")
   // digits only, with country code (e.g. 5511999999999); empty = fall back to the web app's env default
   whatsapp  String   @default("")
+  // digits only, with country code; empty = the SMS contact button is hidden on the site
+  sms       String   @default("")
+  // empty = the Email contact button is hidden on the site
+  email     String   @default("")
   updatedAt DateTime @updatedAt
 }
 
