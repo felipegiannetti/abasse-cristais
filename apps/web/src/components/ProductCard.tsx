@@ -6,6 +6,7 @@ import { formatPrice } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import type { Product } from '@/lib/types';
 import { productMessage } from '@/lib/whatsapp';
+import { ProductContactOptions } from '@/components/ProductContactOptions';
 import { ProductImage } from './ProductImage';
 import { WhatsAppIcon } from './icons';
 import { WhatsAppLink } from '@/components/WhatsAppLink';
@@ -62,6 +63,7 @@ export function ProductCard({ product, priority = false }: { product: Product; p
           <WhatsAppIcon className="h-4 w-4" />
           {soldOut ? m.product.askSimilar : m.product.want}
         </WhatsAppLink>
+        <ProductContactOptions product={product} className="mt-2" />
       </div>
     </article>
   );

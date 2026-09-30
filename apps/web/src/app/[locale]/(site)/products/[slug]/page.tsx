@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ProductContactOptions } from '@/components/ProductContactOptions';
 import { ProductGallery } from '@/components/ProductGallery';
 import { Reveal } from '@/components/Reveal';
 import { GlobeIcon, WhatsAppIcon } from '@/components/icons';
@@ -110,6 +111,7 @@ export default async function ProductPage({ params }: Props) {
               <WhatsAppIcon className="h-5 w-5" />
               {soldOut ? m.product.askSimilarLong : m.product.wantLong}
             </WhatsAppLink>
+            <ProductContactOptions product={p} className="mt-3" />
             {p.saleMode === 'WEIGHT' && <p className="mt-4 text-sm font-medium text-gold-300">{m.product.byWeight}</p>}
             <p className="mt-4 flex items-start gap-2 text-sm text-pearl/70">
               <GlobeIcon className="mt-0.5 h-4 w-4 shrink-0 text-gold-300" /> {m.shipping.note}

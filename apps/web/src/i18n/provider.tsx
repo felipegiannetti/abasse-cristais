@@ -11,6 +11,10 @@ interface I18n {
   href: (path: string) => string;
   /** WhatsApp number (digits) configured by the admin; every WhatsApp button uses it. */
   whatsapp: string;
+  /** SMS phone (digits) configured by the admin; empty hides the SMS contact option. */
+  sms: string;
+  /** Contact email configured by the admin; empty hides the Email contact option. */
+  email: string;
 }
 
 const Ctx = createContext<I18n | null>(null);
@@ -19,16 +23,20 @@ export function I18nProvider({
   locale,
   messages,
   whatsapp = '',
+  sms = '',
+  email = '',
   children,
 }: {
   locale: Locale;
   messages: Messages;
   whatsapp?: string;
+  sms?: string;
+  email?: string;
   children: ReactNode;
 }) {
   const value = useMemo<I18n>(
-    () => ({ locale, m: messages, href: (p) => localePath(locale, p), whatsapp }),
-    [locale, messages, whatsapp],
+    () => ({ locale, m: messages, href: (p) => localePath(locale, p), whatsapp, sms, email }),
+    [locale, messages, whatsapp, sms, email],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

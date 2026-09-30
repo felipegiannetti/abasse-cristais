@@ -42,17 +42,30 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
   }
 }
 
+export interface ContactSettings {
+  /** digits with country code; empty = fall back to the env default */
+  whatsapp: string;
+  /** digits with country code; empty = the SMS button is hidden */
+  sms: string;
+  /** empty = the Email button is hidden */
+  email: string;
+}
+
 /**
- * WhatsApp number every button on the site uses. It is edited by the admins (Settings page) and stored in
- * the database; the env variable is only a fallback for when nothing has been configured yet.
+ * Contact channels every button on the site uses. Edited by the admins (Settings page) and stored in
+ * the database; the WhatsApp env variable is only a fallback for when nothing has been configured yet.
  */
-export async function fetchWhatsapp(): Promise<string> {
-  const fallback = site.whatsapp;
+export async function fetchContact(): Promise<ContactSettings> {
+  const fallback: ContactSettings = { whatsapp: site.whatsapp, sms: '', email: '' };
   try {
     const res = await fetch(`${API_URL}/settings/public`, { next: { revalidate: 60, tags: [SETTINGS_TAG] } });
     if (!res.ok) return fallback;
-    const data = (await res.json()) as { whatsapp?: string };
-    return /^\d{10,15}$/.test(data.whatsapp ?? '') ? (data.whatsapp as string) : fallback;
+    const data = (await res.json()) as Partial<ContactSettings>;
+    return {
+      whatsapp: /^\d{10,15}$/.test(data.whatsapp ?? '') ? (data.whatsapp as string) : fallback.whatsapp,
+      sms: /^\d{10,15}$/.test(data.sms ?? '') ? (data.sms as string) : '',
+      email: typeof data.email === 'string' ? data.email : '',
+    };
   } catch {
     return fallback;
   }

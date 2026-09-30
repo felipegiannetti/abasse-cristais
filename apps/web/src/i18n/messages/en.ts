@@ -54,6 +54,19 @@ export const en = {
       PRODUCT_PAGE: 'product page',
     },
   },
+  sms: {
+    button: 'Text us',
+    general: 'Hi, I found {brand} online and would like to know more about your crystals.',
+    product: 'Hi, I’m interested in this crystal from {brand}: {name} — {price}. {url} Is it still available?',
+  },
+  email: {
+    button: 'Email us',
+    subjectGeneral: 'Question about your crystals',
+    subjectProduct: '{name} — question',
+    general: 'Hello,\n\nI found {brand} online and would like to know more about your crystals.\n\nThank you!',
+    product:
+      'Hello,\n\nI’m interested in this crystal from {brand}:\n\n{name} — {price}\n{url}\n\nIs it still available?\n\nThank you!',
+  },
   shipping: {
     badge: 'Worldwide shipping',
     title: 'We ship worldwide',

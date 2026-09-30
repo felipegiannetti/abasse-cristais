@@ -55,6 +55,19 @@ export const es: PublicMessages = {
       PRODUCT_PAGE: 'página del producto',
     },
   },
+  sms: {
+    button: 'Enviar SMS',
+    general: 'Hola, vi el sitio de {brand} y me gustaría saber más sobre los cristales.',
+    product: 'Hola, me interesa este cristal de {brand}: {name} — {price}. {url} ¿Sigue disponible?',
+  },
+  email: {
+    button: 'Enviar correo',
+    subjectGeneral: 'Consulta sobre los cristales',
+    subjectProduct: '{name} — consulta',
+    general: 'Hola,\n\nVi el sitio de {brand} y me gustaría saber más sobre los cristales.\n\n¡Gracias!',
+    product:
+      'Hola,\n\nMe interesa este cristal de {brand}:\n\n{name} — {price}\n{url}\n\n¿Sigue disponible?\n\n¡Gracias!',
+  },
   shipping: {
     badge: 'Envíos a todo el mundo',
     title: 'Enviamos a todo el mundo',
