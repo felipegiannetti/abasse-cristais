@@ -18,7 +18,7 @@ class ConfirmDto {
 }
 
 class CreateAdminDto extends ConfirmDto {
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   @IsString()
   @Matches(/^[a-z0-9][a-z0-9._-]{2,31}$/, {
     message: 'Username: 3 to 32 characters (letters, numbers, dot, dash or underscore).',

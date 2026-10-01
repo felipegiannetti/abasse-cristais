@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { site } from '@/content/site';
 import { fmt, locales, type Locale } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
-import { defaultTemplate, TEMPLATE_KEYS, type TemplateKey, type TemplatesMap } from '@/i18n/templates';
+import { defaultTemplate, type TemplateKey, type TemplatesMap } from '@/i18n/templates';
 import { IconEdit } from './AdminIcons';
 
 const LOCALE_LABEL: Record<Locale, string> = { en: 'English', pt: 'Português', es: 'Español' };

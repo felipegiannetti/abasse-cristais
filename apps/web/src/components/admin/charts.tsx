@@ -45,7 +45,6 @@ export function AreaChart({ points, format, height = 240 }: { points: Point[]; f
     const ticks = [0, 0.5, 1].map((t) => ({ v: max * t, y: y(max * t) }));
     const labelIdx = points.length > 2 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : points.map((_, i) => i);
     return { pad, step, x, y, path, area, ticks, labelIdx };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [points, H]);
 
   const active = hover !== null ? points[hover] : null;

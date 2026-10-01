@@ -6,7 +6,7 @@ import { ProductCard } from '@/components/ProductCard';
 import { Reveal } from '@/components/Reveal';
 import { ShippingBanner } from '@/components/ShippingBanner';
 import { ArrowIcon, GemIcon, WhatsAppIcon } from '@/components/icons';
-import { getMessages, isLocale, localePath, type Locale } from '@/i18n';
+import { isLocale, localePath, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
 import { fetchMessages, fetchProducts } from '@/lib/api';
 import { generalMessage } from '@/lib/whatsapp';

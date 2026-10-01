@@ -183,7 +183,7 @@ export class SalesService {
           status: dto.status ?? 'PAID',
           customerId: customer.id,
           customerName: customer.name,
-          shipTo: shipTo as Prisma.InputJsonValue | undefined,
+          shipTo,
           shippingMethod: dto.shippingMethod ?? null,
           shippingCostCents: shipping,
           trackingCode: dto.trackingCode ?? null,

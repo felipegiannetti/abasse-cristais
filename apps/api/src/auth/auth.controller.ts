@@ -39,7 +39,7 @@ export class AuthController {
   @HttpCode(204)
   @SkipThrottle() // authenticated-only effect; unauthenticated spam must not burn a bucket shared behind the proxy
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    await this.auth.logout(req.cookies?.[config.cookieName]);
+    await this.auth.logout(req.cookies?.[config.cookieName] as string | undefined);
     res.clearCookie(config.cookieName, cookieOptions());
   }
 
