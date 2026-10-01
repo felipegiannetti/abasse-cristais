@@ -178,6 +178,9 @@ const adminRoutes = [
   ['DELETE', '/admin/products/abc/images/def'],
   ['GET', '/auth/me'],
   ['POST', '/auth/change-password'],
+  ['POST', '/auth/sign-out-everywhere'],
+  ['GET', '/admin/audit-log'],
+  ['POST', '/admin/products/abc/duplicate'],
 ];
 for (const [m, p] of adminRoutes) {
   const res = await call(m, p, { body: m === 'GET' || m === 'DELETE' ? undefined : {}, headers: { origin: ORIGIN } });
@@ -606,6 +609,16 @@ if (!PASS) {
     ok(`product validation: ${name} → 400`, r.status === 400, r.status);
   }
 
+  // duplicate: a quick starting point for size/color variants of an existing crystal
+  r = await mut('POST', `/admin/products/${P1.id}/duplicate`, session);
+  ok('duplicate product → 201', r.status === 201 && r.json.id !== P1.id, JSON.stringify(r.json).slice(0, 200));
+  const dup = r.json;
+  ok('duplicate keeps catalog fields but is renamed, hidden and reset to zero stock', dup.name === `${P1.name} (cópia)` && dup.slug !== P1.slug && dup.status === 'HIDDEN' && dup.stockQuantity === 0 && dup.costCents === P1.costCents, JSON.stringify(dup).slice(0, 300));
+  ok('duplicate does not copy images', Array.isArray(dup.images) && dup.images.length === 0, JSON.stringify(dup.images));
+  r = await mut('POST', '/admin/products/clxxxxxxxxxxxxxxxxxxxxxxxx/duplicate', session);
+  ok('duplicate unknown product → 404', r.status === 404, r.status);
+  await mut('DELETE', `/admin/products/${dup.id}`, session);
+
   // customers
   r = await mut('POST', '/admin/customers', session, { name: `Cust ${tag}`, email: 'not-an-email' });
   ok('customer with an invalid e-mail → 400', r.status === 400, r.status);
@@ -772,6 +785,8 @@ if (!PASS) {
   }
   r = await call('POST', '/track/click', { body: { ref: 'ZZZZ22', source: 'MENU', path: '/', locale: 'pt' }, headers: { origin: 'https://evil.example' } });
   ok('click tracking refuses a foreign Origin → 403', r.status === 403, r.status);
+  r = await call('POST', '/track/click', { body: { ref: 'QRQRQR', source: 'QR_CODE', path: '/q/some-slug', locale: 'pt' }, headers: { origin: ORIGIN } });
+  ok('click tracking accepts source QR_CODE (printed QR redirect)', r.status === 204, `${r.status} ${JSON.stringify(r.json)}`);
   const DUP_REF = Array.from({ length: 6 }, () => '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 32)]).join('');
   for (let i = 0; i < 2; i++) await call('POST', '/track/click', { body: { ref: DUP_REF, source: 'HERO', path: '/', locale: 'en' }, headers: { origin: ORIGIN } });
   r = await call('GET', '/admin/analytics/clicks?days=30', { cookie: session });
@@ -808,6 +823,28 @@ if (!PASS) {
   r = await call('GET', `/admin/sales/${S1.id}`, { cookie: session });
   ok('deleting a product keeps the sale history readable', r.status === 200 && r.json.items.every((i) => i.productName.startsWith('Sec ')), JSON.stringify(r.json.items?.map((i) => i.productName)));
 
+  // audit log: "quem mexeu em quê"
+  r = await call('GET', '/admin/audit-log', { cookie: session });
+  ok('audit log → 200 with a paginated shape', r.status === 200 && Array.isArray(r.json.items) && typeof r.json.total === 'number' && r.json.total >= r.json.items.length, JSON.stringify(r.json).slice(0, 200));
+  ok('audit log is newest first', r.json.items.length < 2 || new Date(r.json.items[0].createdAt) >= new Date(r.json.items[1].createdAt), JSON.stringify(r.json.items.slice(0, 2)));
+  r = await call('GET', '/admin/audit-log?entityType=Product&pageSize=100', { cookie: session });
+  ok(
+    'audit log recorded the product actions from this run',
+    r.status === 200 &&
+      r.json.items.every((e) => e.entityType === 'Product') &&
+      r.json.items.some((e) => e.action === 'product.create' && e.summary.includes(P1.name)) &&
+      r.json.items.some((e) => e.action === 'product.duplicate' && e.entityId === dup.id) &&
+      r.json.items.some((e) => e.action === 'product.delete' && e.summary.includes(P1.name)),
+    JSON.stringify(r.json.items.map((e) => e.action)),
+  );
+  ok('audit log entries name the acting admin', r.json.items.every((e) => e.actorUsername === USER), JSON.stringify(r.json.items.map((e) => e.actorUsername)));
+  r = await call('GET', '/admin/audit-log?pageSize=1&page=1', { cookie: session });
+  ok('audit log pagination honours pageSize', r.status === 200 && r.json.items.length === 1 && r.json.pageSize === 1, JSON.stringify(r.json).slice(0, 150));
+  r = await call('GET', `/admin/audit-log?entityType=${'x'.repeat(41)}`, { cookie: session });
+  ok('audit log rejects an oversized entityType filter → 400', r.status === 400, r.status);
+  r = await call('GET', '/admin/audit-log?page=0', { cookie: session });
+  ok('audit log rejects page=0 → 400', r.status === 400, r.status);
+
   // Logout revokes the token server-side (a stolen cookie stops working)
   r = await login(USER, PASS);
   const stolen = r.cookie;
@@ -818,6 +855,19 @@ if (!PASS) {
   ok('logout clears the cookie', /abasse_admin=;|Expires=Thu, 01 Jan 1970/i.test(r.setCookie), r.setCookie);
   r = await call('GET', '/auth/me', { cookie: stolen });
   ok('token is REVOKED after logout (replaying the stolen cookie → 401)', r.status === 401, r.status);
+
+  // "sign out of all devices": the lost-phone panic button revokes every session, not just the caller's
+  const sessA = (await login(USER, PASS)).cookie;
+  const sessB = (await login(USER, PASS)).cookie;
+  r = await call('GET', '/auth/me', { cookie: sessB });
+  ok('a second concurrent session works before sign-out-everywhere', r.status === 200, r.status);
+  r = await mut('POST', '/auth/sign-out-everywhere', sessA);
+  ok('sign out of all devices → 204', r.status === 204, r.status);
+  ok('sign-out-everywhere clears the caller cookie too', /abasse_admin=;|Expires=Thu, 01 Jan 1970/i.test(r.setCookie), r.setCookie);
+  r = await call('GET', '/auth/me', { cookie: sessA });
+  ok('the calling session is revoked', r.status === 401, r.status);
+  r = await call('GET', '/auth/me', { cookie: sessB });
+  ok('a completely different session is ALSO revoked (every device signed out)', r.status === 401, r.status);
 }
 
 // ======================================================================
