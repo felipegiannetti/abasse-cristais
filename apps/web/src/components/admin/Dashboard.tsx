@@ -2,10 +2,10 @@
 
 import { motion, type Variants } from 'motion/react';
 import Link from 'next/link';
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { formatPrice, plural } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
-import { api, errorText } from '@/lib/client-api';
+import { useApiResource } from '@/lib/useApiResource';
 import type { ProductStatus, Stats } from '@/lib/types';
 import {
   IconAlertTriangle,
@@ -103,15 +103,7 @@ export function Dashboard() {
   const { locale, m, href } = useI18n();
   const me = useMe();
   const t = m.admin.dash;
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    api<Stats>('/admin/products/stats', { homePath: href('/'), changePasswordPath: href('/admin/change-password') })
-      .then(setStats)
-      .catch((e) => setError(errorText(e, m, t.loadFailed)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const { data: stats, error } = useApiResource<Stats>('/admin/products/stats', t.loadFailed);
 
   if (error) {
     return <p role="alert" className="glass rounded-3xl px-6 py-5 text-sm text-red-200">{error}</p>;

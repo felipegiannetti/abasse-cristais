@@ -1,11 +1,12 @@
 'use client';
 
 import { AnimatePresence, motion } from 'motion/react';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { getLoginAddress } from '@/app/actions';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
+import { useApiResource } from '@/lib/useApiResource';
 import type { TeamMember } from '@/lib/types';
 import { IconCheck, IconCopy, IconKey, IconPlus, IconShield, IconTrash } from './AdminIcons';
 import { AuditLogSection } from './AuditLogSection';
@@ -55,21 +56,12 @@ export function TeamPage() {
   const toast = useToast();
   const nav = { homePath: href('/'), changePasswordPath: href('/admin/change-password') };
 
-  const [team, setTeam] = useState<TeamMember[] | null>(null);
-  const [error, setError] = useState('');
+  const { data: team, error, reload: load } = useApiResource<TeamMember[]>('/admin/team', t.loadFailed);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState('');
-
-  const load = useCallback(() => {
-    api<TeamMember[]>('/admin/team', nav)
-      .then(setTeam)
-      .catch((e) => setError(errorText(e, m, t.loadFailed)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(load, [load]);
 
   const close = () => {
     if (busy) return;
