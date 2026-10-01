@@ -13,6 +13,7 @@ import type { Product, ProductStatus, SaleMode } from '@/lib/types';
 import { IconExternal } from './AdminIcons';
 import { ImageManager, type ImageItem } from './ImageManager';
 import { ProductPreview } from './ProductPreview';
+import { QrCodeCard } from './QrCodeCard';
 import { useToast } from './Toast';
 
 const STATUSES: ProductStatus[] = ['AVAILABLE', 'SOLD_OUT', 'HIDDEN'];
@@ -321,6 +322,8 @@ export function ProductForm({ initial }: { initial?: Product }) {
               saleMode,
             }}
           />
+          {/* Only an already-saved product has a stable slug for the QR link to point to. */}
+          {slug && <QrCodeCard slug={slug} />}
         </aside>
       </div>
 

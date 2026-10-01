@@ -54,6 +54,7 @@ export const pt: PublicMessages = {
       CATALOG: 'página da coleção',
       PRODUCT_CARD: 'página da coleção',
       PRODUCT_PAGE: 'página do produto',
+      QR_CODE: 'código QR impresso',
     },
   },
   sms: {

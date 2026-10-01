@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import type { TeamMember } from '@/lib/types';
 import { IconCheck, IconCopy, IconKey, IconPlus, IconShield, IconTrash } from './AdminIcons';
+import { AuditLogSection } from './AuditLogSection';
 import { Modal } from './Modal';
 import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
@@ -198,6 +199,8 @@ export function TeamPage() {
           </AnimatePresence>
         </ul>
       )}
+
+      <AuditLogSection />
 
       {/* add / remove / reset — always asks for the acting admin's password */}
       <Modal open={Boolean(formOpen)} onClose={close} title={title} busy={busy}>

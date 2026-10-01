@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { revalidateCatalog } from '@/app/actions';
 import { fmt } from '@/i18n/config';
@@ -10,7 +11,7 @@ import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { formatGrams } from '@/lib/format';
 import type { Product, ProductList, ProductStatus, Stats } from '@/lib/types';
-import { IconEdit, IconGem, IconGrid, IconList, IconPlus, IconSearch, IconStar, IconTrash } from './AdminIcons';
+import { IconCopy, IconEdit, IconGem, IconGrid, IconList, IconPlus, IconSearch, IconStar, IconTrash } from './AdminIcons';
 import { ConfirmDialog } from './ConfirmDialog';
 import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
@@ -31,6 +32,7 @@ type View = 'grid' | 'list';
 
 export function ProductsAdmin() {
   const toast = useToast();
+  const router = useRouter();
   const { locale, m, href } = useI18n();
   const t = m.admin.list;
   const nav = { homePath: href('/'), changePasswordPath: href('/admin/change-password') };
@@ -47,6 +49,7 @@ export function ProductsAdmin() {
   const [view, setView] = useState<View>('grid');
   const [toDelete, setToDelete] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -133,6 +136,18 @@ export function ProductsAdmin() {
       toast(errorText(e, m, t.deleteFailed), 'error');
     } finally {
       setDeleting(false);
+    }
+  }
+
+  async function duplicate(p: Product) {
+    setDuplicatingId(p.id);
+    try {
+      const copy = await api<Product>(`/admin/products/${p.id}/duplicate`, { method: 'POST', ...nav });
+      toast(fmt(t.duplicated, { name: p.name }));
+      router.push(href(`/admin/products/${copy.id}`));
+    } catch (e) {
+      toast(errorText(e, m, t.duplicateFailed), 'error');
+      setDuplicatingId(null);
     }
   }
 
@@ -309,6 +324,20 @@ export function ProductsAdmin() {
                       </Link>
                       <button
                         type="button"
+                        onClick={() => duplicate(p)}
+                        disabled={duplicatingId === p.id}
+                        aria-label={`${t.duplicate}: ${p.name}`}
+                        title={t.duplicate}
+                        className="btn btn-ghost btn-sm !px-3"
+                      >
+                        {duplicatingId === p.id ? (
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-pearl/30 border-t-pearl" />
+                        ) : (
+                          <IconCopy className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => setToDelete(p)}
                         aria-label={`${t.delete}: ${p.name}`}
                         title={t.delete}
@@ -367,6 +396,9 @@ export function ProductsAdmin() {
                   <Link href={href(`/admin/products/${p.id}`)} className="btn btn-ghost btn-sm">
                     {t.edit}
                   </Link>
+                  <button type="button" className="btn btn-ghost btn-sm" disabled={duplicatingId === p.id} onClick={() => duplicate(p)} title={t.duplicate}>
+                    {duplicatingId === p.id ? t.duplicating : t.duplicate}
+                  </button>
                   <button type="button" className="btn btn-danger btn-sm" onClick={() => setToDelete(p)}>
                     {t.delete}
                   </button>

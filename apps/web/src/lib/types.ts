@@ -50,6 +50,25 @@ export interface Stats {
   availableValueCents: number;
   categories: CategoryCount[];
   recent: Product[];
+  lowStock: { id: string; slug: string; name: string; stockQuantity: number }[];
+}
+
+export interface AuditLogEntry {
+  id: string;
+  actorId: string | null;
+  actorUsername: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  summary: string;
+  createdAt: string;
+}
+
+export interface AuditLogList {
+  items: AuditLogEntry[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface TeamMember {

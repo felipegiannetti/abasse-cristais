@@ -4,17 +4,12 @@ import { usePathname } from 'next/navigation';
 import type { AnchorHTMLAttributes, MouseEvent, ReactNode } from 'react';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
+import { makeRef } from '@/lib/ref';
 import { whatsappUrl } from '@/lib/whatsapp';
 
-export type WaSource = 'MENU' | 'FLOATING' | 'FOOTER' | 'HERO' | 'HOME_CTA' | 'CATALOG' | 'PRODUCT_CARD' | 'PRODUCT_PAGE';
-
-// No 0/1/O/I: the code is read out and typed by people
-const ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
-
-function makeRef(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(6));
-  return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join('');
-}
+// QR_CODE never shows up here — it's a printed sticker, not a button a visitor clicks on the site —
+// but the type stays in one place since it shares the same m.whatsapp.origins record (see lib/whatsapp.ts).
+export type WaSource = 'MENU' | 'FLOATING' | 'FOOTER' | 'HERO' | 'HOME_CTA' | 'CATALOG' | 'PRODUCT_CARD' | 'PRODUCT_PAGE' | 'QR_CODE';
 
 /** Page path only (no query, no fragment), restricted to what the API accepts. */
 function cleanPath(): string {

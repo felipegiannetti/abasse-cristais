@@ -3,11 +3,12 @@
 import { motion, type Variants } from 'motion/react';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
-import { formatPrice } from '@/i18n';
+import { formatPrice, plural } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import type { ProductStatus, Stats } from '@/lib/types';
 import {
+  IconAlertTriangle,
   IconArrowRight,
   IconCart,
   IconChart,
@@ -162,6 +163,34 @@ export function Dashboard() {
           </Link>
         </div>
       </motion.section>
+
+      {/* Low stock warning */}
+      {stats.lowStock.length > 0 && (
+        <motion.section variants={item} className="glass-strong rounded-3xl border border-amber-400/25 bg-amber-400/[0.06] p-6">
+          <div className="flex items-start gap-4">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-amber-400/15 text-amber-300">
+              <IconAlertTriangle className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-display text-xl text-pearl">{t.lowStockTitle}</h2>
+              <p className="mt-1 text-sm text-pearl/60">{plural(stats.lowStock.length, t.lowStockOne, t.lowStockMany)}</p>
+              <ul className="mt-3 space-y-2">
+                {stats.lowStock.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={href(`/admin/products/${p.id}`)}
+                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-white/5"
+                    >
+                      <span className="truncate text-pearl/85">{p.name}</span>
+                      <span className="shrink-0 font-semibold text-amber-300">{plural(p.stockQuantity, t.lowStockUnitOne, t.lowStockUnitMany)}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </motion.section>
+      )}
 
       {/* Numbers */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

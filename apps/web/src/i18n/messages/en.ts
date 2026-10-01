@@ -52,6 +52,7 @@ export const en = {
       CATALOG: 'collection page',
       PRODUCT_CARD: 'collection page',
       PRODUCT_PAGE: 'product page',
+      QR_CODE: 'printed QR code',
     },
   },
   sms: {

@@ -5,6 +5,8 @@ import { useState, type FormEvent } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { useMe } from './AdminShell';
+import { ConfirmDialog } from './ConfirmDialog';
+import { useToast } from './Toast';
 
 // Same rules the API enforces (order matches m.admin.password.rules).
 const ruleTests = [
@@ -16,6 +18,7 @@ const ruleTests = [
 
 export function ChangePasswordForm() {
   const router = useRouter();
+  const toast = useToast();
   const { m, href } = useI18n();
   const t = m.admin.password;
   const me = useMe();
@@ -27,6 +30,21 @@ export function ChangePasswordForm() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function signOutEverywhere() {
+    setSigningOut(true);
+    try {
+      await api('/auth/sign-out-everywhere', { method: 'POST', autoRedirect: false });
+      window.location.assign(href('/'));
+    } catch (err) {
+      toast(errorText(err, m, t.signOutFailed), 'error');
+      setSigningOut(false);
+      setConfirmSignOut(false);
+    }
+  }
 
   const allRules = ruleTests.every((test) => test(next));
   const matches = next.length > 0 && next === confirm;
@@ -133,6 +151,27 @@ export function ChangePasswordForm() {
           )}
         </div>
       </form>
+
+      {!forced && (
+        <div className="glass-strong mt-6 rounded-[1.75rem] p-8">
+          <h2 className="font-display text-2xl text-pearl">{t.sessionsTitle}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-pearl/60">{t.sessionsHelp}</p>
+          <button type="button" className="btn btn-danger mt-5" onClick={() => setConfirmSignOut(true)}>
+            {t.signOutEverywhere}
+          </button>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={confirmSignOut}
+        title={t.signOutConfirmTitle}
+        message={t.signOutConfirmText}
+        confirmLabel={t.signOutEverywhere}
+        loadingLabel={t.signingOut}
+        loading={signingOut}
+        onConfirm={signOutEverywhere}
+        onCancel={() => setConfirmSignOut(false)}
+      />
     </div>
   );
 }

@@ -64,6 +64,7 @@ export function middleware(req: NextRequest) {
   return NextResponse.rewrite(internal(rest));
 }
 
-// Everything except Next internals, the API proxy (incl. /api/images) and files with an extension
-// (robots.txt, sitemap.xml, icon.svg, images…).
-export const config = { matcher: ['/((?!_next/|api/|.*\\..*).*)'] };
+// Everything except Next internals, the API proxy (incl. /api/images), the printed-QR redirect
+// (/q/<slug>, outside the [locale] tree on purpose — see app/q/[slug]/route.ts) and files with an
+// extension (robots.txt, sitemap.xml, icon.svg, images…).
+export const config = { matcher: ['/((?!_next/|api/|q/|.*\\..*).*)'] };

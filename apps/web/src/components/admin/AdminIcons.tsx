@@ -194,3 +194,10 @@ export const IconMail = (p: P) => (
     <path d="m4 7 8 6 8-6" />
   </svg>
 );
+export const IconAlertTriangle = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M12 3 2 20h20L12 3z" />
+    <path d="M12 10v4" strokeWidth={2.3} />
+    <path d="M12 17h.01" strokeWidth={2.6} />
+  </svg>
+);
