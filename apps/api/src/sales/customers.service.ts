@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCustomerDto, ListCustomersQuery, UpdateCustomerDto } from './sales.dto';
@@ -15,6 +16,7 @@ export class CustomersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
+    private readonly audit: AuditService,
   ) {}
 
   /** Customers with how much they bought (cancelled sales do not count). */
@@ -79,13 +81,17 @@ export class CustomersService {
     return { ...c, sales };
   }
 
-  create(dto: CreateCustomerDto) {
-    return this.prisma.customer.create({ data: { ...dto } });
+  async create(dto: CreateCustomerDto, actorId: string) {
+    const customer = await this.prisma.customer.create({ data: { ...dto } });
+    await this.audit.record({ actorId, action: 'customer.create', entityType: 'Customer', entityId: customer.id, summary: `Cadastrou o cliente "${customer.name}"` });
+    return customer;
   }
 
-  async update(id: string, dto: UpdateCustomerDto) {
+  async update(id: string, dto: UpdateCustomerDto, actorId: string) {
     if (!(await this.prisma.customer.count({ where: { id } }))) throw notFound();
-    return this.prisma.customer.update({ where: { id }, data: { ...dto } });
+    const customer = await this.prisma.customer.update({ where: { id }, data: { ...dto } });
+    await this.audit.record({ actorId, action: 'customer.update', entityType: 'Customer', entityId: customer.id, summary: `Atualizou o cliente "${customer.name}"` });
+    return customer;
   }
 
   /**
@@ -103,5 +109,7 @@ export class CustomersService {
       await tx.customer.delete({ where: { id } });
     });
     this.logger.log(`admin ${actorId} erased customer ${id}`);
+    // deliberately no customer name in the summary — this action exists to remove that information
+    await this.audit.record({ actorId, action: 'customer.erase', entityType: 'Customer', entityId: id, summary: 'Apagou os dados pessoais de um cliente (LGPD/GDPR)' });
   }
 }

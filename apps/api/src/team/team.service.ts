@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { hash } from 'bcryptjs';
+import { AuditService } from '../audit/audit.service';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -16,6 +17,7 @@ export class TeamService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auth: AuthService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(actorId: string) {
@@ -49,6 +51,7 @@ export class TeamService {
         select: { id: true, username: true, createdAt: true, mustChangePassword: true },
       });
       this.logger.log(`admin ${actorId} created admin ${user.id}`);
+      await this.audit.record({ actorId, action: 'team.create', entityType: 'AdminUser', entityId: user.id, summary: `Criou o admin "${user.username}"` });
       return { user, temporaryPassword: password };
     } catch (e) {
       if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
@@ -63,6 +66,7 @@ export class TeamService {
     if (id === actorId) {
       throw new BadRequestException({ code: 'CANNOT_DELETE_SELF', message: 'You cannot delete your own account.' });
     }
+    const target = await this.prisma.adminUser.findUnique({ where: { id }, select: { username: true } });
     await this.prisma.$transaction(async (tx) => {
       // Lock every admin row so two admins deleting each other at the same time cannot leave zero admins.
       await tx.$queryRaw`SELECT id FROM "AdminUser" FOR UPDATE`;
@@ -73,6 +77,7 @@ export class TeamService {
       if (!count) throw new NotFoundException({ code: 'ADMIN_NOT_FOUND', message: 'Admin not found.' });
     });
     this.logger.log(`admin ${actorId} deleted admin ${id}`); // the deleted user's sessions die with the row
+    await this.audit.record({ actorId, action: 'team.remove', entityType: 'AdminUser', entityId: id, summary: `Removeu o admin "${target?.username ?? id}"` });
   }
 
   async resetPassword(actorId: string, id: string, currentPassword: string) {
@@ -80,6 +85,7 @@ export class TeamService {
     if (id === actorId) {
       throw new BadRequestException({ code: 'USE_CHANGE_PASSWORD', message: 'Use "Change password" for your own account.' });
     }
+    const target = await this.prisma.adminUser.findUnique({ where: { id }, select: { username: true } });
     const password = tempPassword();
     const { count } = await this.prisma.adminUser.updateMany({
       where: { id },
@@ -93,6 +99,7 @@ export class TeamService {
     });
     if (!count) throw new NotFoundException({ code: 'ADMIN_NOT_FOUND', message: 'Admin not found.' });
     this.logger.log(`admin ${actorId} reset the password of admin ${id}`);
+    await this.audit.record({ actorId, action: 'team.reset_password', entityType: 'AdminUser', entityId: id, summary: `Redefiniu a senha de "${target?.username ?? id}"` });
     return { temporaryPassword: password };
   }
 }

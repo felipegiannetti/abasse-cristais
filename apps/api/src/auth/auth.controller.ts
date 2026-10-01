@@ -43,6 +43,17 @@ export class AuthController {
     res.clearCookie(config.cookieName, cookieOptions());
   }
 
+  // "I lost my phone" button: revokes every session of the calling admin, this one included.
+  @Post('sign-out-everywhere')
+  @HttpCode(204)
+  @UseGuards(AdminGuard)
+  @AllowWhenPasswordChangeRequired()
+  @SkipThrottle()
+  async signOutEverywhere(@Req() req: AdminRequest, @Res({ passthrough: true }) res: Response) {
+    await this.auth.signOutEverywhere(req.admin.id);
+    res.clearCookie(config.cookieName, cookieOptions());
+  }
+
   @Get('me')
   @SkipThrottle()
   @UseGuards(AdminGuard)

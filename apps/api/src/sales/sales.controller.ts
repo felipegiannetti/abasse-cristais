@@ -106,13 +106,13 @@ export class CustomersController {
   }
 
   @Post()
-  create(@Body() dto: CreateCustomerDto) {
-    return this.customers.create(dto);
+  create(@Req() req: AdminRequest, @Body() dto: CreateCustomerDto) {
+    return this.customers.create(dto, req.admin.id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
-    return this.customers.update(id, dto);
+  update(@Req() req: AdminRequest, @Param('id') id: string, @Body() dto: UpdateCustomerDto) {
+    return this.customers.update(id, dto, req.admin.id);
   }
 
   // POST (not DELETE) because the acting admin re-types their password and proxies may drop DELETE bodies

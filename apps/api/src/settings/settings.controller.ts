@@ -1,8 +1,12 @@
-import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Put, Req, UseGuards } from '@nestjs/common';
 import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 import { SkipThrottle } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { AdminGuard } from '../auth/admin.guard';
+import type { AdminRequestUser } from '../auth/auth.decorators';
 import { SettingsService } from './settings.service';
+
+type AdminRequest = Request & { admin: AdminRequestUser };
 
 class UpdateSettingsDto {
   @IsOptional()
@@ -51,7 +55,7 @@ export class AdminSettingsController {
   }
 
   @Put()
-  async update(@Body() dto: UpdateSettingsDto) {
-    return this.settings.updateContact(dto);
+  async update(@Req() req: AdminRequest, @Body() dto: UpdateSettingsDto) {
+    return this.settings.updateContact(dto, req.admin.id);
   }
 }

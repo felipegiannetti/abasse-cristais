@@ -104,6 +104,16 @@ export class AuthService {
   }
 
   /**
+   * Revokes every session of this admin (including the one making this call) by bumping the token
+   * version — the exact same mechanism a password change already triggers as a side effect. Exposed as
+   * its own action for the "I lost my phone, kill every session now" moment, without requiring a new
+   * password: unlike the team actions below, this only affects the caller's own account.
+   */
+  async signOutEverywhere(userId: string): Promise<void> {
+    await this.prisma.adminUser.update({ where: { id: userId }, data: { tokenVersion: { increment: 1 } } });
+  }
+
+  /**
    * Step-up authentication for sensitive actions (creating/deleting admins, resetting passwords):
    * re-checks the acting admin's password (a stolen 60-day session alone is not enough) and feeds
    * the same per-account lockout as the login form.

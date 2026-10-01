@@ -9,14 +9,17 @@ import {
   Post,
   Put,
   Query,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { SkipThrottle } from '@nestjs/throttler';
+import type { Request } from 'express';
 import { config } from '../config';
 import { AdminGuard } from '../auth/admin.guard';
+import type { AdminRequestUser } from '../auth/auth.decorators';
 import {
   CreateProductDto,
   ListProductsQuery,
@@ -24,6 +27,8 @@ import {
   UpdateProductDto,
 } from './products.dto';
 import { ProductsService } from './products.service';
+
+type AdminRequest = Request & { admin: AdminRequestUser };
 
 /** Catálogo público (somente leitura). */
 @Controller('products')
@@ -74,19 +79,24 @@ export class AdminProductsController {
   }
 
   @Post()
-  create(@Body() dto: CreateProductDto) {
-    return this.products.create(dto);
+  create(@Req() req: AdminRequest, @Body() dto: CreateProductDto) {
+    return this.products.create(dto, req.admin.id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto) {
-    return this.products.update(id, dto);
+  update(@Req() req: AdminRequest, @Param('id') id: string, @Body() dto: UpdateProductDto) {
+    return this.products.update(id, dto, req.admin.id);
+  }
+
+  @Post(':id/duplicate')
+  duplicate(@Req() req: AdminRequest, @Param('id') id: string) {
+    return this.products.duplicate(id, req.admin.id);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  remove(@Param('id') id: string) {
-    return this.products.remove(id);
+  remove(@Req() req: AdminRequest, @Param('id') id: string) {
+    return this.products.remove(id, req.admin.id);
   }
 
   @Post(':id/images')

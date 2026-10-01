@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const invalidWhatsapp = () =>
@@ -155,7 +156,10 @@ export interface ContactSettings {
 
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   async getContact(): Promise<ContactSettings> {
     const row = await this.prisma.siteSettings.findUnique({ where: { id: 'main' } });
@@ -167,7 +171,10 @@ export class SettingsService {
     };
   }
 
-  async updateContact(input: Partial<{ whatsapp: string; sms: string; email: string; templates: unknown }>): Promise<ContactSettings> {
+  async updateContact(
+    input: Partial<{ whatsapp: string; sms: string; email: string; templates: unknown }>,
+    actorId: string,
+  ): Promise<ContactSettings> {
     const data: { whatsapp?: string; sms?: string; email?: string; messageTemplates?: TemplatesMap } = {};
     if (input.whatsapp !== undefined) data.whatsapp = normalizeWhatsapp(input.whatsapp);
     if (input.sms !== undefined) data.sms = normalizePhone(input.sms);
@@ -179,6 +186,12 @@ export class SettingsService {
       where: { id: 'main' },
       update: data,
       create: { id: 'main', whatsapp: '', sms: '', email: '', messageTemplates: {}, ...data },
+    });
+    await this.audit.record({
+      actorId,
+      action: 'settings.update',
+      entityType: 'Settings',
+      summary: `Atualizou as configurações do site (${Object.keys(data).join(', ')})`,
     });
     return {
       whatsapp: row.whatsapp,

@@ -5,7 +5,7 @@ import { IsIn, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
 import { AdminGuard } from '../auth/admin.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
-export const WA_SOURCES = ['MENU', 'FLOATING', 'FOOTER', 'HERO', 'HOME_CTA', 'CATALOG', 'PRODUCT_CARD', 'PRODUCT_PAGE'] as const;
+export const WA_SOURCES = ['MENU', 'FLOATING', 'FOOTER', 'HERO', 'HOME_CTA', 'CATALOG', 'PRODUCT_CARD', 'PRODUCT_PAGE', 'QR_CODE'] as const;
 const LOCALES = ['en', 'pt', 'es'] as const;
 const upper = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim().toUpperCase() : value);
 

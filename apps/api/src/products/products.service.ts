@@ -5,6 +5,7 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { Prisma, ProductStatus } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { config } from '../config';
 import { PrismaService } from '../prisma/prisma.service';
 import { detectImage } from './image-type';
@@ -63,7 +64,10 @@ export function serialize(p: ProductWithImages, admin = false) {
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   // ---------- leitura ----------
 
@@ -119,7 +123,11 @@ export class ProductsService {
 
   /** Numbers for the admin dashboard (admin-only route). */
   async stats() {
-    const [total, byStatus, featured, images, categories, recent, value] = await Promise.all([
+    // "low stock": available, sold by the piece, down to its last couple of units — the kind of count
+    // where a lucky double sale could oversell before the admin notices. Weight-mode products vary too
+    // much to pick one sane gram threshold, so they're left out of this heuristic for now.
+    const LOW_STOCK_MAX = 2;
+    const [total, byStatus, featured, images, categories, recent, value, lowStock] = await Promise.all([
       this.prisma.product.count(),
       this.prisma.product.groupBy({ by: ['status'], _count: { _all: true } }),
       this.prisma.product.count({ where: { featured: true } }),
@@ -132,6 +140,12 @@ export class ProductsService {
       }),
       this.prisma.product.findMany({ include: withImages, orderBy: { createdAt: 'desc' }, take: 5 }),
       this.prisma.product.aggregate({ where: { status: 'AVAILABLE' }, _sum: { priceCents: true } }),
+      this.prisma.product.findMany({
+        where: { status: 'AVAILABLE', saleMode: 'UNIT', stockQuantity: { gt: 0, lte: LOW_STOCK_MAX } },
+        select: { id: true, slug: true, name: true, stockQuantity: true },
+        orderBy: { stockQuantity: 'asc' },
+        take: 8,
+      }),
     ]);
     const count = (s: ProductStatus) => byStatus.find((r) => r.status === s)?._count._all ?? 0;
     return {
@@ -142,6 +156,7 @@ export class ProductsService {
       availableValueCents: value._sum.priceCents ?? 0,
       categories: categories.map((c) => ({ name: c.category, count: c._count._all })),
       recent: recent.map((p) => serialize(p, true)),
+      lowStock,
     };
   }
 
@@ -162,7 +177,7 @@ export class ProductsService {
 
   // ---------- escrita ----------
 
-  async create(dto: CreateProductDto) {
+  async create(dto: CreateProductDto, actorId?: string) {
     const p = await this.prisma.product.create({
       data: {
         slug: await this.uniqueSlug(dto.name),
@@ -182,10 +197,13 @@ export class ProductsService {
       },
       include: withImages,
     });
+    if (actorId) {
+      await this.audit.record({ actorId, action: 'product.create', entityType: 'Product', entityId: p.id, summary: `Criou o produto "${p.name}"` });
+    }
     return serialize(p, true);
   }
 
-  async update(id: string, dto: UpdateProductDto) {
+  async update(id: string, dto: UpdateProductDto, actorId: string) {
     await this.ensureExists(id);
     // O slug é mantido de propósito: links já compartilhados no WhatsApp não podem quebrar.
     const p = await this.prisma.product.update({
@@ -207,13 +225,51 @@ export class ProductsService {
       },
       include: withImages,
     });
+    await this.audit.record({ actorId, action: 'product.update', entityType: 'Product', entityId: p.id, summary: `Atualizou o produto "${p.name}"` });
     return serialize(p, true);
   }
 
-  async remove(id: string) {
+  /** Copies the catalog fields of an existing product into a new, unpublished draft — useful for a
+   * variant (different size/colour) that doesn't need its name/description retyped. Photos and stock
+   * are deliberately NOT copied: a variant needs its own photos, and starts with no stock until counted. */
+  async duplicate(id: string, actorId: string) {
+    const source = await this.prisma.product.findUnique({ where: { id } });
+    if (!source) throw new NotFoundException({ code: 'PRODUCT_NOT_FOUND', message: 'Product not found.' });
+
+    const copy = await this.create(
+      {
+        name: `${source.name} (cópia)`,
+        description: source.description,
+        priceCents: source.priceCents,
+        category: source.category,
+        weight: source.weight,
+        dimensions: source.dimensions,
+        origin: source.origin,
+        featured: false,
+        status: 'HIDDEN', // stays off the site until the admin adds photos and reviews it
+        saleMode: source.saleMode,
+        stockQuantity: 0,
+        stockGrams: 0,
+        costCents: source.costCents,
+      },
+      undefined, // the create() call itself stays unlogged; we log the more specific "duplicate" action below
+    );
+    await this.audit.record({
+      actorId,
+      action: 'product.duplicate',
+      entityType: 'Product',
+      entityId: copy.id,
+      summary: `Duplicou o produto "${source.name}" como "${copy.name}"`,
+    });
+    return copy;
+  }
+
+  async remove(id: string, actorId: string) {
     // images are rows of this database and go away with the product (ON DELETE CASCADE)
-    await this.ensureExists(id);
+    const p = await this.prisma.product.findUnique({ where: { id }, select: { name: true } });
+    if (!p) throw new NotFoundException({ code: 'PRODUCT_NOT_FOUND', message: 'Product not found.' });
     await this.prisma.product.delete({ where: { id } });
+    await this.audit.record({ actorId, action: 'product.delete', entityType: 'Product', entityId: id, summary: `Excluiu o produto "${p.name}"` });
   }
 
   // ---------- imagens ----------

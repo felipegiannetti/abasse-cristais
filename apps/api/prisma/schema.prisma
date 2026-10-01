@@ -210,3 +210,24 @@ model WhatsAppClick {
   @@index([createdAt])
   @@index([productSlug])
 }
+
+// ------------------------------------------------------------------ audit log
+
+// One row per admin-made change to business data (products, sales, customers, settings, team).
+// actorId/actorUsername: actorUsername is a snapshot so the log still reads if that admin is later
+// removed (no @relation, same convention as Sale.createdById / AdminUser.createdById).
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorId       String?
+  actorUsername String
+  // dot-separated: "<entity>.<verb>", e.g. "product.create", "sale.cancel", "team.remove"
+  action        String
+  entityType    String
+  entityId      String?
+  // human-readable, in Portuguese (the admin panel is Portuguese-only)
+  summary       String
+  createdAt     DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}

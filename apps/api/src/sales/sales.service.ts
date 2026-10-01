@@ -7,6 +7,7 @@ import {
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { Prisma, ProductStatus, SaleMode, SaleStatus } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { detectImage } from '../products/image-type';
 import { imageUrl } from '../products/products.service';
@@ -82,7 +83,10 @@ export function serializeSale(s: SaleFull) {
 export class SalesService {
   private readonly logger = new Logger(SalesService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly audit: AuditService,
+  ) {}
 
   // ------------------------------------------------------------- read
 
@@ -226,7 +230,15 @@ export class SalesService {
     });
 
     this.logger.log(`admin ${actorId} registered sale ${saleId}`);
-    return this.findOne(saleId);
+    const sale = await this.findOne(saleId);
+    await this.audit.record({
+      actorId,
+      action: 'sale.create',
+      entityType: 'Sale',
+      entityId: sale.id,
+      summary: `Registrou a venda #${sale.number} para ${sale.customerName}`,
+    });
+    return sale;
   }
 
   // ------------------------------------------------------------- update / cancel
@@ -281,7 +293,15 @@ export class SalesService {
       });
     });
     this.logger.log(`admin ${actorId} updated sale ${id}`);
-    return this.findOne(id);
+    const sale = await this.findOne(id);
+    await this.audit.record({
+      actorId,
+      action: dto.status === 'CANCELLED' ? 'sale.cancel' : 'sale.update',
+      entityType: 'Sale',
+      entityId: sale.id,
+      summary: dto.status === 'CANCELLED' ? `Cancelou a venda #${sale.number}` : `Atualizou a venda #${sale.number}`,
+    });
+    return sale;
   }
 
   // ------------------------------------------------------------- photos
