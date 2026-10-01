@@ -7,6 +7,8 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 > **Atualização (30/09):** SMS e e-mail como contato alternativo ao WhatsApp foram **implementados** (produto e catálogo, com mensagem pronta no idioma da página; número/e-mail configuráveis em *Configurações*, cada um opcional e oculto se vazio). Não entram no contador de cliques nem no funil do Financeiro (item 2) — isso segue pendente caso se queira estender.
 >
 > **Atualização (30/09, 2):** o texto das mensagens de WhatsApp, SMS e e-mail agora é **editável pelo admin** em *Configurações*, separadamente por idioma (en/pt/es), com prévia ao vivo e opção de voltar ao padrão. Veja `apps/api/src/settings/settings.service.ts` (`normalizeTemplates`) e `apps/web/src/i18n/templates.ts`.
+>
+> **Atualização (01/10):** cinco funcionalidades sugeridas foram **implementadas**: (1) **código QR por produto** — no formulário do produto, gera um QR que aponta para `/q/<slug>`; a cada escaneada, redireciona para o WhatsApp com mensagem pronta e conta o clique (origem "QR_CODE") junto com os demais no Financeiro; (2) **histórico de atividade** ("quem mexeu em quê") em *Equipe*, com tudo que é criado/editado/excluído no painel; (3) **duplicar produto**, para cristais com variações de tamanho/cor; (4) **aviso de estoque baixo** na Visão Geral; (5) **"encerrar todas as sessões"** na tela de segurança, para o caso de perda do aparelho.
 
 ---
 
