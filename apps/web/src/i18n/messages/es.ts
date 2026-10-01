@@ -182,4 +182,11 @@ export const es: PublicMessages = {
     home: 'Volver al inicio',
     collection: 'Ver colección',
   },
+  error: {
+    code: 'Error',
+    title: 'Algo salió mal',
+    text: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+    retry: 'Intentar de nuevo',
+    home: 'Volver al inicio',
+  },
 };

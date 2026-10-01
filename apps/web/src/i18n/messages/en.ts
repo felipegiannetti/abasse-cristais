@@ -181,6 +181,13 @@ export const en = {
     home: 'Back to home',
     collection: 'View collection',
   },
+  error: {
+    code: 'Error',
+    title: 'Something went wrong',
+    text: 'An unexpected error occurred. Please try again.',
+    retry: 'Try again',
+    home: 'Back to home',
+  },
 };
 
 export type PublicMessages = typeof en;

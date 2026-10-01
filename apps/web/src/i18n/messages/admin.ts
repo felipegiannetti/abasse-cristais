@@ -59,6 +59,12 @@ export const adminMessages = {
       greetEvening: 'Boa noite',
       secure: 'Sessão criptografada',
     },
+    error: {
+      title: 'Algo deu errado',
+      text: 'Ocorreu um erro inesperado nesta tela. Tente novamente.',
+      retry: 'Tentar novamente',
+      home: 'Ir para a visão geral',
+    },
     palette: {
       placeholder: 'Digite um comando ou busque produtos…',
       empty: 'Nada encontrado',

@@ -183,4 +183,11 @@ export const pt: PublicMessages = {
     home: 'Voltar ao início',
     collection: 'Ver coleção',
   },
+  error: {
+    code: 'Erro',
+    title: 'Algo deu errado',
+    text: 'Ocorreu um erro inesperado. Tente novamente.',
+    retry: 'Tentar novamente',
+    home: 'Voltar ao início',
+  },
 };
