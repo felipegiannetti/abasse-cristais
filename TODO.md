@@ -5,6 +5,8 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 > **Atualização:** os itens 1 a 4 abaixo foram **implementados** (mensagem com origem + código Ref em EN/PT/ES, contador de cliques, vendas com estoque, clientes e painel financeiro). O que sobrou está indicado como pendente. Detalhes no `README.md` (seção *Vendas, estoque, clientes e financeiro*).
 >
 > **Atualização (30/09):** SMS e e-mail como contato alternativo ao WhatsApp foram **implementados** (produto e catálogo, com mensagem pronta no idioma da página; número/e-mail configuráveis em *Configurações*, cada um opcional e oculto se vazio). Não entram no contador de cliques nem no funil do Financeiro (item 2) — isso segue pendente caso se queira estender.
+>
+> **Atualização (30/09, 2):** o texto das mensagens de WhatsApp, SMS e e-mail agora é **editável pelo admin** em *Configurações*, separadamente por idioma (en/pt/es), com prévia ao vivo e opção de voltar ao padrão. Veja `apps/api/src/settings/settings.service.ts` (`normalizeTemplates`) e `apps/web/src/i18n/templates.ts`.
 
 ---
 
@@ -18,7 +20,7 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 - [x] Manter a mensagem **em inglês na versão inglesa e em português na versão `/pt`** (as duas já são carregadas pelos dicionários; acrescentar as variações por origem).
 - [x] Exemplo de texto (PT): `Olá! Vim pelo site da Abasse Crystal (página: Coleção). Gostaria de saber mais.` / (EN): `Hello! I found you on the Abasse Crystal website (page: Collection). I'd like to know more.`
 - [x] Incluir um **código de referência curto** na mensagem (ex.: `Ref: A7K2`) para o admin conseguir relacionar a conversa com o clique registrado (ver item 2).
-- [ ] (Opcional) Deixar o admin **editar o texto da mensagem** em *Configurações*, nos dois idiomas.
+- [x] Deixar o admin **editar o texto da mensagem** em *Configurações*, nos três idiomas (en/pt/es) — WhatsApp, SMS e e-mail, com prévia ao vivo.
 
 ---
 
@@ -51,6 +53,7 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 - [x] Vincular a venda ao **código de referência** do WhatsApp (item 2), quando existir, para saber de onde veio.
 - [x] Listagem de vendas com filtro por situação e busca.
 - [ ] **Exportação** (CSV/Excel) das vendas e filtro por período/categoria.
+  - Plano: `GET /admin/sales/export?format=csv&...` reaproveitando os mesmos filtros da listagem; gera o CSV no servidor (dados já estão ali, sem N+1) e o navegador baixa via link/blob. Simples de fazer; Excel real (.xlsx) só se CSV não bastar.
 - [x] Guardar o **custo** da peça (opcional) para calcular lucro e margem.
 - [x] Testes de segurança das novas rotas (apenas admin logado; validação de valores; sem alteração de vendas por mass assignment) na suíte `apps/api/test/security.mjs`.
 
@@ -68,6 +71,7 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 - [x] **Funil**: cliques no WhatsApp → conversas → vendas (junta os itens 2 e 3).
 - [x] Seletor de período.
 - [ ] **Exportação** dos números do financeiro (CSV/PDF).
+  - Plano: CSV é direto (mesma ideia do item de vendas, com as linhas da série + resumo). PDF exige gerar um layout (ex. `@react-pdf/renderer` ou puppeteer no servidor) — mais trabalho; sugiro começar só com CSV.
 - [x] Seguir o mesmo visual do painel atual (azul marinho + dourado) (painel só em português, por decisão do cliente).
 
 ---
@@ -90,6 +94,7 @@ Estes itens não foram pedidos agora; estão aqui só para não se perderem.
 - [ ] Cadastrar os **produtos e fotos reais** (os atuais são de demonstração) e configurar o **número de WhatsApp** em *Configurações*.
 - [ ] **Publicar na Vercel** (site e API), com banco Postgres em produção, variáveis de ambiente e `npm run db:deploy` (o passo a passo está no `README.md`; atenção ao aviso sobre a migração das fotos).
 - [ ] Rodapé com **dados da empresa** (razão social, CNPJ, contato) e **política de privacidade** (LGPD).
-- [ ] Nome, descrição e categoria dos produtos hoje aparecem no idioma em que foram digitados; permitir **tradução por produto** (PT/EN).
+- [ ] Nome, descrição e categoria dos produtos hoje aparecem no idioma em que foram digitados; permitir **tradução por produto** (en/pt/es — mesma necessidade do item logo abaixo, "Tradução por produto também para o espanhol").
+  - Plano: `Product.translations Json?` com `{ en: { name, description, category }, pt: {...}, es: {...} }`, mesmo princípio dos templates de mensagem (campo em branco = usa o texto original digitado). No formulário do produto, abas de idioma; na leitura pública, a API já sabe o `locale` da requisição e devolve o texto traduzido quando existir, senão o original. Maior trabalho que os templates (mexe no schema de Product, no formulário, na listagem do catálogo e na busca por texto) — é a peça que falta para o catálogo ficar 100% traduzido (hoje só a interface está).
 - [ ] Ativar **backup do banco** no provedor e um pipeline de CI (`npm audit` + `npm run test:security` em ambiente de teste).
 - [ ] Riscos de segurança **aceitos** que valem revisão futura: CSP com `'unsafe-inline'`, sessão fixa de 60 dias, alertas do `npm audit` no CLI do Prisma (detalhes em `README.md`).
