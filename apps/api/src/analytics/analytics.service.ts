@@ -1,5 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+// WhatsAppClick.createdAt is `timestamp without time zone` under a non-UTC session timezone
+// (America/Sao_Paulo); see finance.service.ts's `ts()` for why a raw Date parameter can't be compared
+// against it directly without silently shifting by the session's offset.
+const ts = (d: Date) => Prisma.sql`${d.toISOString()}::timestamp`;
 
 interface TrackClickInput {
   ref: string;
@@ -37,42 +43,43 @@ export class AnalyticsService {
     return data;
   }
 
+  // SQL aggregates instead of loading every click row in the window (up to 50,000, a silent truncation
+  // risk) and reducing them in application code — see FinanceService for the same change and reasoning.
   private async computeClicks(days: number) {
     const since = new Date(Date.now() - days * 86_400_000);
-    const rows = await this.prisma.whatsAppClick.findMany({
-      where: { createdAt: { gte: since } },
-      select: { source: true, productSlug: true, createdAt: true, confirmedAt: true },
-      take: 50_000,
-    });
+    const where = { createdAt: { gte: since } };
 
-    const bySource = new Map<string, number>();
-    const bySlug = new Map<string, number>();
-    const daily = new Map<string, { count: number; confirmed: number }>();
-    let confirmed = 0;
-    for (const r of rows) {
-      bySource.set(r.source, (bySource.get(r.source) ?? 0) + 1);
-      if (r.productSlug) bySlug.set(r.productSlug, (bySlug.get(r.productSlug) ?? 0) + 1);
-      const key = new Date(r.createdAt.getTime() - 3 * 3_600_000).toISOString().slice(0, 10); // Brazil time (UTC-3)
-      const d = daily.get(key) ?? { count: 0, confirmed: 0 };
-      d.count += 1;
-      if (r.confirmedAt) {
-        d.confirmed += 1;
-        confirmed += 1;
-      }
-      daily.set(key, d);
-    }
+    const [total, confirmed, bySourceRows, topSlugRows, dailyRows] = await Promise.all([
+      this.prisma.whatsAppClick.count({ where }),
+      this.prisma.whatsAppClick.count({ where: { ...where, confirmedAt: { not: null } } }),
+      this.prisma.whatsAppClick.groupBy({ by: ['source'], where, _count: { _all: true } }),
+      this.prisma.whatsAppClick.groupBy({
+        by: ['productSlug'],
+        where: { ...where, productSlug: { not: null } },
+        _count: { _all: true },
+        orderBy: { _count: { productSlug: 'desc' } },
+        take: 8,
+      }),
+      this.prisma.$queryRaw<{ date: string; count: number; confirmed: number }[]>`
+        SELECT to_char("createdAt" - interval '3 hours', 'YYYY-MM-DD') AS date,
+               COUNT(*)::int AS count,
+               COUNT(*) FILTER (WHERE "confirmedAt" IS NOT NULL)::int AS confirmed
+        FROM "WhatsAppClick"
+        WHERE "createdAt" >= ${ts(since)}
+        GROUP BY 1
+      `,
+    ]);
 
-    const topSlugs = [...bySlug].sort((a, b) => b[1] - a[1]).slice(0, 8);
-    const names = new Map(
-      (await this.prisma.product.findMany({ where: { slug: { in: topSlugs.map(([s]) => s) } }, select: { slug: true, name: true } })).map((p) => [p.slug, p.name]),
-    );
+    const slugs = topSlugRows.map((r) => r.productSlug).filter((s): s is string => s !== null);
+    const names = new Map((await this.prisma.product.findMany({ where: { slug: { in: slugs } }, select: { slug: true, name: true } })).map((p) => [p.slug, p.name]));
+
     return {
       days,
-      total: rows.length,
+      total,
       confirmed,
-      bySource: [...bySource].map(([source, count]) => ({ source, count })).sort((a, b) => b.count - a.count),
-      topProducts: topSlugs.map(([slug, count]) => ({ slug, name: names.get(slug) ?? slug, count })),
-      daily: [...daily].map(([date, v]) => ({ date, ...v })).sort((a, b) => a.date.localeCompare(b.date)),
+      bySource: bySourceRows.map((r) => ({ source: r.source, count: r._count._all })).sort((a, b) => b.count - a.count),
+      topProducts: slugs.map((slug, i) => ({ slug, name: names.get(slug) ?? slug, count: topSlugRows[i]._count._all })),
+      daily: dailyRows.map((r) => ({ date: r.date, count: r.count, confirmed: r.confirmed })).sort((a, b) => a.date.localeCompare(b.date)),
     };
   }
 

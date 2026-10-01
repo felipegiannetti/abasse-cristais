@@ -805,6 +805,87 @@ if (!PASS) {
     ok(`finance summary range=${range} works`, r.status === 200 && Array.isArray(r.json.series), r.status);
   }
 
+  // Finance summary now aggregates in SQL (SUM/GROUP BY) instead of loading every sale+item and
+  // reducing in JS; the money math (a discount spread proportionally over a sale's items) is the same
+  // either way, so these probe the exact cases where SQL's ROUND(numeric) and JS's Math.round could in
+  // principle disagree: a .5 tie split across items, and a WEIGHT-mode cost calc that lands on .5 too.
+  {
+    const rtag = `rnd-${tag}`;
+    const before = await call('GET', '/admin/finance/summary?range=365', { cookie: session });
+
+    // R1: two R$0,01 items sharing a R$0,01 discount — factor is exactly 0.5, so each item's
+    // independently-rounded revenue (0.5 → 1) is a real half-up tie, same as the WEIGHT case below.
+    const ra = await mut('POST', '/admin/products', session, { name: `${rtag} A`, description: 'd', category: rtag, priceCents: 1, costCents: 1, stockQuantity: 5 });
+    const rb = await mut('POST', '/admin/products', session, { name: `${rtag} B`, description: 'd', category: rtag, priceCents: 1, costCents: 1, stockQuantity: 5 });
+    const custR = await mut('POST', '/admin/customers', session, { name: `Cust ${rtag}`, addressLine1: 'Teststr. 1', city: 'Berlin', country: 'DE' });
+    const saleR1 = await mut('POST', '/admin/sales', session, {
+      customerId: custR.json.id,
+      paymentMethod: 'PIX',
+      discountCents: 1,
+      items: [{ productId: ra.json.id, quantity: 1 }, { productId: rb.json.id, quantity: 1 }],
+    });
+    ok('rounding probe: tie sale registers → 201', saleR1.status === 201, JSON.stringify(saleR1.json).slice(0, 200));
+
+    // R2: a single WEIGHT item whose cost (R$6,67/kg × 1,5 kg = R$10,005,00) is also an exact .5 tie.
+    const rc = await mut('POST', '/admin/products', session, { name: `${rtag} C`, description: 'd', category: rtag, priceCents: 100, costCents: 667, saleMode: 'WEIGHT', stockGrams: 2000 });
+    const saleR2 = await mut('POST', '/admin/sales', session, {
+      customerId: custR.json.id,
+      paymentMethod: 'PIX',
+      items: [{ productId: rc.json.id, quantity: 1500 }],
+    });
+    ok('rounding probe: WEIGHT-cost tie sale registers → 201', saleR2.status === 201, JSON.stringify(saleR2.json).slice(0, 200));
+
+    const after = await call('GET', '/admin/finance/summary?range=365', { cookie: session });
+    const d = (k) => after.json[k] - before.json[k];
+    // totals.revenueCents is sale-level exact math (subtotal − discount), not a sum of the per-item
+    // rounded values — R1 contributes net=1 (2−1), R2 contributes its (undiscounted) line total 150.
+    ok('rounding probe: revenueCents delta is exact sale-level net, not the sum of rounded item revenues', d('revenueCents') === 151, d('revenueCents'));
+    // cost is quantity × cost-per-unit, never discounted: R1 = 1+1 = 2; R2 = ROUND(667×1500/1000) = 1001.
+    ok('rounding probe: WEIGHT cost tie (1000.5 → 1001) rounds the same as Math.round', d('costCents') === 1003, d('costCents'));
+    // revenueWithCostCents isn't exposed directly, but profitCents = revenueWithCostCents - costCents is:
+    // R1 contributes ROUND(0.5)+ROUND(0.5) = 1+1 = 2 to revenueWithCostCents, R2 contributes 150, so
+    // profitCents' delta is (2+150) - 1003 = -851 — the same two 0.5 → 1 ties, checked indirectly.
+    ok('rounding probe: two independent 0.5 → 1 ties sum to 2, matching Math.round\'s half-up behavior', d('profitCents') === -851, d('profitCents'));
+    ok('rounding probe: units/grams delta matches the two UNIT pieces + 1500 g', d('units') === 2 && d('grams') === 1500, `${d('units')} ${d('grams')}`);
+
+    // byCountry/byPayment are grouped in SQL too (shipTo->>'country' via a JOIN-free raw query);
+    // "DE" is unique to this probe, so it's a clean way to check the grouping itself, not just totals.
+    const deRow = after.json.byCountry.find((c) => c.country === 'DE');
+    ok('rounding probe: byCountry groups the JSON shipTo field correctly', deRow && deRow.revenueCents === 151, JSON.stringify(deRow));
+
+    await mut('PATCH', `/admin/sales/${saleR1.json.id}`, session, { status: 'CANCELLED' });
+    await mut('PATCH', `/admin/sales/${saleR2.json.id}`, session, { status: 'CANCELLED' });
+    for (const p of [ra, rb, rc]) await mut('DELETE', `/admin/products/${p.json.id}`, session);
+    await mut('POST', `/admin/customers/${custR.json.id}/erase`, session, { currentPassword: PASS });
+  }
+
+  // Product renamed between two sales: topProducts must show ONE combined entry under the product's
+  // CURRENT name (the SQL query picks the most recent productName via array_agg ORDER BY soldAt DESC) —
+  // a deliberate, documented difference from the old code's "whichever name the JS loop saw first".
+  // Priced far above anything else in this suite so it's always inside the top-8 ranking.
+  {
+    const rtag = `rename-${tag}`;
+    const custR = await mut('POST', '/admin/customers', session, { name: `Cust ${rtag}` });
+    const prod = await mut('POST', '/admin/products', session, { name: `${rtag} Antigo`, description: 'd', category: rtag, priceCents: 99_999_900, stockQuantity: 2 });
+    const sale1 = await mut('POST', '/admin/sales', session, { customerId: custR.json.id, paymentMethod: 'PIX', items: [{ productId: prod.json.id, quantity: 1 }] });
+    ok('renamed product: sale 1 registers → 201', sale1.status === 201, JSON.stringify(sale1.json).slice(0, 200));
+    const renamed = await mut('PATCH', `/admin/products/${prod.json.id}`, session, { name: `${rtag} Novo` });
+    ok('renamed product: rename → 200', renamed.status === 200, JSON.stringify(renamed.json).slice(0, 200));
+    const sale2 = await mut('POST', '/admin/sales', session, { customerId: custR.json.id, paymentMethod: 'PIX', items: [{ productId: prod.json.id, quantity: 1 }] });
+    ok('renamed product: sale 2 registers → 201', sale2.status === 201, JSON.stringify(sale2.json).slice(0, 200));
+
+    r = await call('GET', '/admin/finance/summary?range=365', { cookie: session });
+    const entries = r.json.topProducts.filter((p) => p.name.includes(rtag));
+    ok('renamed product: exactly one combined entry in topProducts (not split by name)', entries.length === 1, JSON.stringify(entries));
+    ok('renamed product: shows the CURRENT name, not the one at the time of the first sale', entries[0]?.name === `${rtag} Novo`, JSON.stringify(entries[0]));
+    ok('renamed product: revenue from both sales is combined', entries[0]?.revenueCents === 99_999_900 * 2 && entries[0]?.orders === 2, JSON.stringify(entries[0]));
+
+    await mut('PATCH', `/admin/sales/${sale1.json.id}`, session, { status: 'CANCELLED' });
+    await mut('PATCH', `/admin/sales/${sale2.json.id}`, session, { status: 'CANCELLED' });
+    await mut('DELETE', `/admin/products/${prod.json.id}`, session);
+    await mut('POST', `/admin/customers/${custR.json.id}/erase`, session, { currentPassword: PASS });
+  }
+
   // WhatsApp click tracking: validation of the PUBLIC endpoint
   for (const [name, body] of [
     ['bad ref (ambiguous chars)', { ref: 'O0I1AB', source: 'MENU', path: '/', locale: 'en' }],
