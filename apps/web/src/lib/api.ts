@@ -1,4 +1,6 @@
 import { site } from '@/content/site';
+import { getMessages, type Locale, type Messages } from '@/i18n';
+import { applyTemplateOverrides, type TemplatesMap } from '@/i18n/templates';
 import type { CategoryCount, Product, ProductList } from './types';
 
 // Leitura pública feita no servidor (Server Components), com cache por tag.
@@ -49,6 +51,8 @@ export interface ContactSettings {
   sms: string;
   /** empty = the Email button is hidden */
   email: string;
+  /** admin-customized WhatsApp/SMS/email message text, sparse (only what was actually edited) */
+  templates: TemplatesMap;
 }
 
 /**
@@ -56,7 +60,7 @@ export interface ContactSettings {
  * the database; the WhatsApp env variable is only a fallback for when nothing has been configured yet.
  */
 export async function fetchContact(): Promise<ContactSettings> {
-  const fallback: ContactSettings = { whatsapp: site.whatsapp, sms: '', email: '' };
+  const fallback: ContactSettings = { whatsapp: site.whatsapp, sms: '', email: '', templates: {} };
   try {
     const res = await fetch(`${API_URL}/settings/public`, { next: { revalidate: 60, tags: [SETTINGS_TAG] } });
     if (!res.ok) return fallback;
@@ -65,8 +69,20 @@ export async function fetchContact(): Promise<ContactSettings> {
       whatsapp: /^\d{10,15}$/.test(data.whatsapp ?? '') ? (data.whatsapp as string) : fallback.whatsapp,
       sms: /^\d{10,15}$/.test(data.sms ?? '') ? (data.sms as string) : '',
       email: typeof data.email === 'string' ? data.email : '',
+      templates: data.templates && typeof data.templates === 'object' ? data.templates : {},
     };
   } catch {
     return fallback;
   }
+}
+
+/**
+ * `getMessages(locale)` with the admin's customized WhatsApp/SMS/email text merged in. Server
+ * Components that build a WhatsApp/SMS/email message string themselves (rather than through a client
+ * component reading useI18n()) should call this instead of `getMessages`, so a customization made in
+ * Settings shows up there too. Everything outside the whatsapp/sms/email sections is unaffected.
+ */
+export async function fetchMessages(locale: Locale): Promise<Messages> {
+  const contact = await fetchContact();
+  return applyTemplateOverrides(getMessages(locale), contact.templates[locale]);
 }

@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { site } from '@/content/site';
 import { getMessages, getPublicMessages, htmlLang, isLocale, locales, ogLocale } from '@/i18n';
 import { I18nProvider } from '@/i18n/provider';
+import { applyTemplateOverrides } from '@/i18n/templates';
 import { fetchContact } from '@/lib/api';
 import '../globals.css';
 
@@ -55,11 +56,14 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const contact = await fetchContact();
+  // getPublicMessages returns the shared, module-level dictionary — applyTemplateOverrides returns a
+  // fresh object rather than mutating it, so other requests/locales are never affected.
+  const messages = applyTemplateOverrides(getPublicMessages(locale), contact.templates[locale]);
 
   return (
     <html lang={htmlLang[locale]} className={`${display.variable} ${sans.variable}`}>
       <body className="min-h-dvh antialiased">
-        <I18nProvider locale={locale} messages={getPublicMessages(locale)} {...contact}>
+        <I18nProvider locale={locale} messages={messages} whatsapp={contact.whatsapp} sms={contact.sms} email={contact.email}>
           {children}
         </I18nProvider>
       </body>

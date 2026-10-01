@@ -8,7 +8,7 @@ import { ShippingBanner } from '@/components/ShippingBanner';
 import { ArrowIcon, GemIcon, WhatsAppIcon } from '@/components/icons';
 import { getMessages, isLocale, localePath, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchProducts } from '@/lib/api';
+import { fetchMessages, fetchProducts } from '@/lib/api';
 import { generalMessage } from '@/lib/whatsapp';
 import { WhatsAppLink } from '@/components/WhatsAppLink';
 
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function HomePage({ params }: Props) {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
-  const m = getMessages(locale);
+  const m = await fetchMessages(locale); // getMessages() + any admin-customized WhatsApp text
   const href = (p: string) => localePath(locale, p);
 
   let featured = (await fetchProducts({ featured: true, pageSize: 6 })).items;

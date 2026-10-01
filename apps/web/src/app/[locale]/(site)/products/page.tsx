@@ -5,7 +5,7 @@ import { Reveal } from '@/components/Reveal';
 import { ArrowIcon, GemIcon, WhatsAppIcon } from '@/components/icons';
 import { getMessages, isLocale, localePath, plural, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchCategories, fetchProducts } from '@/lib/api';
+import { fetchCategories, fetchMessages, fetchProducts } from '@/lib/api';
 import { generalMessage } from '@/lib/whatsapp';
 import { WhatsAppLink } from '@/components/WhatsAppLink';
 
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Pick<Props, 'params'>): Promi
 export default async function CatalogPage({ params, searchParams }: Props) {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
-  const m = getMessages(locale);
+  const m = await fetchMessages(locale); // getMessages() + any admin-customized WhatsApp text
   const c = m.catalog;
 
   const sp = await searchParams;

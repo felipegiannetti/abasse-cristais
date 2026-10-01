@@ -8,7 +8,7 @@ import { GlobeIcon, WhatsAppIcon } from '@/components/icons';
 import { site } from '@/content/site';
 import { formatPrice, getMessages, isLocale, localePath, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchProduct } from '@/lib/api';
+import { fetchMessages, fetchProduct } from '@/lib/api';
 import { productMessage } from '@/lib/whatsapp';
 import { WhatsAppLink } from '@/components/WhatsAppLink';
 
@@ -34,7 +34,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const { locale: raw, slug } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
-  const m = getMessages(locale);
+  const m = await fetchMessages(locale); // getMessages() + any admin-customized WhatsApp text
   const p = await fetchProduct(slug);
   if (!p) notFound();
 
