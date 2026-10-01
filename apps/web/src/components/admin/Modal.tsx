@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, type ReactNode } from 'react';
+import { useI18n } from '@/i18n/provider';
 import { IconClose } from './AdminIcons';
 
 interface Props {
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function Modal({ open, onClose, title, children, busy, wide }: Props) {
+  const { m } = useI18n();
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && !busy && onClose();
@@ -45,7 +47,7 @@ export function Modal({ open, onClose, title, children, busy, wide }: Props) {
           >
             <button
               type="button"
-              aria-label="Close"
+              aria-label={m.admin.shell.close}
               onClick={() => !busy && onClose()}
               className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-pearl/50 transition-colors hover:bg-white/10 hover:text-pearl"
             >

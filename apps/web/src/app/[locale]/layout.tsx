@@ -61,7 +61,7 @@ export default async function LocaleLayout({
   const messages = applyTemplateOverrides(getPublicMessages(locale), contact.templates[locale]);
 
   return (
-    <html lang={htmlLang[locale]} className={`${display.variable} ${sans.variable}`}>
+    <html lang={htmlLang[locale]} className={`${display.variable} ${sans.variable}`} data-scroll-behavior="smooth">
       <body className="min-h-dvh antialiased">
         <I18nProvider locale={locale} messages={messages} whatsapp={contact.whatsapp} sms={contact.sms} email={contact.email}>
           {children}

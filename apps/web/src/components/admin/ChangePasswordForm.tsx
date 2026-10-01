@@ -24,6 +24,7 @@ export function ChangePasswordForm() {
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -69,7 +70,24 @@ export function ChangePasswordForm() {
           <label htmlFor="new" className="label">
             {t.next}
           </label>
-          <input id="new" type="password" autoComplete="new-password" className="field" required value={next} onChange={(e) => setNext(e.target.value)} />
+          <div className="relative">
+            <input
+              id="new"
+              type={show ? 'text' : 'password'}
+              autoComplete="new-password"
+              className="field !pr-20"
+              required
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setShow((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wider text-pearl/50 hover:text-gold-300"
+            >
+              {show ? t.hide : t.show}
+            </button>
+          </div>
           <ul className="mt-3 grid gap-1.5 text-sm sm:grid-cols-2">
             {t.rules.map((label, i) => {
               const ok = ruleTests[i](next);
@@ -86,7 +104,15 @@ export function ChangePasswordForm() {
           <label htmlFor="confirm" className="label">
             {t.confirm}
           </label>
-          <input id="confirm" type="password" autoComplete="new-password" className="field" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <input
+            id="confirm"
+            type={show ? 'text' : 'password'}
+            autoComplete="new-password"
+            className="field"
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
           {confirm.length > 0 && !matches && <p className="mt-2 text-sm text-red-300">{t.mismatch}</p>}
         </div>
 
