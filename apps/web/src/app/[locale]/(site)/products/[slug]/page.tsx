@@ -34,8 +34,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function ProductPage({ params }: Props) {
   const { locale: raw, slug } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
-  const m = await fetchMessages(locale); // getMessages() + any admin-customized WhatsApp text
-  const p = await fetchProduct(slug);
+  // independent fetches: run together instead of waterfalling
+  const [m, p] = await Promise.all([
+    fetchMessages(locale), // getMessages() + any admin-customized WhatsApp text
+    fetchProduct(slug),
+  ]);
   if (!p) notFound();
 
   const soldOut = p.status === 'SOLD_OUT' || !p.inStock;

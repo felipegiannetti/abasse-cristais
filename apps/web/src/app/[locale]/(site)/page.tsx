@@ -24,10 +24,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function HomePage({ params }: Props) {
   const { locale: raw } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
-  const m = await fetchMessages(locale); // getMessages() + any admin-customized WhatsApp text
+  // independent fetches: run together instead of waterfalling
+  const [m, featuredResult] = await Promise.all([
+    fetchMessages(locale), // getMessages() + any admin-customized WhatsApp text
+    fetchProducts({ featured: true, pageSize: 6 }),
+  ]);
   const href = (p: string) => localePath(locale, p);
 
-  let featured = (await fetchProducts({ featured: true, pageSize: 6 })).items;
+  let featured = featuredResult.items;
   if (featured.length === 0) featured = (await fetchProducts({ pageSize: 6 })).items;
 
   return (

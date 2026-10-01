@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -17,29 +17,37 @@ export function AreaChart({ points, format, height = 240 }: { points: Point[]; f
   const [hover, setHover] = useState<number | null>(null);
   const W = 720;
   const H = height;
-  const pad = { l: 8, r: 8, t: 16, b: 28 };
-  const max = Math.max(1, ...points.map((p) => p.value));
-  const step = points.length > 1 ? (W - pad.l - pad.r) / (points.length - 1) : 0;
-  const x = (i: number) => pad.l + (points.length > 1 ? i * step : (W - pad.l - pad.r) / 2);
-  const y = (v: number) => pad.t + (H - pad.t - pad.b) * (1 - v / max);
 
-  // smooth path (Catmull-Rom → cubic Bézier), control points clamped so the curve never dips below the baseline
-  const pts = points.map((p, i) => [x(i), y(p.value)] as const);
-  const floor = H - pad.b;
-  const path = pts
-    .map((p2, i) => {
-      if (i === 0) return `M ${p2[0]} ${p2[1]}`;
-      const p1 = pts[i - 1];
-      const p0 = pts[i - 2] ?? p1;
-      const p3 = pts[i + 1] ?? p2;
-      const c1y = Math.min(floor, p1[1] + (p2[1] - p0[1]) / 6);
-      const c2y = Math.min(floor, p2[1] - (p3[1] - p1[1]) / 6);
-      return `C ${p1[0] + (p2[0] - p0[0]) / 6} ${c1y}, ${p2[0] - (p3[0] - p1[0]) / 6} ${c2y}, ${p2[0]} ${p2[1]}`;
-    })
-    .join(' ');
-  const area = points.length ? `${path} L ${x(points.length - 1)} ${H - pad.b} L ${x(0)} ${H - pad.b} Z` : '';
-  const ticks = [0, 0.5, 1].map((t) => ({ v: max * t, y: y(max * t) }));
-  const labelIdx = points.length > 2 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : points.map((_, i) => i);
+  // Pure geometry from points/height only (not hover): recomputed only when the data actually changes,
+  // not on every hover move over the chart.
+  const { pad, step, x, y, path, area, ticks, labelIdx } = useMemo(() => {
+    const pad = { l: 8, r: 8, t: 16, b: 28 };
+    const max = Math.max(1, ...points.map((p) => p.value));
+    const step = points.length > 1 ? (W - pad.l - pad.r) / (points.length - 1) : 0;
+    const x = (i: number) => pad.l + (points.length > 1 ? i * step : (W - pad.l - pad.r) / 2);
+    const y = (v: number) => pad.t + (H - pad.t - pad.b) * (1 - v / max);
+
+    // smooth path (Catmull-Rom → cubic Bézier), control points clamped so the curve never dips below the baseline
+    const pts = points.map((p, i) => [x(i), y(p.value)] as const);
+    const floor = H - pad.b;
+    const path = pts
+      .map((p2, i) => {
+        if (i === 0) return `M ${p2[0]} ${p2[1]}`;
+        const p1 = pts[i - 1];
+        const p0 = pts[i - 2] ?? p1;
+        const p3 = pts[i + 1] ?? p2;
+        const c1y = Math.min(floor, p1[1] + (p2[1] - p0[1]) / 6);
+        const c2y = Math.min(floor, p2[1] - (p3[1] - p1[1]) / 6);
+        return `C ${p1[0] + (p2[0] - p0[0]) / 6} ${c1y}, ${p2[0] - (p3[0] - p1[0]) / 6} ${c2y}, ${p2[0]} ${p2[1]}`;
+      })
+      .join(' ');
+    const area = points.length ? `${path} L ${x(points.length - 1)} ${H - pad.b} L ${x(0)} ${H - pad.b} Z` : '';
+    const ticks = [0, 0.5, 1].map((t) => ({ v: max * t, y: y(max * t) }));
+    const labelIdx = points.length > 2 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : points.map((_, i) => i);
+    return { pad, step, x, y, path, area, ticks, labelIdx };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points, H]);
+
   const active = hover !== null ? points[hover] : null;
 
   return (
