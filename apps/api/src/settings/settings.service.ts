@@ -187,12 +187,14 @@ export class SettingsService {
       update: data,
       create: { id: 'main', whatsapp: '', sms: '', email: '', messageTemplates: {}, ...data },
     });
-    await this.audit.record({
-      actorId,
-      action: 'settings.update',
-      entityType: 'Settings',
-      summary: `Atualizou as configurações do site (${Object.keys(data).join(', ')})`,
-    });
+    if (Object.keys(data).length > 0) {
+      await this.audit.record({
+        actorId,
+        action: 'settings.update',
+        entityType: 'Settings',
+        summary: `Atualizou as configurações do site (${Object.keys(data).join(', ')})`,
+      });
+    }
     return {
       whatsapp: row.whatsapp,
       sms: row.sms,

@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
   UnsupportedMediaTypeException,
@@ -178,25 +179,36 @@ export class ProductsService {
   // ---------- escrita ----------
 
   async create(dto: CreateProductDto, actorId?: string) {
-    const p = await this.prisma.product.create({
-      data: {
-        slug: await this.uniqueSlug(dto.name),
-        name: dto.name,
-        description: dto.description,
-        priceCents: dto.priceCents ?? null,
-        category: dto.category,
-        weight: dto.weight ?? null,
-        dimensions: dto.dimensions ?? null,
-        origin: dto.origin ?? null,
-        featured: dto.featured ?? false,
-        status: dto.status ?? 'AVAILABLE',
-        saleMode: dto.saleMode ?? 'UNIT',
-        stockQuantity: dto.stockQuantity ?? (dto.saleMode === 'WEIGHT' ? 0 : 1),
-        stockGrams: dto.stockGrams ?? 0,
-        costCents: dto.costCents ?? null,
-      },
-      include: withImages,
-    });
+    let p: ProductWithImages;
+    try {
+      p = await this.prisma.product.create({
+        data: {
+          slug: await this.uniqueSlug(dto.name),
+          name: dto.name,
+          description: dto.description,
+          priceCents: dto.priceCents ?? null,
+          category: dto.category,
+          weight: dto.weight ?? null,
+          dimensions: dto.dimensions ?? null,
+          origin: dto.origin ?? null,
+          featured: dto.featured ?? false,
+          status: dto.status ?? 'AVAILABLE',
+          saleMode: dto.saleMode ?? 'UNIT',
+          stockQuantity: dto.stockQuantity ?? (dto.saleMode === 'WEIGHT' ? 0 : 1),
+          stockGrams: dto.stockGrams ?? 0,
+          costCents: dto.costCents ?? null,
+        },
+        include: withImages,
+      });
+    } catch (e) {
+      // uniqueSlug() checks availability and this insert happen as two separate steps, so two products
+      // created at the same instant with the same name can race for the same slug; the DB's unique
+      // constraint is the real guard, surfaced here as a clean error instead of a raw 500.
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+        throw new ConflictException({ code: 'SLUG_TAKEN', message: 'A product with a very similar name was just created. Try again.' });
+      }
+      throw e;
+    }
     if (actorId) {
       await this.audit.record({ actorId, action: 'product.create', entityType: 'Product', entityId: p.id, summary: `Criou o produto "${p.name}"` });
     }

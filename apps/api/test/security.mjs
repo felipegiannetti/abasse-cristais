@@ -122,8 +122,11 @@ ok('login with wrong token → 404', r.status === 404, r.status);
 r = await login(USER, 'x', '');
 ok('login with empty token → 404', r.status === 404, r.status);
 if (TOKEN) {
-  r = await login('no-such-user-zzz', 'whatever-password');
-  ok('correct token + unknown user → 401 INVALID_CREDENTIALS', r.status === 401 && r.json.code === 'INVALID_CREDENTIALS', JSON.stringify(r.json));
+  // also sent with NO Origin header at all (unlike the login() helper, which always sets one): proves
+  // /auth/login reaches real auth logic even without Origin, since it has no session yet to protect
+  // (the Origin check requires it everywhere else under /admin and /auth — see the CSRF tests below)
+  r = await call('POST', '/auth/login', { body: { username: 'no-such-user-zzz', password: 'whatever-password' }, headers: { 'x-admin-login-token': TOKEN } });
+  ok('correct token + unknown user → 401 INVALID_CREDENTIALS (even with no Origin header)', r.status === 401 && r.json.code === 'INVALID_CREDENTIALS', JSON.stringify(r.json));
 } else skip('correct-token login checks', 'ADMIN_LOGIN_TOKEN not set');
 
 // DoS shield: floods WITHOUT the token must be answered cheaply and must not burn the login rate limiter,
@@ -211,6 +214,14 @@ r = await call('POST', '/auth/logout', { headers: { origin: 'https://evil.exampl
 ok('foreign Origin on state-changing request → 403', r.status === 403 && r.json.code === 'ORIGIN_NOT_ALLOWED', JSON.stringify(r.json));
 r = await call('POST', '/auth/logout', { headers: { origin: 'null' } });
 ok('Origin: null (sandboxed iframe) → 403', r.status === 403, r.status);
+// /admin and /auth (except /auth/login) read the session cookie: a missing Origin is refused there too
+r = await call('POST', '/auth/logout', {});
+ok('missing Origin on /auth/* (not login) → 403', r.status === 403 && r.json.code === 'ORIGIN_NOT_ALLOWED', JSON.stringify(r.json));
+r = await call('PATCH', '/admin/products/abc', { body: {} });
+ok('missing Origin on /admin/* → 403', r.status === 403 && r.json.code === 'ORIGIN_NOT_ALLOWED', JSON.stringify(r.json));
+// /auth/login itself stays exempt (tested above, with no Origin header, right after the token checks)
+r = await call('POST', '/track/click', { body: { ref: 'NOORIG', source: 'MENU', path: '/', locale: 'en' } });
+ok('missing Origin on the public /track/click still works (server-to-server QR redirect relies on this)', r.status === 204, r.status);
 
 // Injection / input validation on the public API
 for (const payload of ["' OR '1'='1", "'; DROP TABLE \"Product\";--", '%', '_', '\\', '{"$ne":null}', '<script>alert(1)</script>']) {
@@ -511,6 +522,14 @@ if (!PASS) {
   r = await call('GET', '/settings/public');
   ok('templates restored to their original state', JSON.stringify(r.json.templates) === JSON.stringify(original.templates), JSON.stringify(r.json.templates));
 
+  // an empty PUT (every field omitted) is valid but changes nothing: it must not pollute the audit log
+  r = await call('GET', '/admin/audit-log?entityType=Settings&pageSize=1', { cookie: session });
+  const auditTotalBefore = r.json.total;
+  r = await mut('PUT', '/admin/settings', session, {});
+  ok('empty settings update → 200, nothing changed', r.status === 200, r.status);
+  r = await call('GET', '/admin/audit-log?entityType=Settings&pageSize=1', { cookie: session });
+  ok('an empty settings update does not add an audit log entry', r.json.total === auditTotalBefore, `${auditTotalBefore} → ${r.json.total}`);
+
   // ---- Team: admins creating admins (same permissions) with step-up authentication ----
   r = await call('GET', '/admin/team', { cookie: session });
   ok('GET /admin/team lists admins, marks the current one, exposes no hashes', r.status === 200 && r.json.some((u) => u.isYou && u.username === USER) && !/hash|password/i.test(JSON.stringify(r.json).replace(/mustChangePassword/g, '')), JSON.stringify(r.json).slice(0, 200));
@@ -618,6 +637,22 @@ if (!PASS) {
   r = await mut('POST', '/admin/products/clxxxxxxxxxxxxxxxxxxxxxxxx/duplicate', session);
   ok('duplicate unknown product → 404', r.status === 404, r.status);
   await mut('DELETE', `/admin/products/${dup.id}`, session);
+
+  // slug race: two products created at the exact same instant with the identical name must never 500
+  // (the slug-uniqueness check and the insert are two separate steps; the DB's unique constraint is the
+  // real guard, and a P2002 on it must surface as a clean 409, not a raw server error)
+  {
+    const raceName = `Sec Race ${tag}`;
+    const raceBody = { name: raceName, description: 'd', category: 'SecSales' };
+    const [ra, rb] = await Promise.all([mut('POST', '/admin/products', session, raceBody), mut('POST', '/admin/products', session, raceBody)]);
+    ok('creating two products with the identical name at once never 500s', ra.status !== 500 && rb.status !== 500, `${ra.status} ${rb.status}`);
+    ok(
+      'each outcome is either 201 (a free slug) or a clean 409 SLUG_TAKEN (the race), never anything else',
+      [ra, rb].every((x) => x.status === 201 || (x.status === 409 && x.json.code === 'SLUG_TAKEN')),
+      JSON.stringify([ra, rb].map((x) => ({ status: x.status, code: x.json?.code }))),
+    );
+    for (const x of [ra, rb]) if (x.status === 201) await mut('DELETE', `/admin/products/${x.json.id}`, session);
+  }
 
   // customers
   r = await mut('POST', '/admin/customers', session, { name: `Cust ${tag}`, email: 'not-an-email' });
