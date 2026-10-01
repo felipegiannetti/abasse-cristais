@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Prisma, ProductStatus, SaleMode, SaleStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { FinanceService } from '../finance/finance.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { detectImage } from '../products/image-type';
 import { imageUrl } from '../products/products.service';
@@ -86,6 +87,7 @@ export class SalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly finance: FinanceService,
   ) {}
 
   // ------------------------------------------------------------- read
@@ -230,6 +232,7 @@ export class SalesService {
     });
 
     this.logger.log(`admin ${actorId} registered sale ${saleId}`);
+    this.finance.invalidate();
     const sale = await this.findOne(saleId);
     await this.audit.record({
       actorId,
@@ -293,6 +296,7 @@ export class SalesService {
       });
     });
     this.logger.log(`admin ${actorId} updated sale ${id}`);
+    this.finance.invalidate();
     const sale = await this.findOne(id);
     await this.audit.record({
       actorId,

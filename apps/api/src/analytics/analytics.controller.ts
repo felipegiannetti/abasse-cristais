@@ -1,9 +1,9 @@
-import { Body, Controller, Get, HttpCode, NotFoundException, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { Transform, Type } from 'class-transformer';
 import { IsIn, IsInt, IsOptional, Matches, Max, Min } from 'class-validator';
 import { AdminGuard } from '../auth/admin.guard';
-import { PrismaService } from '../prisma/prisma.service';
+import { AnalyticsService } from './analytics.service';
 
 export const WA_SOURCES = ['MENU', 'FLOATING', 'FOOTER', 'HERO', 'HOME_CTA', 'CATALOG', 'PRODUCT_CARD', 'PRODUCT_PAGE', 'QR_CODE'] as const;
 const LOCALES = ['en', 'pt', 'es'] as const;
@@ -51,16 +51,13 @@ class ClicksQuery {
  */
 @Controller('track')
 export class TrackController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly analytics: AnalyticsService) {}
 
   @Post('click')
   @HttpCode(204)
   @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  async click(@Body() dto: TrackClickDto) {
-    await this.prisma.whatsAppClick.createMany({
-      data: [{ ref: dto.ref, source: dto.source, path: dto.path, productSlug: dto.productSlug ?? null, locale: dto.locale }],
-      skipDuplicates: true, // the same ref twice (double click / retry) counts once
-    });
+  click(@Body() dto: TrackClickDto) {
+    return this.analytics.trackClick(dto);
   }
 }
 
@@ -69,57 +66,16 @@ export class TrackController {
 @UseGuards(AdminGuard)
 @SkipThrottle()
 export class AnalyticsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly analytics: AnalyticsService) {}
 
   @Get('clicks')
-  async clicks(@Query() q: ClicksQuery) {
-    const days = q.days ?? 30;
-    const since = new Date(Date.now() - days * 86_400_000);
-    const rows = await this.prisma.whatsAppClick.findMany({
-      where: { createdAt: { gte: since } },
-      select: { source: true, productSlug: true, createdAt: true, confirmedAt: true },
-      take: 50_000,
-    });
-
-    const bySource = new Map<string, number>();
-    const bySlug = new Map<string, number>();
-    const daily = new Map<string, { count: number; confirmed: number }>();
-    let confirmed = 0;
-    for (const r of rows) {
-      bySource.set(r.source, (bySource.get(r.source) ?? 0) + 1);
-      if (r.productSlug) bySlug.set(r.productSlug, (bySlug.get(r.productSlug) ?? 0) + 1);
-      const key = new Date(r.createdAt.getTime() - 3 * 3_600_000).toISOString().slice(0, 10); // Brazil time (UTC-3)
-      const d = daily.get(key) ?? { count: 0, confirmed: 0 };
-      d.count += 1;
-      if (r.confirmedAt) {
-        d.confirmed += 1;
-        confirmed += 1;
-      }
-      daily.set(key, d);
-    }
-
-    const topSlugs = [...bySlug].sort((a, b) => b[1] - a[1]).slice(0, 8);
-    const names = new Map(
-      (await this.prisma.product.findMany({ where: { slug: { in: topSlugs.map(([s]) => s) } }, select: { slug: true, name: true } })).map((p) => [p.slug, p.name]),
-    );
-    return {
-      days,
-      total: rows.length,
-      confirmed,
-      bySource: [...bySource].map(([source, count]) => ({ source, count })).sort((a, b) => b.count - a.count),
-      topProducts: topSlugs.map(([slug, count]) => ({ slug, name: names.get(slug) ?? slug, count })),
-      daily: [...daily].map(([date, v]) => ({ date, ...v })).sort((a, b) => a.date.localeCompare(b.date)),
-    };
+  clicks(@Query() q: ClicksQuery) {
+    return this.analytics.clicks(q.days ?? 30);
   }
 
-  /** The admin types the "Ref: XXXXXX" code from a WhatsApp conversation to mark it as received. */
   @Post('confirm')
   @HttpCode(200)
-  async confirm(@Body() dto: ConfirmDto) {
-    const click = await this.prisma.whatsAppClick.findUnique({ where: { ref: dto.ref } });
-    if (!click) throw new NotFoundException({ code: 'CLICK_NOT_FOUND', message: 'No click found for this code.' });
-    const already = click.confirmedAt !== null;
-    if (!already) await this.prisma.whatsAppClick.update({ where: { id: click.id }, data: { confirmedAt: new Date() } });
-    return { ref: click.ref, source: click.source, path: click.path, productSlug: click.productSlug, clickedAt: click.createdAt, alreadyConfirmed: already };
+  confirm(@Body() dto: ConfirmDto) {
+    return this.analytics.confirm(dto.ref);
   }
 }
