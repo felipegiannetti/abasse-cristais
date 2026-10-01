@@ -4,16 +4,19 @@ import { motion } from 'motion/react';
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { revalidateCatalog } from '@/app/actions';
 import { useI18n } from '@/i18n/provider';
+import type { TemplatesMap } from '@/i18n/templates';
 import { api, errorText } from '@/lib/client-api';
 import { emailUrl, generalEmailBody, generalEmailSubject, generalSms, smsUrl } from '@/lib/contact';
 import { generalMessage, whatsappUrl } from '@/lib/whatsapp';
 import { IconCheck, IconExternal, IconMail, IconSms } from './AdminIcons';
+import { MessageTemplatesCard } from './MessageTemplatesCard';
 import { useToast } from './Toast';
 
 interface ContactSettings {
   whatsapp: string;
   sms: string;
   email: string;
+  templates: TemplatesMap;
 }
 
 /** Mirrors the API's normalization so the admin sees exactly what will be saved. */
@@ -48,6 +51,7 @@ export function SettingsPage() {
   const [whatsapp, setWhatsapp] = useState('');
   const [sms, setSms] = useState('');
   const [email, setEmail] = useState('');
+  const [templates, setTemplates] = useState<TemplatesMap>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -58,6 +62,7 @@ export function SettingsPage() {
         setWhatsapp(d.whatsapp);
         setSms(d.sms);
         setEmail(d.email);
+        setTemplates(d.templates);
       })
       .catch((e) => setError(errorText(e, m, t.loadFailed)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -75,7 +80,12 @@ export function SettingsPage() {
   const emailOk = emailEmpty || validEmail(email);
 
   const ok = waOk && smsOk && emailOk;
-  const dirty = saved !== null && (waDigits !== saved.whatsapp || smsDigits !== saved.sms || email.trim().toLowerCase() !== saved.email);
+  const dirty =
+    saved !== null &&
+    (waDigits !== saved.whatsapp ||
+      smsDigits !== saved.sms ||
+      email.trim().toLowerCase() !== saved.email ||
+      JSON.stringify(templates) !== JSON.stringify(saved.templates));
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -85,13 +95,14 @@ export function SettingsPage() {
     try {
       const res = await api<ContactSettings>('/admin/settings', {
         method: 'PUT',
-        json: { whatsapp, sms, email },
+        json: { whatsapp, sms, email, templates },
         ...nav,
       });
       setSaved(res);
       setWhatsapp(res.whatsapp);
       setSms(res.sms);
       setEmail(res.email);
+      setTemplates(res.templates);
       await revalidateCatalog(); // the whole public site picks the new settings up immediately
       toast(t.saved);
     } catch (err) {
@@ -193,6 +204,8 @@ export function SettingsPage() {
             />
           )}
         </Card>
+
+        <MessageTemplatesCard templates={templates} onChange={setTemplates} disabled={saved === null} />
 
         {error && (
           <p role="alert" className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</p>
