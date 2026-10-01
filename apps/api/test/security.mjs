@@ -398,15 +398,20 @@ if (!PASS) {
   // ---- Site settings (WhatsApp, SMS, Email) ----
   r = await call('GET', '/settings/public');
   ok(
-    'GET /settings/public is open and exposes exactly whatsapp+sms+email (no admin-only fields)',
-    r.status === 200 && Object.keys(r.json).sort().join() === 'email,sms,whatsapp',
+    'GET /settings/public is open and exposes exactly whatsapp+sms+email+templates (no admin-only fields)',
+    r.status === 200 && Object.keys(r.json).sort().join() === 'email,sms,templates,whatsapp',
     JSON.stringify(r.json),
   );
   r = await call('GET', '/admin/settings', { cookie: session });
-  const original = { whatsapp: r.json.whatsapp, sms: r.json.sms, email: r.json.email };
+  const original = { whatsapp: r.json.whatsapp, sms: r.json.sms, email: r.json.email, templates: r.json.templates };
   ok(
     'GET /admin/settings → 200',
-    r.status === 200 && typeof original.whatsapp === 'string' && typeof original.sms === 'string' && typeof original.email === 'string',
+    r.status === 200 &&
+      typeof original.whatsapp === 'string' &&
+      typeof original.sms === 'string' &&
+      typeof original.email === 'string' &&
+      typeof original.templates === 'object' &&
+      original.templates !== null,
     JSON.stringify(r.json),
   );
   for (const [input, expected] of [['+55 (11) 99999-9999', '5511999999999'], ['5511988887777', '5511988887777'], ['https://wa.me/5511977776666', '5511977776666'], ['https://api.whatsapp.com/send?phone=5511966665555&text=hi', '5511966665555']]) {
@@ -450,7 +455,58 @@ if (!PASS) {
   ok('unknown settings field rejected (mass assignment) → 400', r.status === 400, r.status);
   r = await call('GET', '/settings/public');
   ok('rejected inputs did not change the saved number', r.json.whatsapp === '5511966665555', JSON.stringify(r.json));
+
+  // Message templates (admin-editable WhatsApp/SMS/email text, per language)
+  r = await mut('PUT', '/admin/settings', session, {
+    templates: { en: { whatsappGeneral: '  Hi from the admin!  ', emailSubjectProduct: 'A question' }, pt: { smsProduct: 'Olá, {name}?' } },
+  });
+  ok(
+    'templates saved, trimmed, split by language',
+    r.status === 200 &&
+      r.json.templates.en.whatsappGeneral === 'Hi from the admin!' &&
+      r.json.templates.en.emailSubjectProduct === 'A question' &&
+      r.json.templates.pt.smsProduct === 'Olá, {name}?' &&
+      r.json.templates.es === undefined,
+    JSON.stringify(r.json),
+  );
+  r = await call('GET', '/settings/public');
+  ok('the public endpoint reflects the saved templates (the site builds messages from them)', r.json.templates?.en?.whatsappGeneral === 'Hi from the admin!', JSON.stringify(r.json));
+
+  // PUT replaces the whole templates blob (the admin UI always sends its full current state — see
+  // updateContact), so clearing one field here means resending everything else unchanged alongside it.
+  r = await mut('PUT', '/admin/settings', session, {
+    templates: { en: { whatsappGeneral: '   ', emailSubjectProduct: 'A question' }, pt: { smsProduct: 'Olá, {name}?' } },
+  });
+  ok(
+    'a whitespace-only value clears that override (falls back to the default text) without touching the rest',
+    r.status === 200 && r.json.templates.en?.whatsappGeneral === undefined && r.json.templates.en?.emailSubjectProduct === 'A question' && r.json.templates.pt?.smsProduct === 'Olá, {name}?',
+    JSON.stringify(r.json),
+  );
+
+  for (const bad of [
+    { fr: { whatsappGeneral: 'bonjour' } }, // unknown language
+    { en: { subject: 'x' } }, // unknown field name
+    { en: { whatsappGeneral: 123 } }, // not a string
+    { en: 'not an object' },
+    { en: { emailSubjectGeneral: 'x'.repeat(151) } }, // over the subject cap
+    { en: { whatsappProduct: 'x'.repeat(2001) } }, // over the body cap
+  ]) {
+    r = await mut('PUT', '/admin/settings', session, { templates: bad });
+    ok(`templates rejected: ${JSON.stringify(bad).slice(0, 50)}`, r.status === 400 && r.json.code === 'INVALID_TEMPLATES', `${r.status} ${JSON.stringify(r.json).slice(0, 140)}`);
+  }
+  // The whole `templates` value itself must be an object — this is rejected by the DTO layer
+  // (no custom `code`, just the framework's standard validation-error shape).
+  r = await mut('PUT', '/admin/settings', session, { templates: 'not an object at all' });
+  ok('templates rejected when not an object at all → 400', r.status === 400, `${r.status} ${JSON.stringify(r.json).slice(0, 140)}`);
+  r = await call('GET', '/settings/public');
+  ok('rejected template payloads did not change what was saved', r.json.templates?.pt?.smsProduct === 'Olá, {name}?', JSON.stringify(r.json));
+
+  r = await mut('PUT', '/admin/settings', session, { whatsapp: '5511966665555' }); // templates omitted entirely
+  ok('omitting templates from the PUT leaves the saved templates untouched', r.status === 200 && r.json.templates.pt?.smsProduct === 'Olá, {name}?', JSON.stringify(r.json));
+
   await mut('PUT', '/admin/settings', session, original);
+  r = await call('GET', '/settings/public');
+  ok('templates restored to their original state', JSON.stringify(r.json.templates) === JSON.stringify(original.templates), JSON.stringify(r.json.templates));
 
   // ---- Team: admins creating admins (same permissions) with step-up authentication ----
   r = await call('GET', '/admin/team', { cookie: session });
