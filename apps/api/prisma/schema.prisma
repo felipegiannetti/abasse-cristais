@@ -88,6 +88,9 @@ model SiteSettings {
   sms       String   @default("")
   // empty = the Email contact button is hidden on the site
   email     String   @default("")
+  // Admin-customized WhatsApp/SMS/email message text, per language: { en: { whatsappGeneral: "...", ... }, pt: {...}, es: {...} }.
+  // A key that is absent (or was cleared) falls back to the site's built-in default text for that language.
+  messageTemplates Json @default("{}")
   updatedAt DateTime @updatedAt
 }
 

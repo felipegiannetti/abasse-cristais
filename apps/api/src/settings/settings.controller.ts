@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Put, UseGuards } from '@nestjs/common';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 import { SkipThrottle } from '@nestjs/throttler';
 import { AdminGuard } from '../auth/admin.guard';
 import { SettingsService } from './settings.service';
@@ -19,6 +19,12 @@ class UpdateSettingsDto {
   @IsString()
   @MaxLength(254)
   email?: string;
+
+  // { locale: { field: text } } — shape and content are checked by SettingsService.normalizeTemplates,
+  // which also enforces the known locale/field names and a length cap per field.
+  @IsOptional()
+  @IsObject()
+  templates?: Record<string, unknown>;
 }
 
 /** Read by the public site (which contact channels every button uses). */
