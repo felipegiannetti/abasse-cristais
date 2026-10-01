@@ -38,7 +38,7 @@ export function lineTotal(mode: SaleMode, unitPriceCents: number, quantity: numb
 }
 
 /** Keeps the public status in sync when stock reaches zero (or comes back), without touching manual statuses. */
-function nextStatus(before: number, after: number, current: ProductStatus): ProductStatus {
+export function nextStatus(before: number, after: number, current: ProductStatus): ProductStatus {
   if (before > 0 && after <= 0 && current === 'AVAILABLE') return 'SOLD_OUT';
   if (before <= 0 && after > 0 && current === 'SOLD_OUT') return 'AVAILABLE';
   return current;

@@ -24,7 +24,7 @@ type ProductWithImages = Prisma.ProductGetPayload<{ include: typeof withImages }
 
 const PUBLIC_STATUSES: ProductStatus[] = ['AVAILABLE', 'SOLD_OUT'];
 
-function slugify(text: string): string {
+export function slugify(text: string): string {
   return (
     text
       .normalize('NFD')

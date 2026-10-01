@@ -13,6 +13,8 @@
     "db:seed": "ts-node --transpile-only prisma/seed.ts",
     "admin:reset": "ts-node --transpile-only prisma/reset-admin.ts",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:security": "node test/security.mjs"
   },
   "dependencies": {
@@ -38,6 +40,7 @@
     "@types/node": "^22.15.0",
     "prisma": "^6.19.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^5.0.3"
   }
 }
