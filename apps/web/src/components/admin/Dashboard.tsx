@@ -140,7 +140,7 @@ export function Dashboard() {
         <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-sky/10 blur-[80px]" />
         <p className="eyebrow">{greeting(m)}</p>
         <h1 className="mt-3 font-display text-4xl font-medium leading-tight text-pearl sm:text-5xl">
-          <span className="text-shimmer italic">{me?.username}</span>
+          <span className="text-shimmer">{me?.username}</span>
         </h1>
         <p className="mt-3 max-w-xl text-pearl/60">{t.subtitle}</p>
         <div className="mt-6 flex flex-wrap gap-3">

@@ -14,9 +14,11 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <I18nProvider locale="pt" messages={m}>
-      <div className="aurora" aria-hidden="true" />
-      <div className="grain" aria-hidden="true" />
-      {children}
+      <div className="admin-area">
+        <div className="aurora" aria-hidden="true" />
+        <div className="grain" aria-hidden="true" />
+        {children}
+      </div>
     </I18nProvider>
   );
 }

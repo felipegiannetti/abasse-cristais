@@ -25,6 +25,21 @@
   }
 }
 
+/* Área administrativa: fonte simples e de fácil leitura (a mesma que o computador/celular do usuário usa
+   no dia a dia: Segoe UI no Windows, San Francisco no Mac/iPhone, Roboto no Android), em vez das fontes
+   decorativas do site público. `font-display` passa a apontar para ela, então todos os títulos mudam junto. */
+.admin-area {
+  --font-admin: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: var(--font-admin);
+  --font-sans: var(--font-admin);
+  font-family: var(--font-admin);
+}
+@layer components {
+  .admin-area .font-display {
+    letter-spacing: -0.01em;
+  }
+}
+
 @layer components {
   /* Borda dourada que gira ao redor do elemento */
   .gold-border {

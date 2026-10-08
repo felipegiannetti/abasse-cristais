@@ -163,7 +163,7 @@ export default function AdminLoginPage() {
               <IconShield className="h-3.5 w-3.5" /> {t.eyebrow}
             </motion.p>
             <h1 className="mt-3 text-center font-display text-4xl font-medium text-pearl">
-              <span className="text-shimmer italic">{t.welcome}</span>
+              <span className="text-shimmer">{t.welcome}</span>
             </h1>
             <p className="mt-2 text-center text-sm text-pearl/55">{t.subtitle}</p>
 
