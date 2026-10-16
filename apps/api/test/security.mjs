@@ -314,6 +314,22 @@ if (!PASS) {
   const A = r.json;
   r = await mut('PATCH', `/admin/products/${A.id}`, session, { slug: 'hijack', id: 'x', createdAt: '2000-01-01' });
   ok('mass assignment (slug/id/createdAt) rejected → 400', r.status === 400, JSON.stringify(r.json));
+
+  // Optimistic concurrency: an edit based on a stale copy of the product must not overwrite newer changes
+  {
+    const fresh = await call('GET', `/admin/products/${A.id}`, { cookie: session });
+    const v1 = fresh.json.updatedAt;
+    r = await mut('PATCH', `/admin/products/${A.id}`, session, { featured: false, expectedUpdatedAt: '2000-01-01T00:00:00.000Z' });
+    ok('stale expectedUpdatedAt → 409 PRODUCT_CHANGED', r.status === 409 && r.json.code === 'PRODUCT_CHANGED', JSON.stringify(r.json));
+    r = await mut('PATCH', `/admin/products/${A.id}`, session, { featured: false, expectedUpdatedAt: 'not-a-date' });
+    ok('malformed expectedUpdatedAt → 400', r.status === 400, r.status);
+    r = await mut('PATCH', `/admin/products/${A.id}`, session, { featured: false, expectedUpdatedAt: v1 });
+    ok('current expectedUpdatedAt → 200 and the version moves on', r.status === 200 && r.json.updatedAt !== v1, JSON.stringify(r.json).slice(0, 120));
+    r = await mut('PATCH', `/admin/products/${A.id}`, session, { featured: false, expectedUpdatedAt: v1 });
+    ok('replaying the now-stale version → 409 (no silent overwrite)', r.status === 409 && r.json.code === 'PRODUCT_CHANGED', JSON.stringify(r.json));
+    r = await mut('PATCH', `/admin/products/${A.id}`, session, { featured: false });
+    ok('PATCH without expectedUpdatedAt still works (quick toggles in the list)', r.status === 200, r.status);
+  }
   for (const [name, body] of [
     ['negative price', { priceCents: -5 }],
     ['non-integer price', { priceCents: 1.5 }],

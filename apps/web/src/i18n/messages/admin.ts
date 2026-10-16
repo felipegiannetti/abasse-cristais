@@ -7,6 +7,7 @@ export const adminMessages = {
     CUSTOMER_NOT_FOUND: 'Cliente não encontrado.',
     CUSTOMER_REQUIRED: 'Escolha um cliente ou preencha os dados do cliente.',
     INSUFFICIENT_STOCK: 'Estoque insuficiente para uma das peças.',
+    PRODUCT_CHANGED: 'Este produto foi alterado depois que você abriu esta tela (por exemplo, uma venda pode ter mudado o estoque). Nada foi salvo: recarregue a página e refaça a edição.',
     PRICE_REQUIRED: 'Uma das peças não tem valor cadastrado. Informe o valor da venda.',
     DISCOUNT_TOO_HIGH: 'O desconto não pode ser maior que o subtotal.',
     TOTAL_TOO_LARGE: 'O total da venda é grande demais.',

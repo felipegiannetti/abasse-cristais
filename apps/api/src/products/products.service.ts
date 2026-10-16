@@ -225,25 +225,37 @@ export class ProductsService {
   async update(id: string, dto: UpdateProductDto, actorId: string) {
     await this.ensureExists(id);
     // O slug é mantido de propósito: links já compartilhados no WhatsApp não podem quebrar.
-    const p = await this.prisma.product.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        description: dto.description,
-        priceCents: dto.priceCents,
-        category: dto.category,
-        weight: dto.weight,
-        dimensions: dto.dimensions,
-        origin: dto.origin,
-        featured: dto.featured,
-        status: dto.status,
-        saleMode: dto.saleMode,
-        stockQuantity: dto.stockQuantity,
-        stockGrams: dto.stockGrams,
-        costCents: dto.costCents,
-      },
-      include: withImages,
-    });
+    const data = {
+      name: dto.name,
+      description: dto.description,
+      priceCents: dto.priceCents,
+      category: dto.category,
+      weight: dto.weight,
+      dimensions: dto.dimensions,
+      origin: dto.origin,
+      featured: dto.featured,
+      status: dto.status,
+      saleMode: dto.saleMode,
+      stockQuantity: dto.stockQuantity,
+      stockGrams: dto.stockGrams,
+      costCents: dto.costCents,
+    };
+    let p: ProductWithImages;
+    if (dto.expectedUpdatedAt) {
+      // Optimistic concurrency: the form sends the version it read. The edit is applied only if nobody
+      // (a sale taking stock out, another admin, another tab) changed the product since; the compare
+      // and the write are one statement, so there is no window between them.
+      const { count } = await this.prisma.product.updateMany({ where: { id, updatedAt: new Date(dto.expectedUpdatedAt) }, data });
+      if (!count) {
+        throw new ConflictException({
+          code: 'PRODUCT_CHANGED',
+          message: 'This product was changed after you opened it (for example a sale changed its stock). Reload and edit again.',
+        });
+      }
+      p = await this.prisma.product.findUniqueOrThrow({ where: { id }, include: withImages });
+    } else {
+      p = await this.prisma.product.update({ where: { id }, data, include: withImages });
+    }
     await this.audit.record({ actorId, action: 'product.update', entityType: 'Product', entityId: p.id, summary: `Atualizou o produto "${p.name}"` });
     return serialize(p, true);
   }

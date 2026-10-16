@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { revalidateCatalog } from '@/app/actions';
 import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
-import { api, errorText } from '@/lib/client-api';
+import { ApiError, api, errorText } from '@/lib/client-api';
 import { centsToInput, kgToGrams, parsePriceToCents } from '@/lib/format';
 import type { Product, ProductStatus, SaleMode } from '@/lib/types';
 import { IconExternal } from './AdminIcons';
@@ -44,6 +44,8 @@ export function ProductForm({ initial }: { initial?: Product }) {
 
   // After the product is created, another "save" (e.g. after a failed upload) edits it instead of duplicating.
   const [productId, setProductId] = useState(initial?.id);
+  // version of the product this form is based on; the server refuses the save if it moved on (see PRODUCT_CHANGED)
+  const baseVersion = useRef(initial?.updatedAt);
   const [slug, setSlug] = useState(initial?.slug);
 
   const [name, setName] = useState(initial?.name ?? '');
@@ -110,10 +112,11 @@ export function ProductForm({ initial }: { initial?: Product }) {
       setProgress(t.stepData);
       const payload = { name, description, priceCents, category, weight, dimensions, origin, featured, status, saleMode, stockQuantity, stockGrams, costCents };
       const product = productId
-        ? await api<Product>(`/admin/products/${productId}`, { method: 'PATCH', json: payload, ...nav })
+        ? await api<Product>(`/admin/products/${productId}`, { method: 'PATCH', json: { ...payload, expectedUpdatedAt: baseVersion.current }, ...nav })
         : await api<Product>('/admin/products', { method: 'POST', json: payload, ...nav });
       setProductId(product.id);
       setSlug(product.slug);
+      baseVersion.current = product.updatedAt;
 
       while (removedIds.current.length) {
         const id = removedIds.current[0];
@@ -151,7 +154,8 @@ export function ProductForm({ initial }: { initial?: Product }) {
       toast(initial ? t.updated : t.created);
       router.push(href('/admin/products'));
     } catch (err) {
-      setError(errorText(err, m, t.unexpected) + (productId || slug ? ` ${t.keptNote}` : ''));
+      const refused = err instanceof ApiError && err.code === 'PRODUCT_CHANGED'; // nothing was saved: the "kept" note would be wrong
+      setError(errorText(err, m, t.unexpected) + ((productId || slug) && !refused ? ` ${t.keptNote}` : ''));
       setSaving(false);
       setProgress('');
     }

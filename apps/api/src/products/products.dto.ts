@@ -7,6 +7,7 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsISO8601,
   IsOptional,
   IsString,
   Max,
@@ -178,6 +179,14 @@ export class UpdateProductDto {
   @Min(0)
   @Max(100_000_000)
   costCents?: number | null;
+
+  /**
+   * The `updatedAt` the form read when it opened. When present, the update is refused (409 PRODUCT_CHANGED)
+   * if the product changed since — typically a sale that lowered the stock — instead of overwriting it.
+   */
+  @IsOptional()
+  @IsISO8601()
+  expectedUpdatedAt?: string;
 }
 
 export class ListProductsQuery {
