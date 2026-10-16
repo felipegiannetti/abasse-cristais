@@ -941,6 +941,8 @@ if (!PASS) {
   r = await call('GET', `/admin/sales/${S1.id}`, { cookie: session });
   ok('the sale history survives, anonymized (no name, no address)', r.status === 200 && r.json.customerName === '(personal data erased)' && r.json.shipTo === null && r.json.customerId === null && r.json.totalCents === 47000, JSON.stringify(r.json).slice(0, 200));
   ok('erasure also blanks the free-text notes and the tracking code of the erased customer sales', r.json.notes === null && r.json.trackingCode === null, `${r.json.notes} ${r.json.trackingCode}`);
+  r = await call('GET', '/admin/audit-log?pageSize=100', { cookie: session });
+  ok('erasure also removes the customer name from the activity log', r.status === 200 && !JSON.stringify(r.json.items).includes(`Cust ${tag}`), JSON.stringify(r.json.items.filter((e) => e.summary.includes(`Cust ${tag}`))).slice(0, 200));
 
   // cleanup: products (sales keep their snapshots)
   for (const p of [P1, P2, P3]) await mut('DELETE', `/admin/products/${p.id}`, session);

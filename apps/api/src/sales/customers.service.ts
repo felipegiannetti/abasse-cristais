@@ -9,6 +9,24 @@ import { likeSafe } from '../common/like';
 
 const notFound = () => new NotFoundException({ code: 'CUSTOMER_NOT_FOUND', message: 'Customer not found.' });
 
+const ERASED_AUDIT_SUMMARY = 'Registro com dados pessoais apagados (LGPD/GDPR)';
+
+/**
+ * The audit log keeps a human-readable sentence per action, and a few of them carry the customer's name
+ * ("Cadastrou o cliente \"X\"", "Registrou a venda #62 para X"). When that customer's personal data is erased,
+ * the sentences about them are rewritten without the name; anything unrecognised is replaced entirely
+ * (erring on the side of removing too much rather than leaving a name behind).
+ */
+export function scrubAuditSummary(action: string, summary: string): string {
+  if (action === 'sale.create') {
+    const m = /^(Registrou a venda #\d+) para /.exec(summary);
+    return m ? `${m[1]} (cliente apagado)` : ERASED_AUDIT_SUMMARY;
+  }
+  if (action === 'customer.create') return 'Cadastrou um cliente (dados pessoais apagados)';
+  if (action === 'customer.update') return 'Atualizou um cliente (dados pessoais apagados)';
+  return ERASED_AUDIT_SUMMARY;
+}
+
 @Injectable()
 export class CustomersService {
   private readonly logger = new Logger(CustomersService.name);
@@ -102,6 +120,16 @@ export class CustomersService {
     await this.auth.assertPassword(actorId, currentPassword);
     await this.prisma.$transaction(async (tx) => {
       if (!(await tx.customer.count({ where: { id } }))) throw notFound();
+      // the audit log mentions this customer by name (customer.* rows and "sale #N for <name>" rows)
+      const saleIds = (await tx.sale.findMany({ where: { customerId: id }, select: { id: true } })).map((s) => s.id);
+      const mentions = await tx.auditLog.findMany({
+        where: { OR: [{ entityType: 'Customer', entityId: id, action: { not: 'customer.erase' } }, { entityType: 'Sale', entityId: { in: saleIds }, action: 'sale.create' }] },
+        select: { id: true, action: true, summary: true },
+      });
+      for (const row of mentions) {
+        const summary = scrubAuditSummary(row.action, row.summary);
+        if (summary !== row.summary) await tx.auditLog.update({ where: { id: row.id }, data: { summary } });
+      }
       await tx.sale.updateMany({
         where: { customerId: id },
         data: { customerName: '(personal data erased)', shipTo: Prisma.DbNull, customerId: null, notes: null, trackingCode: null },
