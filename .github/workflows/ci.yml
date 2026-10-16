@@ -1,0 +1,128 @@
+# Roda sozinho a cada push na main e em cada pull request.
+#  1. checks:         typecheck + lint + testes de unidade + build (api e web)
+#  2. security-suite: a suíte de integração/segurança (apps/api/test/security.mjs) contra um Postgres descartável
+# Nada aqui usa segredos do repositório: as chaves e senhas do teste são geradas na hora e só existem nesta execução.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# um push novo cancela a execução antiga da mesma branch
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  checks:
+    name: Typecheck, lint, unit tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # só para o `prisma generate`/build: nenhuma conexão é aberta neste job
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+      # o build do site tenta buscar produtos na API; sem API ele cai no conteúdo vazio, como em dev
+      API_URL: http://localhost:4000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: |
+          npm run typecheck -w apps/api
+          npm run typecheck -w apps/web
+      - name: Lint
+        run: |
+          npm run lint -w apps/api
+          npm run lint -w apps/web
+      - name: Unit tests
+        run: npm test -w apps/api
+      - name: Build
+        run: |
+          npm run build -w apps/api
+          npm run build -w apps/web
+
+  security-suite:
+    name: Security / integration suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: abasse
+          POSTGRES_PASSWORD: abasse
+          POSTGRES_DB: abasse
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U abasse"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://abasse:abasse@localhost:5432/abasse?schema=public
+      DIRECT_URL: postgresql://abasse:abasse@localhost:5432/abasse?schema=public
+      ADMIN_USERNAME: admin
+      API_URL: http://localhost:4000
+      WEB_ORIGIN: http://localhost:3000
+      WEB_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+
+      - name: Generate throwaway secrets for this run
+        run: |
+          {
+            echo "JWT_SECRET=$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=\n')"
+            echo "ADMIN_LOGIN_TOKEN=$(openssl rand -base64 24 | tr '+/' '-_' | tr -d '=\n')"
+            # as senhas precisam cumprir a política (maiúscula, minúscula e número)
+            echo "ADMIN_INITIAL_PASSWORD=Temp-$(openssl rand -hex 8)-7Tz"
+            echo "ADMIN_TEST_PASSWORD=Perm-$(openssl rand -hex 8)-4Qx"
+          } >> "$GITHUB_ENV"
+
+      - name: Prepare the database
+        run: |
+          npm run db:deploy -w apps/api
+          npm run db:seed -w apps/api
+
+      - name: Build
+        run: |
+          npm run build -w apps/api
+          npm run build -w apps/web
+
+      - name: Start API and site
+        run: |
+          # o login temporário do seed é o ponto de partida do teste de "primeiro login forçado"
+          echo "ADMIN_TEMP_PASSWORD=$ADMIN_INITIAL_PASSWORD" >> "$GITHUB_ENV"
+          (cd apps/api && PORT=4000 node dist/main.js > "$RUNNER_TEMP/api.log" 2>&1 &)
+          (npm run start -w apps/web > "$RUNNER_TEMP/web.log" 2>&1 &)
+          for i in $(seq 1 60); do
+            curl -fs http://localhost:4000/health > /dev/null && curl -fs -o /dev/null http://localhost:3000/pt && exit 0
+            sleep 2
+          done
+          echo "API or site did not come up in time"; exit 1
+
+      - name: Run the security suite
+        run: npm run test:security -w apps/api
+
+      - name: Show server logs on failure
+        if: failure()
+        run: |
+          echo "--- api.log"; tail -n 80 "$RUNNER_TEMP/api.log" || true
+          echo "--- web.log"; tail -n 80 "$RUNNER_TEMP/web.log" || true

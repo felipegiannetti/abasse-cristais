@@ -132,6 +132,15 @@ ADMIN_TEST_PASSWORD='<senha permanente do admin local>' npm run test:security -w
 
 Sem `ADMIN_TEST_PASSWORD` roda só a parte sem autenticação; com `ADMIN_TEMP_PASSWORD` (após `admin:reset`) também testa o primeiro login forçado; `TEST_LOCKOUT=1` testa o bloqueio por força bruta.
 
+### Integração contínua (CI)
+
+O workflow `.github/workflows/ci.yml` roda sozinho no GitHub a cada push na `main` e a cada pull request, em dois trabalhos independentes:
+
+1. **Typecheck, lint, unit tests, build** — `tsc`, ESLint, Vitest e o build da API e do site.
+2. **Security / integration suite** — sobe um Postgres descartável, aplica as migrations, inicia a API e o site e roda `apps/api/test/security.mjs` inteira (inclui a checagem de que `/admin` e suas variações codificadas respondem 404). Leva alguns minutos porque a suíte espera a janela do limite de login.
+
+Não usa nenhum segredo do repositório: a chave JWT, o token de login e as senhas do teste são gerados a cada execução. Resultado em **Actions** no GitHub; para que um vermelho **impeça** o merge, ative em *Settings → Branches* uma regra de proteção exigindo os dois trabalhos. Para reproduzir localmente o primeiro trabalho: `npm run typecheck`, `npm run lint` e `npm test` dentro de cada app (`-w apps/api` / `-w apps/web`).
+
 **Autenticação e sessão**
 - Senhas com bcrypt (custo 12); limite de 72 **bytes** validado (bcrypt truncaria em silêncio). Troca da senha inicial imposta **no servidor**: todas as rotas do admin retornam 403 até a troca. Não existe senha padrão: sem `ADMIN_INITIAL_PASSWORD` o seed gera uma aleatória.
 - **O login só é aceito com o token do endereço secreto** (cabeçalho `X-Admin-Login-Token`, comparado em tempo constante). Quem não o conhece recebe 404 num *middleware* que roda antes de tudo (antes do rate limit e do banco): não dá para fazer força bruta, travar a conta nem esgotar o limite de tentativas do admin com requisições sem token.
