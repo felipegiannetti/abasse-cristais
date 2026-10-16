@@ -74,11 +74,23 @@ async function call(method, path, { body, cookie, headers = {}, raw } = {}) {
   return { status: res.status, json, headers: res.headers, setCookie, cookie: setCookie.split(';')[0] || '' };
 }
 
-const login = (username, password, token = TOKEN) =>
+// POST /auth/login is limited to 10 per minute per IP (that is what section C tests), and this suite logs in more
+// than 10 times. A 429 here would not be a product bug, just the suite outrunning its own limiter, so `login`
+// waits out the window and retries once. Pass { retry: false } where the 429 is the thing being tested.
+const loginOnce = (username, password, token) =>
   call('POST', '/auth/login', {
     body: { username, password },
     headers: { 'x-admin-login-token': token, origin: ORIGIN },
   });
+const login = async (username, password, token = TOKEN, { retry = true } = {}) => {
+  let res = await loginOnce(username, password, token);
+  if (retry && res.status === 429) {
+    console.log('  (login rate limit reached — waiting 61s for the window to reset)');
+    await new Promise((resolve) => setTimeout(resolve, 61_000));
+    res = await loginOnce(username, password, token);
+  }
+  return res;
+};
 const mut = (method, path, cookie, body) => call(method, path, { body, cookie, headers: { origin: ORIGIN } });
 
 const b64u = (o) => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
@@ -1020,14 +1032,14 @@ if (!TOKEN) {
   // wait out any throttle window left by the tests above
   await new Promise((res) => setTimeout(res, 61_000));
   const codes = [];
-  for (let i = 0; i < 14; i++) codes.push((await login('no-such-user-zzz', `bad-${i}`)).status);
+  for (let i = 0; i < 14; i++) codes.push((await login('no-such-user-zzz', `bad-${i}`, TOKEN, { retry: false })).status);
   ok('rate limit: rapid login attempts eventually → 429', codes.includes(429), codes.join(','));
   ok('rate limit: first attempts are normal 401s', codes.slice(0, 5).every((c) => c === 401), codes.join(','));
 
   if (process.env.TEST_LOCKOUT === '1') {
     await new Promise((res) => setTimeout(res, 61_000));
-    for (let i = 0; i < 5; i++) await login(USER, `wrong-${i}`);
-    r = await login(USER, PASS || 'x');
+    for (let i = 0; i < 5; i++) await login(USER, `wrong-${i}`, TOKEN, { retry: false });
+    r = await login(USER, PASS || 'x', TOKEN, { retry: false });
     ok('account lockout after 5 failures → 429 even with the correct password', r.status === 429, r.status);
     console.log('  (account is now locked for 15 minutes — run `npm run admin:reset -w apps/api` to unlock)');
   } else skip('account lockout', 'set TEST_LOCKOUT=1 (leaves the admin locked for 15 minutes)');
