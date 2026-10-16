@@ -9,8 +9,9 @@ import { flag } from '@/lib/countries';
 import { STATUS_LABELS, brl, formatGrams } from '@/lib/format';
 import type { Sale, SaleStatus } from '@/lib/types';
 import { IconPlus, IconSearch, IconTruck } from './AdminIcons';
+import { Pagination } from './Pagination';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 15;
 const TABS: { key: '' | SaleStatus; label: string }[] = [
   { key: '', label: 'Todas' },
   { key: 'PENDING', label: 'Pendentes' },
@@ -51,7 +52,7 @@ export function SalesPage() {
   }, [q]);
 
   const load = useCallback(
-    async (p: number, append: boolean) => {
+    async (p: number) => {
       setLoading(true);
       setError('');
       try {
@@ -59,7 +60,7 @@ export function SalesPage() {
         if (status) qs.set('status', status);
         if (dq) qs.set('q', dq);
         const d = await api<{ items: Sale[]; total: number }>(`/admin/sales?${qs}`, nav);
-        setItems((cur) => (append ? [...cur, ...d.items] : d.items));
+        setItems(d.items);
         setTotal(d.total);
         setPage(p);
       } catch (e) {
@@ -72,7 +73,7 @@ export function SalesPage() {
     [status, dq, m],
   );
   useEffect(() => {
-    void load(1, false);
+    void load(1);
   }, [load]);
 
   return (
@@ -193,11 +194,7 @@ export function SalesPage() {
         </div>
       )}
 
-      {items.length < total && (
-        <div className="mt-8 text-center">
-          <button className="btn btn-ghost" disabled={loading} onClick={() => load(page + 1, true)}>{loading ? 'Carregando…' : 'Carregar mais'}</button>
-        </div>
-      )}
+      <Pagination page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onChange={(p) => void load(p)} />
     </div>
   );
 }

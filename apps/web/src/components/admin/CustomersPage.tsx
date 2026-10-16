@@ -11,11 +11,14 @@ import type { Customer } from '@/lib/types';
 import { IconEdit, IconPlus, IconSearch, IconShield, IconTrash } from './AdminIcons';
 import { AddressFields, addressComplete, addressFilled, emptyAddress, type AddressForm } from './AddressFields';
 import { Modal } from './Modal';
+import { Pagination } from './Pagination';
 import { STATUS_STYLE, fmtDate } from './SalesPage';
 import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
 
 type Dialog = { kind: 'edit'; customer: Customer | null } | { kind: 'history'; customer: Customer } | { kind: 'erase'; customer: Customer } | null;
+
+const PAGE_SIZE = 15;
 
 export function CustomersPage() {
   const { m, href } = useI18n();
@@ -47,14 +50,14 @@ export function CustomersPage() {
   }, [q]);
 
   const load = useCallback(
-    async (p: number, append: boolean) => {
+    async (p: number) => {
       setLoading(true);
       setError('');
       try {
-        const qs = new URLSearchParams({ page: String(p), pageSize: '18' });
+        const qs = new URLSearchParams({ page: String(p), pageSize: String(PAGE_SIZE) });
         if (dq) qs.set('q', dq);
         const d = await api<{ items: Customer[]; total: number }>(`/admin/customers?${qs}`, nav);
-        setItems((cur) => (append ? [...cur, ...d.items] : d.items));
+        setItems(d.items);
         setTotal(d.total);
         setPage(p);
       } catch (e) {
@@ -67,7 +70,7 @@ export function CustomersPage() {
     [dq, m],
   );
   useEffect(() => {
-    void load(1, false);
+    void load(1);
   }, [load]);
 
   const close = () => {
@@ -121,7 +124,7 @@ export function CustomersPage() {
       else await api('/admin/customers', { method: 'POST', json: body, ...nav });
       toast(dialog.customer ? 'Cliente atualizado.' : 'Cliente cadastrado.');
       setDialog(null);
-      void load(1, false);
+      void load(page);
     } catch (err) {
       setFormError(errorText(err, m));
     } finally {
@@ -139,7 +142,7 @@ export function CustomersPage() {
       toast('Dados pessoais apagados. O histórico de vendas foi mantido de forma anônima.');
       setDialog(null);
       setPassword('');
-      void load(1, false);
+      void load(page);
     } catch (err) {
       setFormError(errorText(err, m));
     } finally {
@@ -205,9 +208,7 @@ export function CustomersPage() {
           {!dq && <p className="mt-2 text-pearl/55">Os clientes são cadastrados ao registrar uma venda, ou pelo botão “Novo cliente”.</p>}
         </div>
       )}
-      {items.length < total && (
-        <div className="mt-8 text-center"><button className="btn btn-ghost" disabled={loading} onClick={() => load(page + 1, true)}>{loading ? 'Carregando…' : 'Carregar mais'}</button></div>
-      )}
+      <Pagination page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onChange={(p) => void load(p)} />
 
       {/* create / edit */}
       <Modal open={dialog?.kind === 'edit'} onClose={close} title={dialog?.kind === 'edit' && dialog.customer ? 'Editar cliente' : 'Novo cliente'} busy={busy} wide>

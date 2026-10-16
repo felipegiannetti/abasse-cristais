@@ -13,10 +13,11 @@ import { formatGrams } from '@/lib/format';
 import type { Product, ProductList, ProductStatus, Stats } from '@/lib/types';
 import { IconCopy, IconEdit, IconGem, IconGrid, IconList, IconPlus, IconSearch, IconStar, IconTrash } from './AdminIcons';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Pagination } from './Pagination';
 import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
 
-const PAGE_SIZE = 18;
+const PAGE_SIZE = 15;
 
 const stockLabel = (p: Product) => (p.saleMode === 'WEIGHT' ? formatGrams(p.stockGrams ?? 0) : `${p.stockQuantity ?? 0} un.`);
 const lowStock = (p: Product) => (p.saleMode === 'WEIGHT' ? (p.stockGrams ?? 0) < 500 : (p.stockQuantity ?? 0) <= 1);
@@ -82,7 +83,7 @@ export function ProductsAdmin() {
   useEffect(loadCounts, [loadCounts]);
 
   const load = useCallback(
-    async (pageToLoad: number, append: boolean) => {
+    async (pageToLoad: number) => {
       setLoading(true);
       setError('');
       try {
@@ -90,7 +91,7 @@ export function ProductsAdmin() {
         if (debouncedQ) qs.set('q', debouncedQ);
         if (status) qs.set('status', status);
         const data = await api<ProductList>(`/admin/products?${qs}`, nav);
-        setItems((cur) => (append ? [...cur, ...data.items] : data.items));
+        setItems(data.items);
         setTotal(data.total);
         setPage(pageToLoad);
       } catch (e) {
@@ -104,7 +105,7 @@ export function ProductsAdmin() {
   );
 
   useEffect(() => {
-    void load(1, false);
+    void load(1);
   }, [load]);
 
   async function patch(p: Product, data: Partial<Pick<Product, 'status' | 'featured'>>, okMessage: string) {
@@ -127,9 +128,9 @@ export function ProductsAdmin() {
     try {
       await api(`/admin/products/${toDelete.id}`, { method: 'DELETE', ...nav });
       await revalidateCatalog();
-      setItems((cur) => cur.filter((i) => i.id !== toDelete.id));
-      setTotal((n) => n - 1);
       loadCounts();
+      // reload this page (stepping back one if it was the last item of the last page)
+      void load(items.length === 1 && page > 1 ? page - 1 : page);
       toast(t.deleted);
       setToDelete(null);
     } catch (e) {
@@ -429,13 +430,7 @@ export function ProductsAdmin() {
         </motion.div>
       )}
 
-      {items.length < total && (
-        <div className="mt-8 text-center">
-          <button className="btn btn-ghost" disabled={loading} onClick={() => load(page + 1, true)}>
-            {loading ? t.loading : t.loadMore}
-          </button>
-        </div>
-      )}
+      <Pagination page={page} total={total} pageSize={PAGE_SIZE} loading={loading} onChange={(p) => void load(p)} />
 
       <ConfirmDialog
         open={!!toDelete}
