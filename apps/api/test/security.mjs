@@ -1033,6 +1033,23 @@ if (!TOKEN) {
   } else skip('account lockout', 'set TEST_LOCKOUT=1 (leaves the admin locked for 15 minutes)');
 }
 
+// ======================================================================
+console.log('\n--- D. Site routing: the admin area stays a 404 without a session');
+const WEB = (process.env.WEB_URL || '').replace(/\/$/, '');
+if (!WEB) {
+  skip('admin gate on the site', 'WEB_URL not set (e.g. WEB_URL=http://localhost:3000)');
+} else {
+  for (const path of ['/admin', '/pt/admin', '/pt/admin/products', '/pt/%61dmin', '/es/%61dmin/products', '/%61dmin', '/pt/ad%6din', '/pt/admin%2Fproducts']) {
+    let status;
+    try {
+      status = (await fetch(WEB + path, { redirect: 'manual' })).status;
+    } catch (e) {
+      status = `unreachable: ${e.message}`;
+    }
+    ok(`site: ${path} without a session → 404`, status === 404, status);
+  }
+}
+
 console.log(`\n${pass} passed, ${fail} failed, ${skipped} skipped`);
 if (fail) console.log('Failures:\n - ' + failures.join('\n - '));
 process.exit(fail ? 1 : 0);

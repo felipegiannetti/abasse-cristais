@@ -47,6 +47,16 @@ export function middleware(req: NextRequest) {
   const internal = (path: string) => new URL(`/${locale}${path === '/' ? '' : path}${search}`, req.url);
   const notFound = () => NextResponse.rewrite(internal('/404'), { status: 404 });
 
+  // Next routes a percent-encoded path as its decoded form ("/pt/%61dmin" is "/pt/admin"), but the checks
+  // below compare the raw text. Any encoded path that decodes to an admin path is answered like /admin itself.
+  let decoded = pathname;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    /* malformed escape: Next rejects it on its own */
+  }
+  if (decoded !== pathname && /(^|\/)admin(\/|$)/i.test(decoded)) return notFound();
+
   // Secret login screen
   if (isLogin) {
     const res = NextResponse.rewrite(internal('/admin/login'));
