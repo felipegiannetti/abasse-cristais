@@ -298,6 +298,14 @@ if (!PASS) {
   // Dashboard stats: admin-only, aggregate numbers, never image bytes
   r = await call('GET', '/admin/products/stats', { cookie: session });
   ok('GET /admin/products/stats → 200 with aggregate numbers', r.status === 200 && typeof r.json.total === 'number' && r.json.byStatus && Array.isArray(r.json.recent), JSON.stringify(r.json).slice(0, 200));
+  {
+    // "stock value" = price × stock of every AVAILABLE product (kg-priced ones: grams × price / 1000)
+    const all = await call('GET', '/admin/products?pageSize=100', { cookie: session });
+    const expected = (all.json.items ?? [])
+      .filter((p) => p.status === 'AVAILABLE' && p.priceCents != null)
+      .reduce((n, p) => n + (p.saleMode === 'WEIGHT' ? Math.round((p.priceCents * p.stockGrams) / 1000) : p.priceCents * p.stockQuantity), 0);
+    ok('products/stats availableValueCents = price × stock (not a plain sum of prices)', r.json.availableValueCents === expected, `${r.json.availableValueCents} vs ${expected}`);
+  }
   ok('stats payload is small (no image bytes)', JSON.stringify(r.json).length < 20000, JSON.stringify(r.json).length);
 
   // Mass assignment / validation

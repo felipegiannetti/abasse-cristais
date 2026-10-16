@@ -140,7 +140,14 @@ export class ProductsService {
         take: 6,
       }),
       this.prisma.product.findMany({ include: withImages, orderBy: { createdAt: 'desc' }, take: 5 }),
-      this.prisma.product.aggregate({ where: { status: 'AVAILABLE' }, _sum: { priceCents: true } }),
+      // What the available stock is worth at the listed price: pieces × price per piece, or grams × price
+      // per kg / 1000 for products sold by weight (a plain SUM(priceCents) ignores quantity and unit).
+      this.prisma.$queryRaw<{ cents: number }[]>`
+        SELECT COALESCE(SUM(CASE WHEN "saleMode" = 'WEIGHT' THEN ROUND("priceCents"::numeric * "stockGrams" / 1000)
+                                 ELSE "priceCents"::numeric * "stockQuantity" END), 0)::int AS cents
+        FROM "Product"
+        WHERE status = 'AVAILABLE' AND "priceCents" IS NOT NULL
+      `,
       this.prisma.product.findMany({
         where: { status: 'AVAILABLE', saleMode: 'UNIT', stockQuantity: { gt: 0, lte: LOW_STOCK_MAX } },
         select: { id: true, slug: true, name: true, stockQuantity: true },
@@ -154,7 +161,7 @@ export class ProductsService {
       byStatus: { AVAILABLE: count('AVAILABLE'), SOLD_OUT: count('SOLD_OUT'), HIDDEN: count('HIDDEN') },
       featured,
       images,
-      availableValueCents: value._sum.priceCents ?? 0,
+      availableValueCents: value[0]?.cents ?? 0,
       categories: categories.map((c) => ({ name: c.category, count: c._count._all })),
       recent: recent.map((p) => serialize(p, true)),
       lowStock,
