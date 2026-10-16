@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { ts } from '../common/sql';
+import { TtlCache } from '../common/ttl-cache';
 import { PrismaService } from '../prisma/prisma.service';
 
 const COUNTED = ['PAID', 'SHIPPED', 'DELIVERED'] as const;
@@ -7,16 +9,6 @@ const DAY = 86_400_000;
 const BRT = 3 * 3_600_000; // Brazil (UTC-3, no daylight saving since 2019)
 const dayKey = (d: Date) => new Date(d.getTime() - BRT).toISOString().slice(0, 10);
 const STATUS_LIST = Prisma.join(COUNTED);
-
-// Sale.soldAt is `timestamp without time zone`, and the Postgres session's timezone is
-// America/Sao_Paulo (not UTC). Interpolating a JS Date directly into $queryRaw sends it as a
-// timestamptz parameter, which Postgres then converts to the SESSION timezone before comparing
-// against the tz-naive column — silently shifting every raw-SQL date comparison by 3 hours (verified:
-// a sale from a few minutes ago compared as "not yet happened" against `now`). Formatting to an
-// explicit UTC ISO string and casting to `::timestamp` takes the wall-clock digits literally, with no
-// timezone conversion, matching how Prisma's own query builder (`prisma.sale.aggregate`/`groupBy`,
-// unaffected by this) already writes and reads the column.
-const ts = (d: Date) => Prisma.sql`${d.toISOString()}::timestamp`;
 
 export type SummaryRange = '7' | '30' | '90' | '365' | 'all';
 
@@ -74,16 +66,12 @@ interface ItemTotalsRow {
  */
 @Injectable()
 export class FinanceService {
-  private readonly cache = new Map<SummaryRange, { at: number; data: Awaited<ReturnType<FinanceService['computeSummary']>> }>();
+  private readonly cache = new TtlCache<SummaryRange, Awaited<ReturnType<FinanceService['computeSummary']>>>(SUMMARY_CACHE_TTL_MS);
 
   constructor(private readonly prisma: PrismaService) {}
 
   async summary(range: SummaryRange) {
-    const cached = this.cache.get(range);
-    if (cached && Date.now() - cached.at < SUMMARY_CACHE_TTL_MS) return cached.data;
-    const data = await this.computeSummary(range);
-    this.cache.set(range, { at: Date.now(), data });
-    return data;
+    return this.cache.get(range, () => this.computeSummary(range));
   }
 
   /** Called by SalesService whenever a sale is created/changed, so the cache above never shows numbers

@@ -1,11 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { ts } from '../common/sql';
+import { TtlCache } from '../common/ttl-cache';
 import { PrismaService } from '../prisma/prisma.service';
-
-// WhatsAppClick.createdAt is `timestamp without time zone` under a non-UTC session timezone
-// (America/Sao_Paulo); see finance.service.ts's `ts()` for why a raw Date parameter can't be compared
-// against it directly without silently shifting by the session's offset.
-const ts = (d: Date) => Prisma.sql`${d.toISOString()}::timestamp`;
 
 interface TrackClickInput {
   ref: string;
@@ -23,7 +19,7 @@ const CLICKS_CACHE_TTL_MS = 30_000;
 /** Counts and reports on WhatsApp-button clicks (see TrackController/AnalyticsController for the HTTP surface). */
 @Injectable()
 export class AnalyticsService {
-  private readonly cache = new Map<number, { at: number; data: Awaited<ReturnType<AnalyticsService['computeClicks']>> }>();
+  private readonly cache = new TtlCache<number, Awaited<ReturnType<AnalyticsService['computeClicks']>>>(CLICKS_CACHE_TTL_MS);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -36,11 +32,7 @@ export class AnalyticsService {
   }
 
   async clicks(days: number) {
-    const cached = this.cache.get(days);
-    if (cached && Date.now() - cached.at < CLICKS_CACHE_TTL_MS) return cached.data;
-    const data = await this.computeClicks(days);
-    this.cache.set(days, { at: Date.now(), data });
-    return data;
+    return this.cache.get(days, () => this.computeClicks(days));
   }
 
   // SQL aggregates instead of loading every click row in the window (up to 50,000, a silent truncation
