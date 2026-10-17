@@ -23,6 +23,7 @@ async function get<T>(path: string, fallback: T): Promise<T> {
 
 const emptyList: ProductList = { items: [], total: 0, page: 1, pageSize: 24 };
 
+/** `locale`: ask for the product texts in that language (the original wherever there is no translation). */
 export function fetchProducts(params: Record<string, string | number | boolean | undefined> = {}) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') qs.set(k, String(v));
@@ -30,13 +31,13 @@ export function fetchProducts(params: Record<string, string | number | boolean |
   return get<ProductList>(`/products${suffix}`, emptyList);
 }
 
-export function fetchCategories() {
-  return get<CategoryCount[]>('/products/categories', []);
+export function fetchCategories(locale?: string) {
+  return get<CategoryCount[]>(`/products/categories${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`, []);
 }
 
-export async function fetchProduct(slug: string): Promise<Product | null> {
+export async function fetchProduct(slug: string, locale?: string): Promise<Product | null> {
   try {
-    const res = await fetch(`${API_URL}/products/${encodeURIComponent(slug)}`, {
+    const res = await fetch(`${API_URL}/products/${encodeURIComponent(slug)}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`, {
       next: { revalidate: 60, tags: [PRODUCTS_TAG] },
     });
     return res.ok ? ((await res.json()) as Product) : null;

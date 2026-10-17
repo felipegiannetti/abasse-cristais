@@ -10,6 +10,7 @@ import { AuditService } from '../audit/audit.service';
 import { config } from '../config';
 import { PrismaService } from '../prisma/prisma.service';
 import { detectImage } from './image-type';
+import { categoryLabels, localize, normalizeTranslations, readTranslations, type TranslationLocale } from './products.translations';
 import { CreateProductDto, ListProductsQuery, UpdateProductDto } from './products.dto';
 import { likeSafe } from '../common/like';
 
@@ -40,15 +41,16 @@ export function slugify(text: string): string {
  * `admin = false` (public API): no cost and no exact stock — only whether the product can be bought.
  * `admin = true`: everything the panel needs.
  */
-export function serialize(p: ProductWithImages, admin = false) {
+export function serialize(p: ProductWithImages, admin = false, locale?: TranslationLocale) {
   const inStock = p.saleMode === 'WEIGHT' ? p.stockGrams > 0 : p.stockQuantity > 0;
   return {
     id: p.id,
     slug: p.slug,
-    name: p.name,
-    description: p.description,
+    // public: the texts in the requested language (original where there is no translation); admin: the original
+    // texts plus the raw translations, so the form can edit both
+    ...(admin || !locale ? { name: p.name, description: p.description, category: p.category } : { ...localize(p, locale), categoryKey: p.category }),
+    ...(admin ? { translations: readTranslations(p.translations) } : {}),
     priceCents: p.priceCents,
-    category: p.category,
     weight: p.weight,
     dimensions: p.dimensions,
     origin: p.origin,
@@ -100,17 +102,21 @@ export class ProductsService {
       this.prisma.product.count({ where }),
     ]);
 
-    return { items: items.map((p) => serialize(p, opts.admin)), total, page, pageSize };
+    return { items: items.map((p) => serialize(p, opts.admin, opts.admin ? undefined : query.locale)), total, page, pageSize };
   }
 
-  async categories() {
+  /** `name` is the category as typed (what the `?category=` filter takes); `label` is how to show it in `locale`. */
+  async categories(locale?: TranslationLocale) {
     const rows = await this.prisma.product.groupBy({
       by: ['category'],
       where: { status: { in: PUBLIC_STATUSES } },
       _count: { _all: true },
       orderBy: { category: 'asc' },
     });
-    return rows.map((r) => ({ name: r.category, count: r._count._all }));
+    const labels = locale
+      ? categoryLabels(await this.prisma.product.findMany({ where: { status: { in: PUBLIC_STATUSES } }, select: { category: true, translations: true } }), locale)
+      : new Map<string, string>();
+    return rows.map((r) => ({ name: r.category, label: labels.get(r.category) ?? r.category, count: r._count._all }));
   }
 
   async allCategoryNames() {
@@ -168,13 +174,13 @@ export class ProductsService {
     };
   }
 
-  async findBySlug(slug: string) {
+  async findBySlug(slug: string, locale?: TranslationLocale) {
     const p = await this.prisma.product.findFirst({
       where: { slug, status: { in: PUBLIC_STATUSES } },
       include: withImages,
     });
     if (!p) throw new NotFoundException({ code: 'PRODUCT_NOT_FOUND', message: 'Product not found.' });
-    return serialize(p);
+    return serialize(p, false, locale);
   }
 
   async findById(id: string) {
@@ -204,6 +210,7 @@ export class ProductsService {
           stockQuantity: dto.stockQuantity ?? (dto.saleMode === 'WEIGHT' ? 0 : 1),
           stockGrams: dto.stockGrams ?? 0,
           costCents: dto.costCents ?? null,
+          translations: normalizeTranslations(dto.translations) as Prisma.InputJsonObject,
         },
         include: withImages,
       });
@@ -239,6 +246,7 @@ export class ProductsService {
       stockQuantity: dto.stockQuantity,
       stockGrams: dto.stockGrams,
       costCents: dto.costCents,
+      translations: dto.translations === undefined ? undefined : (normalizeTranslations(dto.translations) as Prisma.InputJsonObject),
     };
     let p: ProductWithImages;
     if (dto.expectedUpdatedAt) {
@@ -282,6 +290,10 @@ export class ProductsService {
         stockQuantity: 0,
         stockGrams: 0,
         costCents: source.costCents,
+        // the copy keeps the description/category translations; the name ends in "(cópia)", so its translated names are dropped
+        translations: Object.fromEntries(
+          Object.entries(readTranslations(source.translations)).map(([l, t]) => [l, { description: t?.description, category: t?.category }]),
+        ),
       },
       undefined, // the create() call itself stays unlogged; we log the more specific "duplicate" action below
     );

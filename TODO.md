@@ -54,7 +54,7 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 - [x] Ao registrar a venda, **baixar o estoque** e marcar o produto como "vendido" quando zerar (com opção de desfazer/cancelar venda).
 - [x] Vincular a venda ao **código de referência** do WhatsApp (item 2), quando existir, para saber de onde veio.
 - [x] Listagem de vendas com filtro por situação e busca.
-- [ ] **Exportação** (CSV/Excel) das vendas e filtro por período/categoria.
+- [x] **Exportação** (CSV/Excel) das vendas e filtro por período/categoria (botões em *Vendas*; o Excel tem as abas Vendas e Itens).
   - Plano: `GET /admin/sales/export?format=csv&...` reaproveitando os mesmos filtros da listagem; gera o CSV no servidor (dados já estão ali, sem N+1) e o navegador baixa via link/blob. Simples de fazer; Excel real (.xlsx) só se CSV não bastar.
 - [x] Guardar o **custo** da peça (opcional) para calcular lucro e margem.
 - [x] Testes de segurança das novas rotas (apenas admin logado; validação de valores; sem alteração de vendas por mass assignment) na suíte `apps/api/test/security.mjs`.
@@ -72,7 +72,7 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 - [x] Comparativo com o **período anterior** (crescimento/queda).
 - [x] **Funil**: cliques no WhatsApp → conversas → vendas (junta os itens 2 e 3).
 - [x] Seletor de período.
-- [ ] **Exportação** dos números do financeiro (CSV/PDF).
+- [x] **Exportação** dos números do financeiro (CSV/PDF), no período e na moeda mostrados na tela.
   - Plano: CSV é direto (mesma ideia do item de vendas, com as linhas da série + resumo). PDF exige gerar um layout (ex. `@react-pdf/renderer` ou puppeteer no servidor) — mais trabalho; sugiro começar só com CSV.
 - [x] Seguir o mesmo visual do painel atual (azul marinho + dourado) (painel só em português, por decisão do cliente).
 
@@ -80,8 +80,8 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 
 ## Novos pendentes (surgiram com as vendas e o espanhol)
 
-- [ ] **Moeda para o mundo todo:** hoje preços e vendas são em reais (R$). Se for cobrar em dólar/euro, definir moeda por venda e conversão no financeiro.
-- [ ] **Tradução por produto** também para o espanhol (nome/descrição/categoria seguem no idioma digitado).
+- [x] **Moeda:** o dólar (US$) é a moeda principal e tudo é guardado em dólar; o site em português converte para reais pela cotação do dia (PTAX do Banco Central, com AwesomeAPI de reserva). A venda pode ser registrada como paga em reais (guarda os reais recebidos e a cotação). Só dólar e real; outras moedas não estão previstas.
+- [x] **Tradução por produto** (nome, descrição e categoria em en/pt/es), em *Editar produto → Traduções*; em branco usa o texto original.
 - [ ] Revisão do texto em espanhol por um falante nativo.
 - [ ] Política de privacidade e aviso sobre o contador de cliques para visitantes da UE/América Latina (LGPD/GDPR).
 
@@ -96,7 +96,8 @@ Estes itens não foram pedidos agora; estão aqui só para não se perderem.
 - [ ] Cadastrar os **produtos e fotos reais** (os atuais são de demonstração) e configurar o **número de WhatsApp** em *Configurações*.
 - [ ] **Publicar na Vercel** (site e API), com banco Postgres em produção, variáveis de ambiente e `npm run db:deploy` (o passo a passo está no `README.md`; atenção ao aviso sobre a migração das fotos).
 - [ ] Rodapé com **dados da empresa** (razão social, CNPJ, contato) e **política de privacidade** (LGPD).
-- [ ] Nome, descrição e categoria dos produtos hoje aparecem no idioma em que foram digitados; permitir **tradução por produto** (en/pt/es — mesma necessidade do item logo abaixo, "Tradução por produto também para o espanhol").
-  - Plano: `Product.translations Json?` com `{ en: { name, description, category }, pt: {...}, es: {...} }`, mesmo princípio dos templates de mensagem (campo em branco = usa o texto original digitado). No formulário do produto, abas de idioma; na leitura pública, a API já sabe o `locale` da requisição e devolve o texto traduzido quando existir, senão o original. Maior trabalho que os templates (mexe no schema de Product, no formulário, na listagem do catálogo e na busca por texto) — é a peça que falta para o catálogo ficar 100% traduzido (hoje só a interface está).
-- [ ] Ativar **backup do banco** no provedor e um pipeline de CI (`npm audit` + `npm run test:security` em ambiente de teste).
+- [x] Tradução por produto (en/pt/es) — feito (ver o item acima).
+- [x] Pipeline de CI (typecheck, lint, testes de unidade, build e a suíte de segurança a cada push) — `.github/workflows/ci.yml`.
+- [ ] Ativar **backup do banco** no provedor e, no GitHub, uma regra de proteção da `main` exigindo os dois trabalhos do CI.
 - [ ] Riscos de segurança **aceitos** que valem revisão futura: CSP com `'unsafe-inline'`, sessão fixa de 60 dias, alertas do `npm audit` no CLI do Prisma (detalhes em `README.md`).
+- [ ] **Conferir a responsividade geral** (site público e painel admin) em celular, tablet e telas grandes.

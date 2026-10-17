@@ -759,8 +759,15 @@ if (!PASS) {
     r = await call('GET', '/admin/sales/export?format=csv', { cookie: session });
     const cd = r.headers.get('content-disposition') || '';
     const csv = typeof r.json === 'string' ? r.json : '';
-    ok('sales export (CSV) → 200 attachment with a UTF-8 BOM, ";" header and our sale inside', r.status === 200 && /^attachment; filename="vendas-d{4}-d{2}-d{2}.csv"$/.test(cd) && csv.startsWith('﻿Pedido;Data;') && csv.includes(`Cust ${tag}`), `${r.status} ${cd} ${csv.slice(0, 60)}`);
+    ok('sales export (CSV) → 200 attachment with a UTF-8 BOM, ";" header and our sale inside', r.status === 200 && /^attachment; filename="vendas-\d{4}-\d{2}-\d{2}\.csv"$/.test(cd) && csv.startsWith('Pedido;Data;') && csv.includes(`Cust ${tag}`), `${r.status} ${cd} ${csv.slice(0, 60)}`);
     ok('the export is never cached', /no-store/.test(r.headers.get('cache-control') || '') && r.headers.get('x-content-type-options') === 'nosniff');
+    {
+      // fetch().text() drops a UTF-8 BOM, so read the raw bytes: Excel needs EF BB BF to read the accents as UTF-8
+      const raw = new Uint8Array(await (await fetch(API + '/admin/sales/export?format=csv', { headers: { cookie: session } })).arrayBuffer());
+      ok('the sales CSV starts with a UTF-8 BOM (EF BB BF)', raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf, Array.from(raw.slice(0, 3)).join(','));
+      const rawFin = new Uint8Array(await (await fetch(API + '/admin/finance/export?format=csv', { headers: { cookie: session } })).arrayBuffer());
+      ok('the finance CSV starts with a UTF-8 BOM (EF BB BF)', rawFin[0] === 0xef && rawFin[1] === 0xbb && rawFin[2] === 0xbf, Array.from(rawFin.slice(0, 3)).join(','));
+    }
     r = await call('GET', '/admin/sales/export?format=xlsx', { cookie: session });
     ok('sales export (XLSX) → a real .xlsx (zip)', r.status === 200 && /spreadsheetml.sheet/.test(r.headers.get('content-type') || '') && typeof r.json === 'string' && r.json.startsWith('PK'), `${r.status} ${r.headers.get('content-type')}`);
     r = await call('GET', '/admin/sales/export?format=pdf', { cookie: session });
@@ -783,6 +790,50 @@ if (!PASS) {
     ok('export rejects an oversized category filter → 400', r.status === 400, r.status);
     r = await call('GET', '/admin/audit-log?pageSize=20', { cookie: session });
     ok('the export is recorded in the activity log', r.status === 200 && r.json.items.some((e) => e.action === 'sale.export'), JSON.stringify(r.json.items?.slice(0, 2)).slice(0, 160));
+  }
+
+  // Per-product translations (name, description, category in en/pt/es), with fallback to the original text
+  {
+    const body = {
+      name: `Sec Tr ${tag}`,
+      description: 'Descrição original em português.',
+      category: 'SecTrCat',
+      priceCents: 1500,
+      status: 'AVAILABLE',
+      translations: { en: { name: `Sec Tr EN ${tag}`, category: 'SecTrCat EN' }, pt: { description: '' } },
+    };
+    r = await mut('POST', '/admin/products', session, body);
+    ok('create a product with translations → 201 (blank entries dropped)', r.status === 201 && r.json.translations?.en?.name === `Sec Tr EN ${tag}` && r.json.translations?.pt === undefined, JSON.stringify(r.json.translations));
+    const T = r.json;
+    r = await call('GET', `/admin/products/${T.id}`, { cookie: session });
+    ok('the admin sees the original texts plus the raw translations', r.json.name === `Sec Tr ${tag}` && r.json.translations?.en?.category === 'SecTrCat EN');
+    r = await call('GET', `/products/${T.slug}?locale=en`);
+    ok('public product in English: translated name and category, original description (fallback), categoryKey kept', r.status === 200 && r.json.name === `Sec Tr EN ${tag}` && r.json.category === 'SecTrCat EN' && r.json.description === 'Descrição original em português.' && r.json.categoryKey === 'SecTrCat', JSON.stringify(r.json).slice(0, 220));
+    r = await call('GET', `/products/${T.slug}?locale=es`);
+    ok('a language without translations falls back to the original texts', r.status === 200 && r.json.name === `Sec Tr ${tag}` && r.json.category === 'SecTrCat');
+    r = await call('GET', `/products/${T.slug}`);
+    ok('without ?locale the public API returns the originals and exposes no translations', r.status === 200 && r.json.name === `Sec Tr ${tag}` && r.json.translations === undefined && r.json.categoryKey === undefined, JSON.stringify(r.json).slice(0, 160));
+    r = await call('GET', `/products/${T.slug}?locale=fr`);
+    ok('an unsupported ?locale → 400', r.status === 400, r.status);
+    r = await call('GET', '/products?locale=en&category=SecTrCat&pageSize=5');
+    ok('public list in English filters by the ORIGINAL category and shows translated names', r.status === 200 && r.json.items.some((p) => p.name === `Sec Tr EN ${tag}` && p.categoryKey === 'SecTrCat'), JSON.stringify(r.json.items?.map((p) => p.name)));
+    r = await call('GET', '/products/categories?locale=en');
+    ok('categories carry the original name (for filtering) and a translated label', r.status === 200 && r.json.some((c) => c.name === 'SecTrCat' && c.label === 'SecTrCat EN'), JSON.stringify(r.json).slice(0, 200));
+    r = await call('GET', '/products/categories');
+    ok('categories without ?locale: label = the category as typed', r.json.some((c) => c.name === 'SecTrCat' && c.label === 'SecTrCat'));
+    r = await mut('PATCH', `/admin/products/${T.id}`, session, { translations: { es: { name: 'Prueba ES' } } });
+    ok('updating translations replaces them (English gone, Spanish set)', r.status === 200 && r.json.translations?.en === undefined && r.json.translations?.es?.name === 'Prueba ES', JSON.stringify(r.json.translations));
+    r = await mut('PATCH', `/admin/products/${T.id}`, session, { featured: false });
+    ok('a PATCH without translations leaves them untouched', r.status === 200 && r.json.translations?.es?.name === 'Prueba ES');
+    for (const [label, tr] of [['an unknown language', { fr: { name: 'x' } }], ['an unknown field', { en: { slug: 'x' } }], ['a non-text value', { en: { name: 5 } }], ['an over-long name', { en: { name: 'x'.repeat(121) } }], ['an array', []]]) {
+      r = await mut('PATCH', `/admin/products/${T.id}`, session, { translations: tr });
+      ok(`translations with ${label} → 400`, r.status === 400, `${r.status} ${JSON.stringify(r.json).slice(0, 100)}`);
+    }
+    r = await mut('PATCH', `/admin/products/${T.id}`, session, { translations: { en: { name: 'Back to EN', description: 'EN description' } } });
+    r = await mut('POST', `/admin/products/${T.id}/duplicate`, session);
+    ok('duplicate keeps description/category translations but not the translated names', r.status === 201 && r.json.translations?.en?.description === 'EN description' && r.json.translations?.en?.name === undefined, JSON.stringify(r.json.translations));
+    if (r.json.id) await mut('DELETE', `/admin/products/${r.json.id}`, session);
+    await mut('DELETE', `/admin/products/${T.id}`, session);
   }
   r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
   const afterP1 = r.json;
@@ -908,7 +959,7 @@ if (!PASS) {
     r = await call('GET', '/admin/finance/export?format=csv&range=30', { cookie: session });
     const cd = r.headers.get('content-disposition') || '';
     const csv = typeof r.json === 'string' ? r.json : '';
-    ok('finance export (CSV) → 200 attachment, BOM, flat header, summary rows', r.status === 200 && /^attachment; filename="financeiro-30-USD-\d{4}-\d{2}-\d{2}\.csv"$/.test(cd) && csv.startsWith('\uFEFFSeção;Item;Valor;Pedidos;Detalhe') && csv.includes('Resumo;Faturamento (US$);'), `${r.status} ${cd} ${csv.slice(0, 50)}`);
+    ok('finance export (CSV) → 200 attachment, flat header, summary rows', r.status === 200 && /^attachment; filename="financeiro-30-USD-\d{4}-\d{2}-\d{2}\.csv"$/.test(cd) && csv.startsWith('Seção;Item;Valor;Pedidos;Detalhe') && csv.includes('Resumo;Faturamento (US$);'), `${r.status} ${cd} ${csv.slice(0, 50)}`);
     ok('the finance export is never cached', /no-store/.test(r.headers.get('cache-control') || ''));
     r = await call('GET', '/admin/finance/export?format=pdf&range=all', { cookie: session });
     ok('finance export (PDF) → a real PDF', r.status === 200 && /application\/pdf/.test(r.headers.get('content-type') || '') && typeof r.json === 'string' && r.json.startsWith('%PDF-'), `${r.status} ${r.headers.get('content-type')}`);

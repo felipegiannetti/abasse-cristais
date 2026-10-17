@@ -8,6 +8,8 @@ import {
   IsEnum,
   IsInt,
   IsISO8601,
+  IsIn,
+  IsObject,
   IsOptional,
   IsString,
   Max,
@@ -21,12 +23,26 @@ const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? val
 const emptyToNull = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() || null : value;
 
+const LOCALES = ['en', 'pt', 'es'] as const;
+
+/** The language the public site asks the texts in. */
+export class LocaleQuery {
+  @IsOptional()
+  @IsIn(LOCALES)
+  locale?: (typeof LOCALES)[number];
+}
+
 export class CreateProductDto {
   @Transform(trim)
   @IsString()
   @MinLength(2)
   @MaxLength(120)
   name: string;
+
+  /** { en: { name?, description?, category? }, pt: {...}, es: {...} }; validated and cleaned by normalizeTranslations(). */
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, unknown>;
 
   @Transform(trim)
   @IsString()
@@ -101,6 +117,10 @@ export class CreateProductDto {
 }
 
 export class UpdateProductDto {
+  @IsOptional()
+  @IsObject()
+  translations?: Record<string, unknown>;
+
   @Transform(trim)
   @IsOptional()
   @IsString()
@@ -189,7 +209,7 @@ export class UpdateProductDto {
   expectedUpdatedAt?: string;
 }
 
-export class ListProductsQuery {
+export class ListProductsQuery extends LocaleQuery {
   @IsOptional()
   @Transform(trim)
   @IsString()

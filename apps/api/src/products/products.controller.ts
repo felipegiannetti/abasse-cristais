@@ -23,6 +23,7 @@ import type { AdminRequestUser } from '../auth/auth.decorators';
 import {
   CreateProductDto,
   ListProductsQuery,
+  LocaleQuery,
   ReorderImagesDto,
   UpdateProductDto,
 } from './products.dto';
@@ -41,13 +42,13 @@ export class PublicProductsController {
   }
 
   @Get('categories')
-  categories() {
-    return this.products.categories();
+  categories(@Query() q: LocaleQuery) {
+    return this.products.categories(q.locale);
   }
 
   @Get(':slug')
-  bySlug(@Param('slug') slug: string) {
-    return this.products.findBySlug(slug);
+  bySlug(@Param('slug') slug: string, @Query() q: LocaleQuery) {
+    return this.products.findBySlug(slug, q.locale);
   }
 }
 

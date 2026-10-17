@@ -7,13 +7,26 @@ export interface ProductImage {
   url: string;
 }
 
+export type ProductLocale = 'en' | 'pt' | 'es';
+export interface ProductTranslation {
+  name?: string;
+  description?: string;
+  category?: string;
+}
+export type ProductTranslations = Partial<Record<ProductLocale, ProductTranslation>>;
+
 export interface Product {
   id: string;
   slug: string;
+  /** public API with ?locale=: already in that language (falls back to the original); admin API: the original */
   name: string;
   description: string;
   priceCents: number | null;
   category: string;
+  /** public API with ?locale=: the category as typed (what ?category= filters by) */
+  categoryKey?: string;
+  /** admin API only */
+  translations?: ProductTranslations;
   weight: string | null;
   dimensions: string | null;
   origin: string | null;
@@ -48,7 +61,10 @@ export interface ProductList {
 }
 
 export interface CategoryCount {
+  /** the category as typed (what ?category= filters by) */
   name: string;
+  /** how to show it in the requested language */
+  label: string;
   count: number;
 }
 

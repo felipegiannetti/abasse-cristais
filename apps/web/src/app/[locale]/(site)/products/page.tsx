@@ -38,8 +38,8 @@ export default async function CatalogPage({ params, searchParams }: Props) {
   const page = Math.max(1, Number.parseInt(sp.page ?? '1', 10) || 1);
 
   const [{ items, total }, categories] = await Promise.all([
-    fetchProducts({ category: sp.category, q: sp.q, page, pageSize: PAGE_SIZE }),
-    fetchCategories(),
+    fetchProducts({ category: sp.category, q: sp.q, page, pageSize: PAGE_SIZE, locale }),
+    fetchCategories(locale),
   ]);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const filtered = Boolean(sp.category || sp.q);
@@ -72,7 +72,7 @@ export default async function CatalogPage({ params, searchParams }: Props) {
               active={sp.category?.toLowerCase() === cat.name.toLowerCase()}
               to={href({ category: cat.name, q: sp.q })}
             >
-              {cat.name} <span className="ml-1 text-pearl/40">{cat.count}</span>
+              {cat.label} <span className="ml-1 text-pearl/40">{cat.count}</span>
             </Chip>
           ))}
         </div>

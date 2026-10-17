@@ -9,8 +9,9 @@ import { fmt } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
 import { ApiError, api, errorText } from '@/lib/client-api';
 import { centsToInput, kgToGrams, parsePriceToCents } from '@/lib/format';
-import type { Product, ProductStatus, SaleMode } from '@/lib/types';
+import type { Product, ProductStatus, ProductTranslations, SaleMode } from '@/lib/types';
 import { IconExternal } from './AdminIcons';
+import { TranslationsEditor } from './TranslationsEditor';
 import { ImageManager, type ImageItem } from './ImageManager';
 import { ProductPreview } from './ProductPreview';
 import { QrCodeCard } from './QrCodeCard';
@@ -50,6 +51,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
 
   const [name, setName] = useState(initial?.name ?? '');
   const [category, setCategory] = useState(initial?.category ?? '');
+  const [translations, setTranslations] = useState<ProductTranslations>(initial?.translations ?? {});
   const [price, setPrice] = useState(centsToInput(initial?.priceCents, locale));
   const [status, setStatus] = useState<ProductStatus>(initial?.status ?? 'AVAILABLE');
   const [featured, setFeatured] = useState(initial?.featured ?? false);
@@ -110,7 +112,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
     setSaving(true);
     try {
       setProgress(t.stepData);
-      const payload = { name, description, priceCents, category, weight, dimensions, origin, featured, status, saleMode, stockQuantity, stockGrams, costCents };
+      const payload = { name, description, priceCents, category, weight, dimensions, origin, featured, status, saleMode, stockQuantity, stockGrams, costCents, translations };
       const product = productId
         ? await api<Product>(`/admin/products/${productId}`, { method: 'PATCH', json: { ...payload, expectedUpdatedAt: baseVersion.current }, ...nav })
         : await api<Product>('/admin/products', { method: 'POST', json: payload, ...nav });
@@ -265,7 +267,11 @@ export function ProductForm({ initial }: { initial?: Product }) {
             <ImageManager items={images} onChange={handleImages} onError={(msg) => toast(msg, 'error')} disabled={saving} />
           </Section>
 
-          <Section n={4} title={t.sectionPublish} delay={0.16}>
+          <Section n={4} title="Traduções (EN · PT · ES)" delay={0.12}>
+            <TranslationsEditor value={translations} onChange={setTranslations} original={{ name, category, description }} disabled={saving} />
+          </Section>
+
+          <Section n={5} title={t.sectionPublish} delay={0.16}>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="status" className="label">{t.status}</label>

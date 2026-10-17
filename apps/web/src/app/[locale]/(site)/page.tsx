@@ -27,12 +27,12 @@ export default async function HomePage({ params }: Props) {
   // independent fetches: run together instead of waterfalling
   const [m, featuredResult] = await Promise.all([
     fetchMessages(locale), // getMessages() + any admin-customized WhatsApp text
-    fetchProducts({ featured: true, pageSize: 6 }),
+    fetchProducts({ featured: true, pageSize: 6, locale }),
   ]);
   const href = (p: string) => localePath(locale, p);
 
   let featured = featuredResult.items;
-  if (featured.length === 0) featured = (await fetchProducts({ pageSize: 6 })).items;
+  if (featured.length === 0) featured = (await fetchProducts({ pageSize: 6, locale })).items;
 
   return (
     <>

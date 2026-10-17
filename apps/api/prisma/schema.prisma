@@ -56,6 +56,9 @@ model Product {
   stockGrams    Int            @default(0)
   // what the piece/kg cost the business (admin only, never exposed publicly)
   costCents     Int?
+  // Optional per-language texts: { en: { name, description, category }, pt: {...}, es: {...} }. A missing or
+  // blank entry falls back to the original fields above (see src/products/products.translations.ts).
+  translations  Json           @default("{}")
   images        ProductImage[]
   saleItems     SaleItem[]
   createdAt     DateTime       @default(now())

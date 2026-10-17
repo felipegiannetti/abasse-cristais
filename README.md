@@ -121,6 +121,23 @@ Crie **dois projetos** a partir deste mesmo repositório.
 - **Cores**: tokens em `apps/web/src/app/globals.css` (`@theme`).
 - **Tipos de cristal do 3D da home**: cores em `CRYSTAL_VARIANTS` (`src/components/CrystalScene.tsx`) e nomes em `home.hero.variants` nos dicionários.
 
+## Moeda, cotação, traduções e exportações
+
+**Moeda.** Todo valor é guardado em **dólares americanos** (centavos): preço e custo do produto, vendas e financeiro. O dólar é a moeda principal; o site em inglês e em espanhol mostra dólares. No site em **português** os preços são convertidos para reais pela cotação do dia, com uma nota no rodapé e na página do produto ("US$ 1 = R$ 5,08, cotação oficial do Banco Central de 16/10"). Se não houver nenhuma cotação disponível, o site em português continua mostrando dólares.
+
+**Cotação (USD→BRL).** `GET /fx/usd-brl` (API). Fonte principal: **PTAX do Banco Central** (oficial, taxa de venda). Reserva automática: **AwesomeAPI** (cotação de mercado), usada se o BC estiver fora do ar, responder lixo ou variar mais de 15% de uma leitura para a outra. Cada atualização fica gravada no banco (`ExchangeRate`), então a última cotação conhecida sobrevive a qualquer queda; ela é renovada sozinha, no máximo uma vez por hora, e é marcada como "antiga" depois de 48 h sem renovar. O site guarda a cotação em cache por 1 hora.
+
+**Painel.** Preços, custos, vendas e financeiro aparecem em dólar ("US$ 1.299,00"). No financeiro há uma chave **US$ / R$** que mostra os mesmos números convertidos. Ao registrar uma venda, "Pago em" pode ser **Real (R$)**: o total continua em dólar e a venda guarda também os reais recebidos (ou o valor negociado que você digitar) e a cotação usada.
+
+**Traduções por produto.** Em *Editar produto → Traduções* dá para preencher nome, descrição e categoria em inglês, português e espanhol. O que ficar em branco usa o texto original (o digitado em "Dados do cristal"). A busca do site procura no texto original; o filtro de categoria usa sempre o nome original, mesmo mostrando o nome traduzido.
+
+**Exportações.**
+- **Vendas** (*Vendas → Exportar CSV / Exportar Excel*): respeitam os filtros da tela (situação, busca, **período** e **categoria**). O Excel traz duas abas, *Vendas* (uma linha por venda) e *Itens* (uma linha por peça vendida). Limite de 20.000 vendas por arquivo.
+- **Financeiro** (*Financeiro → Exportar CSV / Exportar PDF*): o período e a moeda (US$ ou R$) que estão na tela. Em reais, o arquivo informa a cotação usada, a fonte e a data.
+- O CSV usa UTF-8 com BOM, ";" como separador e vírgula decimal (abre direto no Excel em português); texto que começa com `=`, `+`, `-` ou `@` é protegido contra fórmulas.
+
+**Atualizando um banco antigo.** Antes desta versão os valores eram guardados em reais. Um banco que já tenha produtos e vendas em reais precisa ser convertido (dividir preços, custos e valores de venda pela cotação) antes de usar esta versão; o projeto ainda não tinha dados reais, só os de demonstração (`npm run db:seed-demo -w apps/api -- --reset` recria tudo já em dólar).
+
 ## Segurança
 
 Uma revisão de segurança completa foi feita e os testes de regressão ficam em `apps/api/test/security.mjs`:

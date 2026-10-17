@@ -18,7 +18,7 @@ const API_URL = (process.env.API_URL || 'http://localhost:4000').replace(/\/$/, 
  */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const product = await fetchProduct(slug);
+  const product = await fetchProduct(slug, 'pt'); // the QR message is Portuguese
   if (!product) return NextResponse.redirect(new URL('/pt/products', _req.url));
 
   const [contact, m, fx] = await Promise.all([fetchContact(), fetchMessages('pt'), fetchFx()]); // the QR message is Portuguese: reais

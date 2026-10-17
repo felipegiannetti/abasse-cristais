@@ -19,7 +19,7 @@ type Props = { params: Promise<{ locale: string; slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale: raw, slug } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
-  const p = await fetchProduct(slug);
+  const p = await fetchProduct(slug, locale);
   if (!p) return { title: getMessages(locale).meta.productNotFound };
   const description = p.description.slice(0, 160);
   const image = p.images[0]?.url;
@@ -37,7 +37,7 @@ export default async function ProductPage({ params }: Props) {
   // independent fetches: run together instead of waterfalling
   const [m, p, fx] = await Promise.all([
     fetchMessages(locale), // getMessages() + any admin-customized WhatsApp text
-    fetchProduct(slug),
+    fetchProduct(slug, locale),
     locale === 'pt' ? fetchFx() : Promise.resolve(null), // prices are in dollars; the Portuguese page shows reais
   ]);
   if (!p) notFound();
