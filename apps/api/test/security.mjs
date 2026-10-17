@@ -261,6 +261,17 @@ ok('no X-Powered-By header', !r.headers.get('x-powered-by'));
 ok('X-Content-Type-Options: nosniff', r.headers.get('x-content-type-options') === 'nosniff');
 r = await call('GET', '/.env');
 ok('/.env not served → 404', r.status === 404);
+
+// Exchange rate (public, same number printed on every page). Depends on the Banco Central / AwesomeAPI being
+// reachable, so "no rate yet" (503 FX_UNAVAILABLE) is accepted; when there is one, its shape must be sane.
+r = await call('GET', '/fx/usd-brl');
+ok(
+  'GET /fx/usd-brl → a plausible rate (or 503 FX_UNAVAILABLE when no source answered)',
+  (r.status === 200 && r.json.base === 'USD' && r.json.quote === 'BRL' && r.json.rate > 1 && r.json.rate < 20 && ['BCB_PTAX', 'AWESOMEAPI'].includes(r.json.source)) ||
+    (r.status === 503 && r.json.code === 'FX_UNAVAILABLE'),
+  `${r.status} ${JSON.stringify(r.json).slice(0, 160)}`,
+);
+ok('the rate is cacheable by shared caches for a few minutes', r.status !== 200 || /public, max-age=\d+/.test(r.headers.get('cache-control') || ''));
 for (const bad of ['../../.env', '..%2f..%2f.env', '%2e%2e%2f', "x'%20OR%20'1'='1", 'a'.repeat(200), 'clx0000000000000000000000']) {
   r = await call('GET', `/images/${bad}`);
   ok(`GET /images/${bad.slice(0, 22)} → 404 (no traversal/injection/enumeration leak)`, r.status === 404, r.status);

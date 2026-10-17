@@ -231,3 +231,22 @@ model AuditLog {
   @@index([createdAt])
   @@index([entityType, entityId])
 }
+
+// ------------------------------------------------------------------ exchange rate
+
+// USD→BRL quotes fetched from the Banco Central (PTAX) with a market fallback (AwesomeAPI). Every refresh
+// inserts a row, so the latest one is the current rate and the table doubles as a short history.
+model ExchangeRate {
+  id          String   @id @default(cuid())
+  base        String   @default("USD")
+  quote       String   @default("BRL")
+  // units of `quote` per 1 `base` (e.g. 5.0826 reais per dollar)
+  rate        Decimal  @db.Decimal(12, 6)
+  // BCB_PTAX | AWESOMEAPI
+  source      String
+  // when the source says the quote was set
+  referenceAt DateTime
+  fetchedAt   DateTime @default(now())
+
+  @@index([base, quote, fetchedAt])
+}

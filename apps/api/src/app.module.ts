@@ -5,6 +5,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { FinanceModule } from './finance/finance.module';
+import { FxModule } from './fx/fx.module';
 import { PrismaModule } from './prisma/prisma.service';
 import { ProductsModule } from './products/products.module';
 import { SalesModule } from './sales/sales.module';
@@ -33,6 +34,7 @@ class HealthController {
     SalesModule,
     AnalyticsModule,
     FinanceModule,
+    FxModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
