@@ -51,6 +51,8 @@ export interface FxInfo {
   asOf: string;
   source: 'BCB_PTAX' | 'AWESOMEAPI';
   stale: boolean;
+  /** the last rate that differed from this one, for the up/down arrow; null = none yet */
+  previousRate?: number | null;
 }
 
 export interface ProductList {

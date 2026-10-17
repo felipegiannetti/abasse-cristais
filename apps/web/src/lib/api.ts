@@ -58,7 +58,8 @@ export async function fetchFx(): Promise<FxInfo | null> {
     const d = (await res.json()) as Partial<FxInfo>;
     const sources = ['BCB_PTAX', 'AWESOMEAPI'];
     if (typeof d.rate !== 'number' || !(d.rate > 1 && d.rate < 20) || typeof d.asOf !== 'string' || !sources.includes(d.source ?? '')) return null;
-    return { rate: d.rate, asOf: d.asOf, source: d.source as FxInfo['source'], stale: d.stale === true };
+    const previousRate = typeof d.previousRate === 'number' && d.previousRate > 1 && d.previousRate < 20 ? d.previousRate : null;
+    return { rate: d.rate, asOf: d.asOf, source: d.source as FxInfo['source'], stale: d.stale === true, previousRate };
   } catch {
     return null;
   }

@@ -14,7 +14,11 @@ interface Row {
 function fakePrisma(initial: Row[] = []) {
   const rows = [...initial];
   const exchangeRate = {
-    findFirst: vi.fn(() => Promise.resolve([...rows].sort((a, b) => b.fetchedAt.getTime() - a.fetchedAt.getTime())[0] ?? null)),
+    // honours the one filter the service uses besides base/quote: `rate: { not }` (the previous, different rate)
+    findFirst: vi.fn((args?: { where?: { rate?: { not?: unknown } } }) => {
+      const not = args?.where?.rate?.not === undefined ? null : Number(args.where.rate.not);
+      return Promise.resolve([...rows].filter((r) => not === null || r.rate !== not).sort((a, b) => b.fetchedAt.getTime() - a.fetchedAt.getTime())[0] ?? null);
+    }),
     create: vi.fn(({ data }: { data: { rate: number; source: string; referenceAt: Date } }) => {
       rows.push({ ...data, fetchedAt: new Date() });
       return Promise.resolve();
@@ -95,6 +99,27 @@ describe('FxService', () => {
 
     expect((await svc.current())?.rate).toBe(5.08);
     expect(source).not.toHaveBeenCalled();
+  });
+
+  it('reports the previous different rate (for the up/down arrow)', async () => {
+    const t = (h: number) => new Date(Date.now() - h * 3_600_000);
+    const { prisma } = fakePrisma([
+      { rate: 5.0, source: 'BCB_PTAX', referenceAt: t(5), fetchedAt: t(5) },
+      { rate: 5.1, source: 'BCB_PTAX', referenceAt: t(3), fetchedAt: t(3) },
+      { rate: 5.1, source: 'BCB_PTAX', referenceAt: t(0.1), fetchedAt: t(0.1) }, // same value refreshed
+    ]);
+    const svc = new FxService(prisma);
+    svc.sources = [];
+    const r = await svc.current();
+    expect(r?.rate).toBe(5.1);
+    expect(r?.previousRate).toBe(5.0);
+  });
+
+  it('has no previous rate when every stored reading is the same value', async () => {
+    const { prisma } = fakePrisma([{ rate: 5.1, source: 'BCB_PTAX', referenceAt: new Date(), fetchedAt: new Date() }]);
+    const svc = new FxService(prisma);
+    svc.sources = [];
+    expect((await svc.current())?.previousRate).toBeNull();
   });
 
   it('shares one refresh between concurrent callers (single-flight)', async () => {

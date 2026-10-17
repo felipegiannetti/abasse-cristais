@@ -19,6 +19,8 @@ export interface FxRate {
   /** when we stored it */
   fetchedAt: Date;
   stale: boolean;
+  /** the last stored rate that differed from this one (null = none yet); drives the up/down arrow */
+  previousRate: number | null;
 }
 
 type Fetcher = () => Promise<FxQuote | null>;
@@ -80,6 +82,9 @@ export class FxService {
   private async latest(fresh = false): Promise<FxRate | null> {
     if (!fresh && this.memory && Date.now() - this.memory.at < MEMORY_MS) return this.memory.value;
     const row = await this.prisma.exchangeRate.findFirst({ where: { base: 'USD', quote: 'BRL' }, orderBy: { fetchedAt: 'desc' } });
+    const before = row
+      ? await this.prisma.exchangeRate.findFirst({ where: { base: 'USD', quote: 'BRL', rate: { not: row.rate } }, orderBy: { fetchedAt: 'desc' }, select: { rate: true } })
+      : null;
     const value: FxRate | null = row
       ? {
           base: 'USD',
@@ -89,6 +94,7 @@ export class FxService {
           asOf: row.referenceAt,
           fetchedAt: row.fetchedAt,
           stale: Date.now() - row.fetchedAt.getTime() > STALE_AFTER_MS,
+          previousRate: before ? Number(before.rate) : null,
         }
       : null;
     this.memory = { at: Date.now(), value };

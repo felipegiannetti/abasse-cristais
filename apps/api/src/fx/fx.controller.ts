@@ -14,6 +14,6 @@ export class FxController {
   async usdBrl() {
     const r = await this.fx.current();
     if (!r) throw new ServiceUnavailableException({ code: 'FX_UNAVAILABLE', message: 'No exchange rate available yet.' });
-    return { base: r.base, quote: r.quote, rate: r.rate, source: r.source, asOf: r.asOf, fetchedAt: r.fetchedAt, stale: r.stale };
+    return { base: r.base, quote: r.quote, rate: r.rate, source: r.source, asOf: r.asOf, fetchedAt: r.fetchedAt, stale: r.stale, previousRate: r.previousRate };
   }
 }

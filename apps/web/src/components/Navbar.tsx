@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { stripLocale } from '@/i18n/config';
 import { useI18n } from '@/i18n/provider';
 import { generalMessage } from '@/lib/whatsapp';
+import { FxTicker } from './FxTicker';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Logo } from './Logo';
 import { WhatsAppIcon } from './icons';
@@ -14,7 +15,7 @@ import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export function Navbar() {
   const pathname = usePathname();
-  const { m, href } = useI18n();
+  const { m, href, fx } = useI18n();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -66,6 +67,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {fx && <FxTicker className="hidden lg:inline-flex" />}
           <LanguageSwitcher />
           <WhatsAppLink
             message={generalMessage(m)} source="MENU"
@@ -106,6 +108,7 @@ export function Navbar() {
                   {l.label}
                 </Link>
               ))}
+              {fx && <FxTicker className="mt-2 inline-flex w-fit" />}
               <WhatsAppLink
                 message={generalMessage(m)} source="MENU"
                 className="btn btn-primary mt-3"
