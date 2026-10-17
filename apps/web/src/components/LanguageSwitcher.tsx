@@ -35,7 +35,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
     <div
       role="group"
       aria-label={m.common.language}
-      className={`flex items-center rounded-full border border-white/12 bg-white/[0.03] p-0.5 text-xs font-semibold ${className}`}
+      className={`flex items-center rounded-lg border border-white/12 bg-white/[0.03] p-0.5 text-xs font-semibold ${className}`}
     >
       {locales.map((l) => (
         <Link
@@ -47,7 +47,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
           aria-current={l === locale ? 'true' : undefined}
           title={LABEL[l].full}
           onClick={(e) => onClick(e, l)}
-          className={`rounded-full px-2.5 py-1.5 tracking-wider transition-colors ${
+          className={`rounded-md px-2.5 py-1.5 tracking-wider transition-colors ${
             l === locale ? 'bg-gold-400 text-navy-950' : 'text-pearl/60 hover:text-pearl'
           }`}
         >

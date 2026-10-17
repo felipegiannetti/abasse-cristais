@@ -79,7 +79,7 @@ export function Navbar() {
             aria-label={open ? m.nav.closeMenu : m.nav.openMenu}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
-            className="grid h-10 w-10 place-items-center rounded-full border border-white/15 md:hidden"
+            className="grid h-10 w-10 place-items-center rounded-lg border border-white/15 md:hidden"
           >
             <span className="relative block h-3 w-5">
               <span className={`absolute left-0 h-px w-5 bg-pearl transition-all ${open ? 'top-1.5 rotate-45' : 'top-0'}`} />

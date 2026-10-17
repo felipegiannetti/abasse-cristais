@@ -18,9 +18,9 @@ export function ShippingBanner({ m }: { m: Messages }) {
               <path d="M60 6v108" />
             </g>
             <path d="M8 40h104M6 60h108M8 80h104" opacity="0.55" />
-            <circle cx="88" cy="34" r="3.5" fill="currentColor" stroke="none" className="animate-pulse" />
-            <circle cx="36" cy="78" r="3" fill="currentColor" stroke="none" className="animate-pulse" />
-            <circle cx="66" cy="62" r="2.5" fill="currentColor" stroke="none" className="animate-pulse" />
+            <circle cx="88" cy="34" r="3.5" fill="currentColor" stroke="none" />
+            <circle cx="36" cy="78" r="3" fill="currentColor" stroke="none" />
+            <circle cx="66" cy="62" r="2.5" fill="currentColor" stroke="none" />
           </svg>
           <div className="text-center md:text-left">
             <p className="eyebrow inline-flex items-center gap-2">

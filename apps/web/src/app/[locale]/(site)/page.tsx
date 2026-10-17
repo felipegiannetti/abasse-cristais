@@ -62,7 +62,7 @@ export default async function HomePage({ params }: Props) {
             {m.home.story.pillars.map((p, i) => (
               <Reveal key={p.title} delay={0.1 * i}>
                 <div className="glass group flex gap-5 rounded-3xl p-6 transition-colors hover:border-gold-400/40">
-                  <div className="facet-clip grid h-14 w-14 shrink-0 place-items-center bg-gradient-to-br from-gold-300/30 to-gold-600/30 text-gold-300">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-gold-400/15 text-gold-300">
                     <GemIcon className="h-6 w-6" />
                   </div>
                   <div>
@@ -117,7 +117,7 @@ export default async function HomePage({ params }: Props) {
           <div className="pointer-events-none absolute left-[16%] right-[16%] top-8 hidden h-px bg-gradient-to-r from-transparent via-gold-400/40 to-transparent md:block" />
           {m.home.how.steps.map((s, i) => (
             <Reveal key={s.title} delay={0.12 * i} className="relative text-center">
-              <div className="facet-clip relative z-10 mx-auto grid h-16 w-16 place-items-center bg-gradient-to-br from-gold-300 to-gold-600 font-display text-3xl font-semibold text-navy-950">
+              <div className="relative z-10 mx-auto grid h-14 w-14 place-items-center rounded-xl bg-gold-400 font-display text-3xl font-semibold text-navy-950">
                 {i + 1}
               </div>
               <h3 className="mt-6 font-display text-2xl font-semibold text-pearl">{s.title}</h3>

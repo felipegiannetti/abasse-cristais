@@ -43,7 +43,7 @@ export function ProductGallery({ images, name, soldOut }: { images: Img[]; name:
           </motion.div>
         </AnimatePresence>
         {soldOut && (
-          <span className="absolute right-4 top-4 rounded-full bg-pearl px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-navy-950">
+          <span className="absolute right-4 top-4 rounded-md bg-pearl px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-navy-950">
             {m.product.soldOut}
           </span>
         )}

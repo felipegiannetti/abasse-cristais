@@ -1,0 +1,61 @@
+/* ------------------------------------------------------------------------------------------------
+   Site público: mesma identidade (azul-marinho, dourado, serifada elegante), mas mais contido —
+   botões planos sem brilho nem "salto", destaques sem cintilar, cantos um pouco menos redondos,
+   nada pulsando. Vale só dentro de .site-area (o painel tem o seu próprio ajuste em admin.css).
+   (CSS sem camada: vence os utilitários do Tailwind e as classes de @layer components.)
+------------------------------------------------------------------------------------------------- */
+.site-area {
+  --radius-2xl: 0.75rem;
+  --radius-3xl: 1rem;
+}
+.site-area .animate-float {
+  animation: none;
+}
+.site-area .eyebrow {
+  letter-spacing: 0.22em;
+}
+/* destaques em itálico: um dourado liso em vez de degradê/brilho animado */
+.site-area .text-gradient,
+.site-area .text-shimmer {
+  animation: none;
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--color-gold-300);
+}
+
+.site-area .btn {
+  border-radius: 0.625rem;
+  padding: 0.8rem 1.5rem;
+  letter-spacing: 0;
+}
+.site-area .btn:active {
+  transform: none;
+}
+.site-area .btn-primary {
+  background: var(--color-gold-400);
+  box-shadow: none;
+}
+.site-area .btn-primary:hover:not(:disabled) {
+  background: var(--color-gold-300);
+  transform: none;
+  box-shadow: none;
+}
+.site-area .btn-primary::after {
+  display: none;
+}
+.site-area .btn-ghost {
+  background: transparent;
+  backdrop-filter: none;
+  border-color: rgb(245 240 230 / 0.22);
+}
+.site-area .btn-ghost:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.05);
+  border-color: rgb(245 240 230 / 0.4);
+  transform: none;
+}
+.site-area .btn-sm {
+  padding: 0.5rem 1rem;
+}
+.site-area .glass {
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
