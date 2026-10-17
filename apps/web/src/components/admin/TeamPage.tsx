@@ -11,7 +11,6 @@ import type { TeamMember } from '@/lib/types';
 import { IconCheck, IconCopy, IconKey, IconPlus, IconShield, IconTrash } from './AdminIcons';
 import { AuditLogSection } from './AuditLogSection';
 import { Modal } from './Modal';
-import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
 
 type Dialog =
@@ -126,7 +125,7 @@ export function TeamPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">{t.eyebrow}</p>
-          <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">{t.title}</h1>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">{t.title}</h1>
           <p className="mt-3 max-w-xl text-pearl/55">{t.subtitle}</p>
         </div>
         <button type="button" onClick={() => setDialog({ kind: 'add' })} className="btn btn-primary">
@@ -154,15 +153,15 @@ export function TeamPage() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.5, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
               >
-                <TiltCard className={`glass-strong h-full rounded-3xl p-6 ${u.isYou ? 'gold-border' : ''}`}>
+                <div className={`relative glass-strong h-full rounded-3xl p-6 ${u.isYou ? 'gold-border' : ''}`}>
                   <div className="flex items-center gap-4">
-                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-600 font-display text-3xl font-semibold uppercase text-navy-950">
+                    <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gold-400 font-display text-3xl font-semibold uppercase text-navy-950">
                       {u.username.slice(0, 1)}
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-2 truncate font-display text-2xl text-pearl">
                         {u.username}
-                        {u.isYou && <span className="rounded-full bg-gold-400/20 px-2 py-0.5 font-sans text-[0.65rem] font-bold uppercase tracking-wider text-gold-300">{t.you}</span>}
+                        {u.isYou && <span className="rounded bg-gold-400/20 px-2 py-0.5 font-sans text-[0.65rem] font-bold uppercase tracking-wider text-gold-300">{t.you}</span>}
                       </p>
                       <p className="text-xs leading-snug text-pearl/45">
                         {u.createdBy ? fmt(t.createdBy, { name: u.createdBy }) : t.original} · {fmt(t.since, { date: fmtDate(u.createdAt) })}
@@ -171,7 +170,7 @@ export function TeamPage() {
                   </div>
 
                   <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <span className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${u.mustChangePassword ? 'border-sky/40 bg-sky/10 text-sky' : 'border-gold-400/40 bg-gold-400/10 text-gold-300'}`}>
+                    <span className={`flex items-center gap-1.5 rounded-md border px-3 py-1 text-xs font-semibold ${u.mustChangePassword ? 'border-sky/40 bg-sky/10 text-sky' : 'border-gold-400/40 bg-gold-400/10 text-gold-300'}`}>
                       <IconShield className="h-3.5 w-3.5" /> {u.mustChangePassword ? t.pending : t.active}
                     </span>
                     {!u.isYou && (
@@ -185,7 +184,7 @@ export function TeamPage() {
                       </div>
                     )}
                   </div>
-                </TiltCard>
+                </div>
               </motion.li>
             ))}
           </AnimatePresence>

@@ -20,9 +20,7 @@ import {
   IconSparkle,
   IconStar,
 } from './AdminIcons';
-import { CountUp } from './CountUp';
 import { useMe } from './AdminShell';
-import { TiltCard } from './TiltCard';
 
 const container: Variants = { hidden: {}, show: { transition: { staggerChildren: 0.07 } } };
 const item: Variants = {
@@ -44,14 +42,13 @@ function greeting(m: ReturnType<typeof useI18n>['m']) {
 function StatCard({ icon, label, children, accent }: { icon: ReactNode; label: string; children: ReactNode; accent?: boolean }) {
   return (
     <motion.div variants={item}>
-      <TiltCard className={`glass-strong h-full rounded-3xl p-5 ${accent ? 'gold-border' : ''}`}>
+      <div className={`relative glass-strong h-full rounded-3xl p-5 ${accent ? 'gold-border' : ''}`}>
         <div className="flex items-center justify-between">
           <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gold-400/15 text-gold-300">{icon}</span>
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold-400" />
-        </div>
-        <p className="mt-5 font-display text-4xl font-medium leading-none text-pearl">{children}</p>
+          </div>
+        <p className="mt-5 font-display text-3xl font-semibold leading-none tabular-nums text-pearl">{children}</p>
         <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-pearl/45">{label}</p>
-      </TiltCard>
+      </div>
     </motion.div>
   );
 }
@@ -90,8 +87,8 @@ function Donut({ values, total }: { values: Record<ProductStatus, number>; total
       </svg>
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
-          <p className="font-display text-4xl font-medium text-pearl">
-            <CountUp value={total} />
+          <p className="font-display text-3xl font-semibold tabular-nums text-pearl">
+            {total.toLocaleString('pt-BR')}
           </p>
         </div>
       </div>
@@ -135,15 +132,11 @@ export function Dashboard() {
   return (
     <motion.div variants={container} initial="hidden" animate="show" className="space-y-6">
       {/* Hero */}
-      <motion.section variants={item} className="glass-strong gold-border relative overflow-hidden rounded-[2rem] p-7 sm:p-9">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-64 w-64 rounded-full bg-gold-400/20 blur-[80px]" />
-        <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-sky/10 blur-[80px]" />
+      <motion.section variants={item} className="glass-strong relative overflow-hidden rounded-3xl p-6 sm:p-7">
         <p className="eyebrow">{greeting(m)}</p>
-        <h1 className="mt-3 font-display text-4xl font-medium leading-tight text-pearl sm:text-5xl">
-          <span className="text-shimmer">{me?.username}</span>
-        </h1>
-        <p className="mt-3 max-w-xl text-pearl/60">{t.subtitle}</p>
-        <div className="mt-6 flex flex-wrap gap-3">
+        <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">{me?.username}</h1>
+        <p className="mt-2 max-w-xl text-pearl/60">{t.subtitle}</p>
+        <div className="mt-5 flex flex-wrap gap-3">
           <Link href={href('/admin/products/new')} className="btn btn-primary">
             <IconPlus className="h-4 w-4" /> {t.quickAdd}
           </Link>
@@ -187,36 +180,36 @@ export function Dashboard() {
       {/* Numbers */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard accent icon={<IconGem />} label={t.total}>
-          <CountUp value={stats.total} />
+          {stats.total.toLocaleString('pt-BR')}
         </StatCard>
         <StatCard icon={<IconSparkle />} label={t.available}>
-          <CountUp value={stats.byStatus.AVAILABLE} />
+          {stats.byStatus.AVAILABLE.toLocaleString('pt-BR')}
         </StatCard>
         <StatCard icon={<IconStar />} label={t.featured}>
-          <CountUp value={stats.featured} />
+          {stats.featured.toLocaleString('pt-BR')}
         </StatCard>
         <StatCard icon={<IconImage />} label={t.photos}>
-          <CountUp value={stats.images} />
+          {stats.images.toLocaleString('pt-BR')}
         </StatCard>
       </div>
 
       <motion.div variants={item}>
-        <TiltCard max={2} className="glass-strong flex flex-wrap items-center justify-between gap-4 rounded-3xl px-6 py-5">
+        <div className="relative glass-strong flex flex-wrap items-center justify-between gap-4 rounded-3xl px-6 py-5">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pearl/45">{t.value}</p>
-            <p className="mt-1 font-display text-4xl font-medium text-gold-300">
-              <CountUp value={stats.availableValueCents} format={(n) => formatPrice(Math.round(n), locale, m)} duration={1.6} />
+            <p className="mt-1 font-display text-3xl font-semibold tabular-nums text-gold-300">
+              {formatPrice(Math.round(stats.availableValueCents), locale, m)}
             </p>
           </div>
           <div className="h-2 min-w-40 flex-1 overflow-hidden rounded-full bg-white/[0.06] sm:max-w-md">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-gold-600 via-gold-400 to-gold-300"
+              className="h-full rounded-full bg-gold-400"
               initial={{ width: 0 }}
               animate={{ width: `${stats.total ? (stats.byStatus.AVAILABLE / stats.total) * 100 : 0}%` }}
               transition={{ duration: 1.2, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
             />
           </div>
-        </TiltCard>
+        </div>
       </motion.div>
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -254,7 +247,7 @@ export function Dashboard() {
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
                     <motion.div
-                      className="h-full rounded-full bg-gradient-to-r from-gold-600 to-gold-300"
+                      className="h-full rounded-full bg-gold-400"
                       initial={{ width: 0 }}
                       animate={{ width: `${(c.count / maxCat) * 100}%` }}
                       transition={{ duration: 0.9, delay: 0.3 + i * 0.08, ease: [0.22, 1, 0.36, 1] }}
@@ -293,7 +286,7 @@ export function Dashboard() {
                     <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-navy-900">
                       {p.images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.images[0].url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <img src={p.images[0].url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
                       ) : (
                         <span className="grid h-full w-full place-items-center text-gold-400/40">
                           <IconGem />

@@ -24,10 +24,10 @@ function Section({ n, title, children, delay = 0 }: { n: number; title: string; 
       initial={{ opacity: 0, y: 22 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
-      className="glass-strong rounded-[1.75rem] p-6 sm:p-7"
+      className="glass-strong rounded-3xl p-6 sm:p-7"
     >
       <h2 className="flex items-center gap-3 font-display text-2xl text-pearl">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-600 font-sans text-sm font-bold text-navy-950">{n}</span>
+        <span className="grid h-8 w-8 place-items-center rounded-md bg-gold-400 font-sans text-sm font-bold text-navy-950">{n}</span>
         {title}
       </h2>
       <div className="mt-5">{children}</div>
@@ -170,7 +170,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
           <Link href={href('/admin/products')} className="text-sm text-pearl/50 transition-colors hover:text-gold-300">
             {t.back}
           </Link>
-          <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">{initial ? t.titleEdit : t.titleNew}</h1>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">{initial ? t.titleEdit : t.titleNew}</h1>
         </div>
         {slug && (
           <a href={href(`/products/${slug}`)} target="_blank" rel="noopener" className="btn btn-ghost btn-sm">
@@ -332,7 +332,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
       </div>
 
       {/* Sticky action bar */}
-      <div className="glass-strong sticky bottom-4 z-30 mt-8 flex flex-wrap items-center gap-3 rounded-full p-2.5 pl-3">
+      <div className="glass-strong sticky bottom-4 z-30 mt-8 flex flex-wrap items-center gap-3 rounded-xl p-2.5 pl-3">
         <button type="submit" disabled={saving} className="btn btn-primary">
           {saving ? t.saving : initial ? t.save : t.create}
         </button>

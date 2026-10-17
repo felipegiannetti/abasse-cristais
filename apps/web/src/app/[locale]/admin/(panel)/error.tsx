@@ -14,8 +14,8 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
 
   return (
     <div className="mx-auto grid min-h-[60vh] max-w-lg place-items-center px-5 text-center">
-      <div className="glass-strong gold-border rounded-[1.75rem] p-8">
-        <h1 className="font-display text-3xl font-medium text-pearl">{t.title}</h1>
+      <div className="glass-strong gold-border rounded-3xl p-8">
+        <h1 className="font-display text-xl font-semibold text-pearl">{t.title}</h1>
         <p className="mt-3 text-pearl/60">{t.text}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button type="button" onClick={() => reset()} className="btn btn-primary">

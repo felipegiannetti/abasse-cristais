@@ -8,9 +8,7 @@ import { countryName, flag } from '@/lib/countries';
 import { PAYMENT_LABELS, SOURCE_LABELS, brl, formatGrams } from '@/lib/format';
 import type { ClicksSummary, FinanceSummary } from '@/lib/types';
 import { IconChart, IconCheck, IconGem, IconSparkle, IconStar, IconTruck, IconCart } from './AdminIcons';
-import { CountUp } from './CountUp';
 import { AreaChart, DonutChart, Funnel, HBars } from './charts';
-import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
 
 const RANGES = [
@@ -28,12 +26,12 @@ const COLORS = ['#e0bd7a', '#6e9be0', '#a37bff', '#5fd0a8', '#f08fa9', '#7d8aa6'
 function Kpi({ icon, label, children, note, accent }: { icon: ReactNode; label: string; children: ReactNode; note?: ReactNode; accent?: boolean }) {
   return (
     <motion.div variants={item}>
-      <TiltCard className={`glass-strong h-full rounded-3xl p-5 ${accent ? 'gold-border' : ''}`}>
+      <div className={`relative glass-strong h-full rounded-3xl p-5 ${accent ? 'gold-border' : ''}`}>
         <span className="grid h-10 w-10 place-items-center rounded-2xl bg-gold-400/15 text-gold-300">{icon}</span>
-        <p className="mt-4 font-display text-3xl leading-none text-pearl sm:text-4xl">{children}</p>
+        <p className="mt-4 font-display text-2xl font-semibold leading-none tabular-nums text-pearl sm:text-3xl">{children}</p>
         <p className="mt-2 text-xs font-semibold uppercase tracking-[0.14em] text-pearl/45">{label}</p>
         {note && <div className="mt-2 text-xs">{note}</div>}
-      </TiltCard>
+      </div>
     </motion.div>
   );
 }
@@ -103,13 +101,13 @@ export function FinancePage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Financeiro</p>
-          <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">Como está o negócio</h1>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">Como está o negócio</h1>
           <p className="mt-3 max-w-xl text-pearl/55">Faturamento, lucro, produtos e países que mais vendem, e quantos cliques no WhatsApp viraram venda.</p>
         </div>
-        <div role="tablist" className="glass inline-flex flex-wrap gap-1 rounded-3xl p-1 sm:rounded-full">
+        <div role="tablist" className="glass inline-flex flex-wrap gap-1 rounded-lg p-1">
           {RANGES.map((r) => (
-            <button key={r.key} role="tab" aria-selected={range === r.key} onClick={() => setRange(r.key)} className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${range === r.key ? 'text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}>
-              {range === r.key && <motion.span layoutId="fin-range" className="absolute inset-0 rounded-full bg-gradient-to-r from-gold-300 to-gold-500" transition={{ type: 'spring', stiffness: 460, damping: 36 }} />}
+            <button key={r.key} role="tab" aria-selected={range === r.key} onClick={() => setRange(r.key)} className={`relative whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${range === r.key ? 'text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}>
+              {range === r.key && <motion.span layoutId="fin-range" className="absolute inset-0 rounded-md bg-gold-400" transition={{ type: 'spring', stiffness: 460, damping: 36 }} />}
               <span className="relative">{r.label}</span>
             </button>
           ))}
@@ -125,16 +123,16 @@ export function FinancePage() {
         <motion.div key={range} variants={container} initial="hidden" animate="show" className="mt-8 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi accent icon={<IconCart />} label="Faturamento" note={delta !== null ? <span className={delta >= 0 ? 'text-emerald-300' : 'text-red-300'}>{delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}% vs. período anterior</span> : <span className="text-pearl/35">sem período anterior</span>}>
-              <CountUp value={fin.revenueCents} format={(n) => brl(Math.round(n))} duration={1.5} />
+              {brl(Math.round(fin.revenueCents))}
             </Kpi>
             <Kpi icon={<IconChart />} label="Lucro" note={fin.marginPct !== null ? <span className="text-pearl/55">margem {fin.marginPct.toLocaleString('pt-BR')}%{fin.costCoveragePct < 100 && <span className="text-amber-300/80"> · custo em {fin.costCoveragePct}% das vendas</span>}</span> : <span className="text-amber-300/80">cadastre o custo dos produtos</span>}>
-              <CountUp value={fin.profitCents} format={(n) => brl(Math.round(n))} duration={1.5} />
+              {brl(Math.round(fin.profitCents))}
             </Kpi>
             <Kpi icon={<IconGem />} label="Pedidos" note={<span className="text-pearl/55">ticket médio {brl(fin.averageTicketCents)}</span>}>
-              <CountUp value={fin.orders} />
+              {fin.orders.toLocaleString('pt-BR')}
             </Kpi>
             <Kpi icon={<IconTruck />} label="Frete cobrado" note={<span className="text-pearl/55">{fin.units} peças · {formatGrams(fin.grams)} vendidos</span>}>
-              <CountUp value={fin.shippingCents} format={(n) => brl(Math.round(n))} />
+              {brl(Math.round(fin.shippingCents))}
             </Kpi>
           </div>
 

@@ -16,7 +16,7 @@ function pageList(current: number, last: number): (number | 'gap-l' | 'gap-r')[]
 }
 
 const btn =
-  'grid h-10 min-w-10 place-items-center rounded-full border px-3 text-sm font-medium tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-40';
+  'grid h-10 min-w-10 place-items-center rounded-md border px-3 text-sm font-medium tabular-nums transition-colors disabled:cursor-not-allowed disabled:opacity-40';
 
 /** Page navigation for the admin lists: "Mostrando 16–30 de 62", previous/next and numbered pages. Renders
  * nothing when everything fits on one page. */
@@ -65,7 +65,7 @@ export function Pagination({
               aria-current={p === page ? 'page' : undefined}
               disabled={loading && p !== page}
               onClick={() => go(p)}
-              className={`${btn} ${p === page ? 'border-gold-400 bg-gradient-to-r from-gold-300 to-gold-500 text-navy-950' : 'border-white/10 text-pearl/70 hover:border-gold-400/50 hover:text-gold-300'}`}
+              className={`${btn} ${p === page ? 'border-gold-400 bg-gold-400 text-navy-950' : 'border-white/10 text-pearl/70 hover:border-gold-400/50 hover:text-gold-300'}`}
             >
               {p}
             </button>

@@ -131,12 +131,12 @@ export function ImageManager({ items, onChange, onError, max = 10, disabled }: P
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={it.url} alt={fmt(t.photoN, { n: i + 1 })} draggable={false} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 {i === 0 && (
-                  <span className="absolute left-2 top-2 rounded-full bg-gradient-to-r from-gold-300 to-gold-500 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider text-navy-950 shadow">
+                  <span className="absolute left-2 top-2 rounded-md bg-gold-400 px-2.5 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider text-navy-950 shadow">
                     {t.cover}
                   </span>
                 )}
                 {it.file && (
-                  <span className="absolute right-2 top-2 rounded-full bg-navy-950/80 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-sky">
+                  <span className="absolute right-2 top-2 rounded bg-navy-950/80 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-sky">
                     {t.isNew}
                   </span>
                 )}
@@ -226,7 +226,7 @@ function IconBtn({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={`grid h-7 w-7 place-items-center rounded-full text-xs backdrop-blur transition-colors disabled:opacity-30 ${
+      className={`grid h-7 w-7 place-items-center rounded-md text-xs backdrop-blur transition-colors disabled:opacity-30 ${
         danger ? 'bg-red-500/25 text-red-200 hover:bg-red-500/50' : 'bg-white/10 text-pearl hover:bg-gold-400 hover:text-navy-950'
       }`}
     >

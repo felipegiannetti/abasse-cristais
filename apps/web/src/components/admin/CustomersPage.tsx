@@ -13,7 +13,6 @@ import { AddressFields, addressComplete, addressFilled, emptyAddress, type Addre
 import { Modal } from './Modal';
 import { Pagination } from './Pagination';
 import { STATUS_STYLE, fmtDate } from './SalesPage';
-import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
 
 type Dialog = { kind: 'edit'; customer: Customer | null } | { kind: 'history'; customer: Customer } | { kind: 'erase'; customer: Customer } | null;
@@ -155,7 +154,7 @@ export function CustomersPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Clientes</p>
-          <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">Quem compra de você</h1>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">Quem compra de você</h1>
           <p className="mt-3 max-w-xl text-pearl/55">Endereço, contato e todo o histórico de compras de cada cliente, no Brasil e no mundo.</p>
         </div>
         <button className="btn btn-primary" onClick={() => openEdit(null)}><IconPlus className="h-4 w-4" /> Novo cliente</button>
@@ -163,7 +162,7 @@ export function CustomersPage() {
 
       <div className="relative mt-8 max-w-md">
         <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-pearl/40" />
-        <input className="field !rounded-full !pl-11" placeholder="Buscar por nome, e-mail, telefone ou cidade…" aria-label="Buscar clientes" value={q} onChange={(e) => setQ(e.target.value)} />
+        <input className="field !pl-10" placeholder="Buscar por nome, e-mail, telefone ou cidade…" aria-label="Buscar clientes" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       {error && <p role="alert" className="mt-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">{error}</p>}
@@ -177,9 +176,9 @@ export function CustomersPage() {
         <AnimatePresence initial={false}>
           {items.map((c, i) => (
             <motion.li key={c.id} layout initial={{ opacity: 0, y: 22, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ duration: 0.45, delay: Math.min(i, 8) * 0.04 }}>
-              <TiltCard className="glass-strong h-full rounded-3xl p-5">
+              <div className="relative glass-strong h-full rounded-3xl p-5">
                 <div className="flex items-start gap-3">
-                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-600 font-display text-2xl font-semibold uppercase text-navy-950">{c.name.slice(0, 1)}</span>
+                  <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-gold-400 font-display text-2xl font-semibold uppercase text-navy-950">{c.name.slice(0, 1)}</span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-2xl text-pearl">{c.name}</p>
                     <p className="truncate text-xs text-pearl/45">{c.country ? `${flag(c.country)} ${[c.city, countryName(c.country)].filter(Boolean).join(', ')}` : 'Sem endereço'}</p>
@@ -196,15 +195,15 @@ export function CustomersPage() {
                   <button className="btn btn-ghost btn-sm" onClick={() => openEdit(c)}><IconEdit className="h-4 w-4" /> Editar</button>
                   <button className="btn btn-danger btn-sm" aria-label={`Apagar dados de ${c.name}`} title="Apagar dados pessoais (LGPD)" onClick={() => { setPassword(''); setFormError(''); setDialog({ kind: 'erase', customer: c }); }}><IconTrash className="h-4 w-4" /></button>
                 </div>
-              </TiltCard>
+              </div>
             </motion.li>
           ))}
         </AnimatePresence>
       </ul>
 
       {!loading && items.length === 0 && !error && (
-        <div className="glass-strong gold-border mt-4 rounded-[2rem] px-6 py-16 text-center">
-          <p className="font-display text-4xl text-pearl">{dq ? 'Nenhum cliente encontrado' : 'Nenhum cliente ainda'}</p>
+        <div className="glass-strong gold-border mt-4 rounded-3xl px-6 py-16 text-center">
+          <p className="font-display text-2xl font-semibold text-pearl">{dq ? 'Nenhum cliente encontrado' : 'Nenhum cliente ainda'}</p>
           {!dq && <p className="mt-2 text-pearl/55">Os clientes são cadastrados ao registrar uma venda, ou pelo botão “Novo cliente”.</p>}
         </div>
       )}
@@ -246,7 +245,7 @@ export function CustomersPage() {
                         <span className="block truncate text-sm text-pearl">{s.items.map((i) => `${i.productName} ${i.mode === 'WEIGHT' ? formatGrams(i.quantity) : `×${i.quantity}`}`).join(' · ')}</span>
                         <span className="text-xs text-pearl/45">{fmtDate(s.soldAt)}{s.shippingMethod ? ` · ${s.shippingMethod}` : ''}{s.trackingCode ? ` · ${s.trackingCode}` : ''}</span>
                       </span>
-                      <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[s.status]}`}>{STATUS_LABELS[s.status]}</span>
+                      <span className={`rounded-md border px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[s.status]}`}>{STATUS_LABELS[s.status]}</span>
                       <span className="w-24 text-right text-sm font-semibold tabular-nums text-pearl">{brl(s.totalCents)}</span>
                     </Link>
                   </li>

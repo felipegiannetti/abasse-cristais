@@ -99,7 +99,7 @@ export function SaleDetail({ id }: { id: string }) {
   if (error) {
     return (
       <div className="glass rounded-3xl p-10 text-center">
-        <p className="font-display text-3xl text-pearl">{error}</p>
+        <p className="font-display text-xl font-semibold text-pearl">{error}</p>
         <Link href={href('/admin/sales')} className="btn btn-ghost mt-6">← Voltar às vendas</Link>
       </div>
     );
@@ -116,10 +116,10 @@ export function SaleDetail({ id }: { id: string }) {
       <Link href={href('/admin/sales')} className="text-sm text-pearl/50 transition-colors hover:text-gold-300">← Voltar às vendas</Link>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-4xl font-medium text-pearl sm:text-5xl">Venda #{sale.number}</h1>
+          <h1 className="font-display text-2xl font-semibold text-pearl sm:text-3xl">Venda #{sale.number}</h1>
           <p className="mt-2 text-pearl/55">{fmtDate(sale.soldAt)} · {PAYMENT_LABELS[sale.paymentMethod] ?? sale.paymentMethod}</p>
         </div>
-        <span className={`rounded-full border px-4 py-1.5 text-sm font-semibold ${STATUS_STYLE[sale.status]}`}>{STATUS_LABELS[sale.status]}</span>
+        <span className={`rounded-md border px-4 py-1.5 text-sm font-semibold ${STATUS_STYLE[sale.status]}`}>{STATUS_LABELS[sale.status]}</span>
       </div>
 
       {!cancelled && (

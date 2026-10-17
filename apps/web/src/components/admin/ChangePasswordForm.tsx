@@ -70,14 +70,14 @@ export function ChangePasswordForm() {
   return (
     <div className="mx-auto max-w-lg">
       <p className="eyebrow">{forced ? t.firstAccess : t.security}</p>
-      <h1 className="mt-3 font-display text-4xl font-medium text-pearl sm:text-5xl">{forced ? t.titleForced : t.title}</h1>
+      <h1 className="mt-3 font-display text-2xl font-semibold text-pearl sm:text-3xl">{forced ? t.titleForced : t.title}</h1>
       {forced && (
         <p className="mt-4 rounded-2xl border border-gold-400/25 bg-gold-400/[0.07] px-5 py-4 text-sm leading-relaxed text-pearl/80">
           {t.forcedNote}
         </p>
       )}
 
-      <form onSubmit={onSubmit} className="glass-strong gold-border mt-8 space-y-5 rounded-[1.75rem] p-8" noValidate>
+      <form onSubmit={onSubmit} className="glass-strong gold-border mt-8 space-y-5 rounded-3xl p-8" noValidate>
         <div>
           <label htmlFor="current" className="label">
             {forced ? t.initial : t.current}
@@ -153,7 +153,7 @@ export function ChangePasswordForm() {
       </form>
 
       {!forced && (
-        <div className="glass-strong mt-6 rounded-[1.75rem] p-8">
+        <div className="glass-strong mt-6 rounded-3xl p-8">
           <h2 className="font-display text-2xl text-pearl">{t.sessionsTitle}</h2>
           <p className="mt-2 text-sm leading-relaxed text-pearl/60">{t.sessionsHelp}</p>
           <button type="button" className="btn btn-danger mt-5" onClick={() => setConfirmSignOut(true)}>

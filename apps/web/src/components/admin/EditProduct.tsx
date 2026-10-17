@@ -27,7 +27,7 @@ export function EditProduct({ id }: { id: string }) {
   if (error) {
     return (
       <div className="glass rounded-3xl p-10 text-center">
-        <p className="font-display text-3xl text-pearl">{error}</p>
+        <p className="font-display text-xl font-semibold text-pearl">{error}</p>
         <Link href={href('/admin/products')} className="btn btn-ghost mt-6">
           {m.admin.form.back}
         </Link>

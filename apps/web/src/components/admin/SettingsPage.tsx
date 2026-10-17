@@ -115,7 +115,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto max-w-3xl">
       <p className="eyebrow">{t.eyebrow}</p>
-      <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">{t.title}</h1>
+      <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">{t.title}</h1>
       <p className="mt-3 text-pearl/55">{t.subtitle}</p>
 
       <form onSubmit={onSubmit} noValidate className="mt-8 space-y-6">
@@ -227,14 +227,14 @@ function Card({ icon, title, help, children }: { icon: ReactNode; title: string;
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="glass-strong gold-border rounded-[2rem] p-7 sm:p-9"
+      className="glass-strong gold-border rounded-3xl p-7 sm:p-9"
     >
       <div className="flex items-center gap-4">
-        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-600 text-navy-950">
+        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gold-400 text-navy-950">
           {icon}
         </span>
         <div>
-          <h2 className="font-display text-3xl text-pearl">{title}</h2>
+          <h2 className="font-display text-xl font-semibold text-pearl">{title}</h2>
         </div>
       </div>
       <p className="mt-5 text-sm leading-relaxed text-pearl/60">{help}</p>

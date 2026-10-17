@@ -25,7 +25,6 @@ import {
   IconUsers,
 } from './AdminIcons';
 import { CommandPalette } from './CommandPalette';
-import { CrystalField } from './CrystalField';
 import { ToastProvider } from './Toast';
 
 interface Me {
@@ -121,14 +120,14 @@ export function AdminShell({ children, allowPasswordChange = false }: { children
             key={n.path}
             href={href(n.path)}
             aria-current={active ? 'page' : undefined}
-            className={`group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-colors ${
+            className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
               active ? 'text-pearl' : 'text-pearl/60 hover:text-pearl'
             }`}
           >
             {active && (
               <motion.span
                 layoutId={`nav-pill-${id}`}
-                className="absolute inset-0 rounded-2xl border border-gold-400/25 bg-gradient-to-r from-gold-400/20 to-gold-400/[0.04]"
+                className="absolute inset-0 rounded-lg bg-white/[0.07]"
                 transition={{ type: 'spring', stiffness: 420, damping: 36 }}
               />
             )}
@@ -141,7 +140,7 @@ export function AdminShell({ children, allowPasswordChange = false }: { children
         href={href('/')}
         target="_blank"
         rel="noopener"
-        className="group relative flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium text-pearl/60 transition-colors hover:text-pearl"
+        className="group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-pearl/60 transition-colors hover:text-pearl"
       >
         <IconExternal className="h-5 w-5 group-hover:text-gold-300" />
         {m.admin.nav.viewSite}
@@ -152,7 +151,7 @@ export function AdminShell({ children, allowPasswordChange = false }: { children
   const renderUser = () => (
     <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
       <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-600 font-display text-xl font-semibold uppercase text-navy-950">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gold-400 font-display text-xl font-semibold uppercase text-navy-950">
           {me.username.slice(0, 1)}
         </span>
         <div className="min-w-0 flex-1">
@@ -177,12 +176,11 @@ export function AdminShell({ children, allowPasswordChange = false }: { children
   return (
     <MeContext.Provider value={me}>
       <ToastProvider>
-        <CrystalField />
         <div className="flex min-h-dvh">
           {/* Sidebar (desktop) */}
           {full && (
-            <aside className="sticky top-0 hidden h-dvh w-[280px] shrink-0 p-4 lg:block">
-              <div className="glass-strong flex h-full flex-col rounded-[1.75rem] p-5">
+            <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 border-r border-white/[0.07] bg-navy-900/40 lg:block">
+              <div className="flex h-full flex-col p-5">
                 <Logo className="h-9" />
                 {renderNav('desktop')}
                 <div className="mt-auto space-y-3 pt-6">
@@ -218,7 +216,7 @@ export function AdminShell({ children, allowPasswordChange = false }: { children
                     <button
                       type="button"
                       onClick={() => setPalette(true)}
-                      className="hidden items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] py-2 pl-4 pr-2 text-sm text-pearl/50 transition-colors hover:border-gold-400/40 hover:text-pearl md:flex"
+                      className="hidden items-center gap-3 rounded-lg border border-white/10 bg-white/[0.04] py-2 pl-4 pr-2 text-sm text-pearl/50 transition-colors hover:border-gold-400/40 hover:text-pearl md:flex"
                     >
                       <IconSearch className="h-4 w-4" />
                       <span className="w-40 text-left">{m.admin.shell.search}</span>

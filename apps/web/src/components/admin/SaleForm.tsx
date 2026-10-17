@@ -25,9 +25,9 @@ const SHIPPING = ['Correios PAC', 'Correios SEDEX', 'Correios Internacional', 'D
 
 function Card({ n, title, children }: { n: number; title: string; children: ReactNode }) {
   return (
-    <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: n * 0.05, ease: [0.22, 1, 0.36, 1] }} style={{ zIndex: 10 - n }} className="glass-strong relative rounded-[1.75rem] p-6 sm:p-7">
+    <motion.section initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: n * 0.05, ease: [0.22, 1, 0.36, 1] }} style={{ zIndex: 10 - n }} className="glass-strong relative rounded-3xl p-6 sm:p-7">
       <h2 className="flex items-center gap-3 font-display text-2xl text-pearl">
-        <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-gold-300 to-gold-600 font-sans text-sm font-bold text-navy-950">{n}</span>
+        <span className="grid h-8 w-8 place-items-center rounded-md bg-gold-400 font-sans text-sm font-bold text-navy-950">{n}</span>
         {title}
       </h2>
       <div className="mt-5">{children}</div>
@@ -239,7 +239,7 @@ export function SaleForm() {
     <form onSubmit={onSubmit} noValidate>
       <div className="mb-8">
         <Link href={href('/admin/sales')} className="text-sm text-pearl/50 transition-colors hover:text-gold-300">← Voltar às vendas</Link>
-        <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">Registrar venda</h1>
+        <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">Registrar venda</h1>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -338,9 +338,9 @@ export function SaleForm() {
 
           {/* 2. customer */}
           <Card n={2} title="Quem comprou">
-            <div role="tablist" className="glass inline-flex gap-1 rounded-full p-1">
+            <div role="tablist" className="glass inline-flex gap-1 rounded-lg p-1">
               {([['existing', 'Cliente cadastrado'], ['new', 'Novo cliente']] as const).map(([k, label]) => (
-                <button key={k} type="button" role="tab" aria-selected={cMode === k} onClick={() => setCMode(k)} className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${cMode === k ? 'bg-gold-400/25 text-gold-300' : 'text-pearl/60 hover:text-pearl'}`}>
+                <button key={k} type="button" role="tab" aria-selected={cMode === k} onClick={() => setCMode(k)} className={`rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${cMode === k ? 'bg-gold-400/25 text-gold-300' : 'text-pearl/60 hover:text-pearl'}`}>
                   {label}
                 </button>
               ))}

@@ -14,7 +14,6 @@ import type { Product, ProductList, ProductStatus, Stats } from '@/lib/types';
 import { IconCopy, IconEdit, IconGem, IconGrid, IconList, IconPlus, IconSearch, IconStar, IconTrash } from './AdminIcons';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Pagination } from './Pagination';
-import { TiltCard } from './TiltCard';
 import { useToast } from './Toast';
 
 const PAGE_SIZE = 15;
@@ -164,7 +163,7 @@ export function ProductsAdmin() {
       aria-label={fmt(t.statusOf, { name: p.name })}
       value={p.status}
       onChange={(e) => patch(p, { status: e.target.value as ProductStatus }, t.statusUpdated)}
-      className={`cursor-pointer appearance-none rounded-full border px-3 py-1 text-xs font-semibold outline-none transition-colors ${STATUS_STYLE[p.status]}`}
+      className={`cursor-pointer appearance-none rounded-md border px-3 py-1 text-xs font-semibold outline-none transition-colors ${STATUS_STYLE[p.status]}`}
     >
       {STATUSES.map((s) => (
         <option key={s} value={s} className="bg-navy-900 text-pearl">
@@ -181,7 +180,7 @@ export function ProductsAdmin() {
       title={p.featured ? t.unfeature : t.feature}
       aria-label={p.featured ? t.unfeature : t.feature}
       onClick={() => patch(p, { featured: !p.featured }, p.featured ? t.unfeatured : t.featured)}
-      className={`grid h-9 w-9 place-items-center rounded-full border backdrop-blur transition-all hover:scale-110 ${
+      className={`grid h-9 w-9 place-items-center rounded-md border backdrop-blur transition-colors ${
         p.featured ? 'border-gold-400 bg-gold-400/25 text-gold-300' : 'border-white/20 bg-navy-950/50 text-pearl/60 hover:text-gold-300'
       }`}
     >
@@ -194,7 +193,7 @@ export function ProductsAdmin() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">{t.eyebrow}</p>
-          <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">{t.title}</h1>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">{t.title}</h1>
         </div>
         <Link href={href('/admin/products/new')} className="btn btn-primary">
           <IconPlus className="h-4 w-4" /> {t.new.replace('+ ', '')}
@@ -203,7 +202,7 @@ export function ProductsAdmin() {
 
       {/* Toolbar */}
       <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div role="tablist" aria-label={t.statusLabel} className="glass inline-flex w-fit max-w-full flex-wrap gap-1 rounded-3xl p-1 sm:rounded-full">
+        <div role="tablist" aria-label={t.statusLabel} className="glass inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg p-1">
           {tabs.map((tab) => {
             const on = status === tab.key;
             return (
@@ -212,12 +211,12 @@ export function ProductsAdmin() {
                 role="tab"
                 aria-selected={on}
                 onClick={() => setStatus(tab.key)}
-                className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${on ? 'text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}
+                className={`relative whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${on ? 'text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}
               >
                 {on && (
                   <motion.span
                     layoutId="status-tab"
-                    className="absolute inset-0 rounded-full bg-gradient-to-r from-gold-300 to-gold-500"
+                    className="absolute inset-0 rounded-md bg-gold-400"
                     transition={{ type: 'spring', stiffness: 460, damping: 36 }}
                   />
                 )}
@@ -234,14 +233,14 @@ export function ProductsAdmin() {
           <div className="relative flex-1 lg:w-72 lg:flex-none">
             <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-pearl/40" />
             <input
-              className="field !rounded-full !pl-11"
+              className="field !pl-10"
               placeholder={t.searchPlaceholder}
               aria-label={t.searchLabel}
               value={q}
               onChange={(e) => setQ(e.target.value)}
             />
           </div>
-          <div className="glass flex rounded-full p-1" role="group">
+          <div className="glass flex rounded-lg p-1" role="group">
             {(['grid', 'list'] as View[]).map((v) => (
               <button
                 key={v}
@@ -250,7 +249,7 @@ export function ProductsAdmin() {
                 aria-label={v === 'grid' ? t.grid : t.listView}
                 title={v === 'grid' ? t.grid : t.listView}
                 onClick={() => changeView(v)}
-                className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${view === v ? 'bg-gold-400/25 text-gold-300' : 'text-pearl/50 hover:text-pearl'}`}
+                className={`grid h-9 w-9 place-items-center rounded-md transition-colors ${view === v ? 'bg-gold-400/25 text-gold-300' : 'text-pearl/50 hover:text-pearl'}`}
               >
                 {v === 'grid' ? <IconGrid className="h-4 w-4" /> : <IconList className="h-4 w-4" />}
               </button>
@@ -291,14 +290,14 @@ export function ProductsAdmin() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.5, delay: Math.min(i, 8) * 0.04, ease: [0.22, 1, 0.36, 1] }}
               >
-                <TiltCard className="glass-strong group overflow-hidden rounded-3xl">
+                <div className="relative glass-strong group overflow-hidden rounded-3xl">
                   <div className="relative aspect-[4/3] overflow-hidden bg-navy-900">
                     {p.images[0] ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={p.images[0].url}
                         alt=""
-                        className={`h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 ${p.status === 'HIDDEN' ? 'opacity-50 grayscale' : ''}`}
+                        className={`h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] ${p.status === 'HIDDEN' ? 'opacity-50 grayscale' : ''}`}
                       />
                     ) : (
                       <div className="grid h-full w-full place-items-center text-gold-400/40">
@@ -348,7 +347,7 @@ export function ProductsAdmin() {
                       </button>
                     </div>
                   </div>
-                </TiltCard>
+                </div>
               </motion.li>
             ))}
           </AnimatePresence>
@@ -414,11 +413,10 @@ export function ProductsAdmin() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass-strong gold-border relative mt-4 overflow-hidden rounded-[2rem] px-6 py-20 text-center"
+          className="glass-strong gold-border relative mt-4 overflow-hidden rounded-3xl px-6 py-20 text-center"
         >
-          <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold-400/10 blur-[70px]" />
           <IconGem className="relative mx-auto h-14 w-14 animate-float text-gold-300" />
-          <p className="relative mt-5 font-display text-4xl text-pearl">{filtered ? t.emptyFiltered : t.emptyAll}</p>
+          <p className="relative mt-5 font-display text-2xl font-semibold text-pearl">{filtered ? t.emptyFiltered : t.emptyAll}</p>
           {!filtered && (
             <>
               <p className="relative mt-2 text-pearl/55">{t.emptyText}</p>

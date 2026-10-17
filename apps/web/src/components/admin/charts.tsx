@@ -11,7 +11,7 @@ export interface Point {
   sub?: string;
 }
 
-/** Revenue over time: smooth line + gradient area, animated draw, hover tooltip. */
+/** Revenue over time: straight-segment line + faint area, hover tooltip (no smoothing: every point is real data). */
 export function AreaChart({ points, format, height = 240 }: { points: Point[]; format: (n: number) => string; height?: number }) {
   const gid = useId().replace(/:/g, '');
   const [hover, setHover] = useState<number | null>(null);
@@ -27,20 +27,7 @@ export function AreaChart({ points, format, height = 240 }: { points: Point[]; f
     const x = (i: number) => pad.l + (points.length > 1 ? i * step : (W - pad.l - pad.r) / 2);
     const y = (v: number) => pad.t + (H - pad.t - pad.b) * (1 - v / max);
 
-    // smooth path (Catmull-Rom → cubic Bézier), control points clamped so the curve never dips below the baseline
-    const pts = points.map((p, i) => [x(i), y(p.value)] as const);
-    const floor = H - pad.b;
-    const path = pts
-      .map((p2, i) => {
-        if (i === 0) return `M ${p2[0]} ${p2[1]}`;
-        const p1 = pts[i - 1];
-        const p0 = pts[i - 2] ?? p1;
-        const p3 = pts[i + 1] ?? p2;
-        const c1y = Math.min(floor, p1[1] + (p2[1] - p0[1]) / 6);
-        const c2y = Math.min(floor, p2[1] - (p3[1] - p1[1]) / 6);
-        return `C ${p1[0] + (p2[0] - p0[0]) / 6} ${c1y}, ${p2[0] - (p3[0] - p1[0]) / 6} ${c2y}, ${p2[0]} ${p2[1]}`;
-      })
-      .join(' ');
+    const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(p.value)}`).join(' ');
     const area = points.length ? `${path} L ${x(points.length - 1)} ${H - pad.b} L ${x(0)} ${H - pad.b} Z` : '';
     const ticks = [0, 0.5, 1].map((t) => ({ v: max * t, y: y(max * t) }));
     const labelIdx = points.length > 2 ? [0, Math.floor((points.length - 1) / 2), points.length - 1] : points.map((_, i) => i);
@@ -54,12 +41,12 @@ export function AreaChart({ points, format, height = 240 }: { points: Point[]; f
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" onMouseLeave={() => setHover(null)}>
         <defs>
           <linearGradient id={`a${gid}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#e0bd7a" stopOpacity="0.4" />
+            <stop offset="0" stopColor="#e0bd7a" stopOpacity="0.16" />
             <stop offset="1" stopColor="#e0bd7a" stopOpacity="0" />
           </linearGradient>
           <linearGradient id={`l${gid}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0" stopColor="#c9a35c" />
-            <stop offset="1" stopColor="#f3dfae" />
+            <stop offset="0" stopColor="#e0bd7a" />
+            <stop offset="1" stopColor="#e0bd7a" />
           </linearGradient>
         </defs>
         {ticks.map((t) => (
@@ -70,16 +57,7 @@ export function AreaChart({ points, format, height = 240 }: { points: Point[]; f
         {points.length > 0 && (
           <>
             <motion.path d={area} fill={`url(#a${gid})`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1, delay: 0.4 }} />
-            <motion.path
-              d={path}
-              fill="none"
-              stroke={`url(#l${gid})`}
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              initial={{ pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{ duration: 1.4, ease }}
-            />
+            <path d={path} fill="none" stroke={`url(#l${gid})`} strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" />
           </>
         )}
         {labelIdx.map((i) => (
@@ -169,7 +147,7 @@ export function HBars({ rows, format }: { rows: { label: string; value: number; 
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
             <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-gold-600 to-gold-300"
+              className="h-full rounded-full bg-gold-400"
               initial={{ width: 0 }}
               animate={{ width: `${(r.value / max) * 100}%` }}
               transition={{ duration: 0.9, delay: 0.2 + i * 0.07, ease }}

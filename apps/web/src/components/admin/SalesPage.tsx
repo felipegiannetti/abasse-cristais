@@ -81,7 +81,7 @@ export function SalesPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Vendas</p>
-          <h1 className="mt-2 font-display text-4xl font-medium text-pearl sm:text-5xl">Registro de vendas</h1>
+          <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">Registro de vendas</h1>
           <p className="mt-3 max-w-xl text-pearl/55">Cada venda baixa o estoque sozinha. Quem comprou, o que foi, quanto, e como foi enviado.</p>
         </div>
         <Link href={href('/admin/sales/new')} className="btn btn-primary">
@@ -90,7 +90,7 @@ export function SalesPage() {
       </div>
 
       <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div role="tablist" className="glass inline-flex w-fit max-w-full flex-wrap gap-1 rounded-3xl p-1 sm:rounded-full">
+        <div role="tablist" className="glass inline-flex w-fit max-w-full flex-wrap gap-1 rounded-lg p-1">
           {TABS.map((tab) => {
             const on = status === tab.key;
             return (
@@ -99,10 +99,10 @@ export function SalesPage() {
                 role="tab"
                 aria-selected={on}
                 onClick={() => setStatus(tab.key)}
-                className={`relative whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${on ? 'text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}
+                className={`relative whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${on ? 'text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}
               >
                 {on && (
-                  <motion.span layoutId="sales-tab" className="absolute inset-0 rounded-full bg-gradient-to-r from-gold-300 to-gold-500" transition={{ type: 'spring', stiffness: 460, damping: 36 }} />
+                  <motion.span layoutId="sales-tab" className="absolute inset-0 rounded-md bg-gold-400" transition={{ type: 'spring', stiffness: 460, damping: 36 }} />
                 )}
                 <span className="relative">{tab.label}</span>
               </button>
@@ -111,7 +111,7 @@ export function SalesPage() {
         </div>
         <div className="relative lg:w-80">
           <IconSearch className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-pearl/40" />
-          <input className="field !rounded-full !pl-11" placeholder="Cliente, peça, nº ou código Ref…" aria-label="Buscar vendas" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className="field !pl-10" placeholder="Cliente, peça, nº ou código Ref…" aria-label="Buscar vendas" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       </div>
 
@@ -174,7 +174,7 @@ export function SalesPage() {
                 </div>
                 <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:gap-1.5">
                   <span className="font-display text-2xl text-gold-300">{brl(s.totalCents)}</span>
-                  <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_STYLE[s.status]}`}>{STATUS_LABELS[s.status]}</span>
+                  <span className={`rounded-md border px-3 py-1 text-xs font-semibold ${STATUS_STYLE[s.status]}`}>{STATUS_LABELS[s.status]}</span>
                 </div>
               </Link>
             </motion.li>
@@ -183,8 +183,8 @@ export function SalesPage() {
       </ul>
 
       {!loading && items.length === 0 && !error && (
-        <div className="glass-strong gold-border relative mt-4 overflow-hidden rounded-[2rem] px-6 py-16 text-center">
-          <p className="font-display text-4xl text-pearl">{status || dq ? 'Nenhuma venda encontrada' : 'Nenhuma venda registrada ainda'}</p>
+        <div className="glass-strong gold-border relative mt-4 overflow-hidden rounded-3xl px-6 py-16 text-center">
+          <p className="font-display text-2xl font-semibold text-pearl">{status || dq ? 'Nenhuma venda encontrada' : 'Nenhuma venda registrada ainda'}</p>
           {!status && !dq && (
             <>
               <p className="mt-2 text-pearl/55">Registre a primeira venda para acompanhar estoque, clientes e financeiro.</p>

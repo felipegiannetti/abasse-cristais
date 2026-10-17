@@ -46,14 +46,14 @@ export function MessageTemplatesCard({ templates, onChange, disabled }: Props) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="glass-strong gold-border rounded-[2rem] p-7 sm:p-9"
+      className="glass-strong gold-border rounded-3xl p-7 sm:p-9"
     >
       <div className="flex items-center gap-4">
-        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-gold-300 to-gold-600 text-navy-950">
+        <span className="grid h-14 w-14 place-items-center rounded-2xl bg-gold-400 text-navy-950">
           <IconEdit className="h-7 w-7" />
         </span>
         <div>
-          <h2 className="font-display text-3xl text-pearl">{t.title}</h2>
+          <h2 className="font-display text-xl font-semibold text-pearl">{t.title}</h2>
         </div>
       </div>
       <p className="mt-5 text-sm leading-relaxed text-pearl/60">{t.help}</p>
@@ -68,7 +68,7 @@ export function MessageTemplatesCard({ templates, onChange, disabled }: Props) {
               role="tab"
               aria-selected={l === lang}
               onClick={() => setLang(l)}
-              className={`relative rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+              className={`relative rounded-lg border px-3.5 py-1.5 text-sm font-medium transition-colors ${
                 l === lang ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-white/12 text-pearl/70 hover:border-gold-400/50 hover:text-pearl'
               }`}
             >

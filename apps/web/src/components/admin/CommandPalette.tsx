@@ -155,7 +155,7 @@ export function CommandPalette({ open, onClose, onLogout }: { open: boolean; onC
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[95] grid place-items-start justify-items-center bg-navy-950/70 px-4 pt-[14vh] backdrop-blur-md"
+          className="fixed inset-0 z-[95] grid place-items-start justify-items-center bg-navy-950/75 px-4 pt-[14vh]"
           onClick={onClose}
         >
           <motion.div

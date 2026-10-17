@@ -31,7 +31,7 @@ export function Modal({ open, onClose, title, children, busy, wide }: Props) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-navy-950/75 px-4 py-8 backdrop-blur-md"
+          className="fixed inset-0 z-[90] grid place-items-center overflow-y-auto bg-navy-950/80 px-4 py-8"
           onClick={() => !busy && onClose()}
         >
           <motion.div
@@ -43,17 +43,17 @@ export function Modal({ open, onClose, title, children, busy, wide }: Props) {
             exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ type: 'spring', stiffness: 380, damping: 32 }}
             onClick={(e) => e.stopPropagation()}
-            className={`glass-strong gold-border relative w-full rounded-[1.75rem] p-7 sm:p-8 ${wide ? 'max-w-xl' : 'max-w-md'}`}
+            className={`glass-strong gold-border relative w-full rounded-3xl p-7 sm:p-8 ${wide ? 'max-w-xl' : 'max-w-md'}`}
           >
             <button
               type="button"
               aria-label={m.admin.shell.close}
               onClick={() => !busy && onClose()}
-              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-pearl/50 transition-colors hover:bg-white/10 hover:text-pearl"
+              className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-lg text-pearl/50 transition-colors hover:bg-white/10 hover:text-pearl"
             >
               <IconClose className="h-4 w-4" />
             </button>
-            <h2 className="pr-8 font-display text-3xl font-medium text-pearl">{title}</h2>
+            <h2 className="pr-8 font-display text-xl font-semibold text-pearl">{title}</h2>
             <div className="mt-4">{children}</div>
           </motion.div>
         </motion.div>

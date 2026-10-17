@@ -52,7 +52,7 @@ export function ProductPreview({ data }: { data: PreviewData }) {
         <div className="flex items-center justify-between">
           <h3 className="font-display text-2xl text-pearl">{t.previewTitle}</h3>
           <span className="flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-gold-300">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gold-400" /> live
+            live
           </span>
         </div>
         <p className="mt-1 text-xs text-pearl/45">{t.previewCard}</p>
@@ -70,12 +70,12 @@ export function ProductPreview({ data }: { data: PreviewData }) {
             )}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-navy-950/80 via-transparent to-transparent" />
             {data.category.trim() && (
-              <span className="absolute left-3 top-3 rounded-full border border-white/15 bg-navy-950/60 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-gold-300 backdrop-blur">
+              <span className="absolute left-3 top-3 rounded-md border border-white/15 bg-navy-950/60 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-gold-300 backdrop-blur">
                 {data.category}
               </span>
             )}
             {sold && (
-              <span className="absolute right-3 top-3 rounded-full bg-pearl px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-navy-950">
+              <span className="absolute right-3 top-3 rounded-md bg-pearl px-3 py-1 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-navy-950">
                 {m.product.soldOut}
               </span>
             )}
