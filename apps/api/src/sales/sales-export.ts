@@ -20,7 +20,7 @@ export interface Table {
 }
 
 const STATUS_LABEL: Record<string, string> = { PENDING: 'Pendente', PAID: 'Pago', SHIPPED: 'Enviado', DELIVERED: 'Entregue', CANCELLED: 'Cancelado' };
-const PAYMENT_LABEL: Record<string, string> = {
+export const PAYMENT_LABEL: Record<string, string> = {
   PIX: 'Pix',
   CREDIT_CARD: 'Cartão de crédito',
   PAYPAL: 'PayPal',

@@ -185,6 +185,7 @@ const adminRoutes = [
   ['GET', '/admin/analytics/clicks'],
   ['POST', '/admin/analytics/confirm'],
   ['GET', '/admin/finance/summary'],
+  ['GET', '/admin/finance/export?format=csv'],
   ['GET', '/admin/products/abc'],
   ['POST', '/admin/products'],
   ['PATCH', '/admin/products/abc'],
@@ -902,6 +903,29 @@ if (!PASS) {
   ok('cancelling a sale removes it from the revenue', r.json.revenueCents === rev0 - 9000, `${rev0} → ${r.json.revenueCents}`);
   r = await call('GET', '/admin/finance/summary?range=abc', { cookie: session });
   ok('finance summary rejects an invalid range → 400', r.status === 400, r.status);
+  {
+    // finance export: the dashboard numbers as a CSV or a PDF report
+    r = await call('GET', '/admin/finance/export?format=csv&range=30', { cookie: session });
+    const cd = r.headers.get('content-disposition') || '';
+    const csv = typeof r.json === 'string' ? r.json : '';
+    ok('finance export (CSV) → 200 attachment, BOM, flat header, summary rows', r.status === 200 && /^attachment; filename="financeiro-30-USD-\d{4}-\d{2}-\d{2}\.csv"$/.test(cd) && csv.startsWith('\uFEFFSeção;Item;Valor;Pedidos;Detalhe') && csv.includes('Resumo;Faturamento (US$);'), `${r.status} ${cd} ${csv.slice(0, 50)}`);
+    ok('the finance export is never cached', /no-store/.test(r.headers.get('cache-control') || ''));
+    r = await call('GET', '/admin/finance/export?format=pdf&range=all', { cookie: session });
+    ok('finance export (PDF) → a real PDF', r.status === 200 && /application\/pdf/.test(r.headers.get('content-type') || '') && typeof r.json === 'string' && r.json.startsWith('%PDF-'), `${r.status} ${r.headers.get('content-type')}`);
+    r = await call('GET', '/admin/finance/export?format=xml', { cookie: session });
+    ok('finance export with an unknown format → 400', r.status === 400, r.status);
+    r = await call('GET', '/admin/finance/export?format=csv&range=abc', { cookie: session });
+    ok('finance export with an invalid range → 400', r.status === 400, r.status);
+    r = await call('GET', '/admin/finance/export?format=csv&currency=EUR', { cookie: session });
+    ok('finance export with an unsupported currency → 400', r.status === 400, r.status);
+    const fxNow = await call('GET', '/fx/usd-brl');
+    r = await call('GET', '/admin/finance/export?format=csv&currency=BRL', { cookie: session });
+    if (fxNow.status === 200) {
+      ok('finance export in reais states the rate used', r.status === 200 && r.json.includes('Informações;Cotação usada;') && r.json.includes('Resumo;Faturamento (R$);'), String(r.json).slice(0, 120));
+    } else {
+      ok('finance export in reais without a rate → 503 FX_UNAVAILABLE', r.status === 503 && r.json.code === 'FX_UNAVAILABLE', r.status);
+    }
+  }
   for (const range of ['7', '90', '365', 'all']) {
     r = await call('GET', `/admin/finance/summary?range=${range}`, { cookie: session });
     ok(`finance summary range=${range} works`, r.status === 200 && Array.isArray(r.json.series), r.status);

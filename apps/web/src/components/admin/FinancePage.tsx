@@ -4,6 +4,7 @@ import { AnimatePresence, motion, type Variants } from 'motion/react';
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
+import { downloadFile } from '@/lib/download';
 import { countryName, flag } from '@/lib/countries';
 import { PAYMENT_LABELS, SOURCE_LABELS, brl, usd, formatGrams } from '@/lib/format';
 import { useFx } from '@/lib/useFx';
@@ -64,6 +65,18 @@ export function FinancePage() {
   // money is stored in dollars; "R$" shows the same numbers converted at the current rate
   const fx = useFx();
   const [inReais, setInReais] = useState(false);
+  const [exporting, setExporting] = useState<'' | 'csv' | 'pdf'>('');
+  async function exportReport(format: 'csv' | 'pdf') {
+    setExporting(format);
+    try {
+      // same period and currency as on screen
+      await downloadFile(`/admin/finance/export?format=${format}&range=${range}&currency=${inReais && fx ? 'BRL' : 'USD'}`);
+    } catch (e) {
+      toast(errorText(e, m, 'Não foi possível exportar o financeiro.'), 'error');
+    } finally {
+      setExporting('');
+    }
+  }
   const money = (cents: number) => (inReais && fx ? brl(Math.round(cents * fx.rate)) : usd(cents));
 
   const load = useCallback(() => {
@@ -126,6 +139,14 @@ export function FinancePage() {
               <span className="relative">{r.label}</span>
             </button>
           ))}
+        </div>
+        <div className="flex gap-2">
+          <button type="button" className="btn btn-ghost btn-sm" disabled={exporting !== '' || !fin} onClick={() => exportReport('csv')} title="Baixa estes números em CSV (abre no Excel)">
+            {exporting === 'csv' ? 'Exportando…' : 'Exportar CSV'}
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" disabled={exporting !== '' || !fin} onClick={() => exportReport('pdf')} title="Baixa um relatório em PDF, pronto para imprimir ou enviar">
+            {exporting === 'pdf' ? 'Gerando…' : 'Exportar PDF'}
+          </button>
         </div>
         </div>
       </div>
