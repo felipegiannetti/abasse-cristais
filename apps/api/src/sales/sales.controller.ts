@@ -25,6 +25,7 @@ import {
   ConfirmPasswordDto,
   CreateCustomerDto,
   CreateSaleDto,
+  ExportSalesQuery,
   ListCustomersQuery,
   ListSalesQuery,
   UpdateCustomerDto,
@@ -44,6 +45,20 @@ export class SalesController {
   @Get()
   list(@Query() q: ListSalesQuery) {
     return this.sales.list(q);
+  }
+
+  // declared before ':id' so "export" is not taken for an id
+  @Get('export')
+  async export(@Req() req: AdminRequest, @Query() q: ExportSalesQuery, @Res() res: Response) {
+    const { filename, contentType, body } = await this.sales.export(req.admin.id, q);
+    res
+      .status(200)
+      .setHeader('Content-Type', contentType)
+      .setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+      .setHeader('Content-Length', body.length)
+      .setHeader('Cache-Control', 'private, no-store')
+      .setHeader('X-Content-Type-Options', 'nosniff')
+      .end(body);
   }
 
   // declared before ':id' so "photos" is not taken for an id

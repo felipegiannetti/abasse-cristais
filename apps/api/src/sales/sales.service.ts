@@ -14,10 +14,12 @@ import { FxService } from '../fx/fx.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { detectImage } from '../products/image-type';
 import { imageUrl } from '../products/products.service';
-import { CreateSaleDto, ListSalesQuery, UpdateSaleDto } from './sales.dto';
+import { CreateSaleDto, ExportSalesQuery, ListSalesQuery, UpdateSaleDto } from './sales.dto';
+import { itemsTable, salesTable, tablesToXlsx, tableToCsv } from './sales-export';
 import { likeSafe } from '../common/like';
 
 const MAX_PHOTOS_PER_SALE = 6;
+const MAX_EXPORT_ROWS = 20_000;
 const MAX_TOTAL_CENTS = 2_000_000_000; // int4 column (R$ 20 million)
 export const salePhotoUrl = (id: string) => `/api/admin/sales/photos/${id}`;
 
@@ -98,13 +100,13 @@ export class SalesService {
 
   // ------------------------------------------------------------- read
 
-  async list(q: ListSalesQuery) {
-    const page = q.page ?? 1;
-    const pageSize = q.pageSize ?? 20;
+  /** The filters shared by the list and the export: status, free-text search, period and product category. */
+  private filters(q: Pick<ListSalesQuery, 'status' | 'q' | 'from' | 'to' | 'category'>): Prisma.SaleWhereInput {
     const num = q.q && /^#?\d{1,9}$/.test(q.q) ? Number(q.q.replace('#', '')) : undefined;
-    const where: Prisma.SaleWhereInput = {
+    return {
       status: q.status,
       soldAt: q.from || q.to ? { gte: q.from ? new Date(q.from) : undefined, lte: q.to ? new Date(q.to) : undefined } : undefined,
+      items: q.category ? { some: { category: { equals: likeSafe(q.category), mode: 'insensitive' } } } : undefined,
       OR: q.q
         ? [
             { customerName: { contains: likeSafe(q.q), mode: 'insensitive' } },
@@ -114,11 +116,42 @@ export class SalesService {
           ]
         : undefined,
     };
+  }
+
+  async list(q: ListSalesQuery) {
+    const page = q.page ?? 1;
+    const pageSize = q.pageSize ?? 20;
+    const where = this.filters(q);
     const [rows, total] = await this.prisma.$transaction([
       this.prisma.sale.findMany({ where, include: saleInclude, orderBy: { soldAt: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
       this.prisma.sale.count({ where }),
     ]);
     return { items: rows.map(serializeSale), total, page, pageSize };
+  }
+
+  // ------------------------------------------------------------- export
+
+  /** The filtered sales as a CSV (one row per sale) or an XLSX (a sheet of sales + a sheet of items). */
+  async export(actorId: string, q: ExportSalesQuery): Promise<{ filename: string; contentType: string; body: Buffer }> {
+    const where = this.filters(q);
+    const sales = await this.prisma.sale.findMany({ where, include: { items: true }, orderBy: { soldAt: 'desc' }, take: MAX_EXPORT_ROWS + 1 });
+    if (sales.length > MAX_EXPORT_ROWS) {
+      throw err(400, 'EXPORT_TOO_LARGE', `Too many sales to export at once (limit ${MAX_EXPORT_ROWS}). Narrow the period.`);
+    }
+    const day = new Date(Date.now() - 3 * 3_600_000).toISOString().slice(0, 10);
+    const body =
+      q.format === 'xlsx'
+        ? await tablesToXlsx([
+            { name: 'Vendas', table: salesTable(sales) },
+            { name: 'Itens', table: itemsTable(sales) },
+          ])
+        : Buffer.from('\uFEFF' + tableToCsv(salesTable(sales)), 'utf8'); // BOM: Excel reads the accents as UTF-8
+    await this.audit.record({ actorId, action: 'sale.export', entityType: 'Sale', summary: `Exportou ${sales.length} venda(s) em ${q.format.toUpperCase()}` });
+    return {
+      filename: `vendas-${day}.${q.format}`,
+      contentType: q.format === 'xlsx' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv; charset=utf-8',
+      body,
+    };
   }
 
   async findOne(id: string) {

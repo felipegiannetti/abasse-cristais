@@ -290,6 +290,13 @@ export class ListSalesQuery {
   @IsISO8601()
   to?: string;
 
+  /** Only sales with at least one item of this product category. */
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(80)
+  category?: string;
+
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -303,6 +310,36 @@ export class ListSalesQuery {
   @Min(1)
   @Max(100)
   pageSize?: number;
+}
+
+/** Same filters as the list (no paging), plus the file format. */
+export class ExportSalesQuery {
+  @IsIn(['csv', 'xlsx'])
+  format: 'csv' | 'xlsx';
+
+  @IsOptional()
+  @IsEnum(SaleStatus)
+  status?: SaleStatus;
+
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(80)
+  q?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  from?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  to?: string;
+
+  @IsOptional()
+  @Transform(trim)
+  @IsString()
+  @MaxLength(80)
+  category?: string;
 }
 
 export class ListCustomersQuery {

@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
+import { downloadFile } from '@/lib/download';
 import { flag } from '@/lib/countries';
 import { STATUS_LABELS, usd, formatGrams } from '@/lib/format';
 import type { Sale, SaleStatus } from '@/lib/types';
 import { IconPlus, IconSearch, IconTruck } from './AdminIcons';
 import { Pagination } from './Pagination';
+import { useToast } from './Toast';
 
 const PAGE_SIZE = 15;
 const TABS: { key: '' | SaleStatus; label: string }[] = [
@@ -36,6 +38,7 @@ export const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('pt-BR'
 
 export function SalesPage() {
   const { m, href } = useI18n();
+  const toast = useToast();
   const nav = { homePath: href('/'), changePasswordPath: href('/admin/change-password') };
   const [items, setItems] = useState<Sale[]>([]);
   const [total, setTotal] = useState(0);
@@ -43,22 +46,60 @@ export function SalesPage() {
   const [status, setStatus] = useState<'' | SaleStatus>('');
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
+  // period (yyyy-mm-dd, Brasília days) and product category
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
+  const [exporting, setExporting] = useState<'' | 'csv' | 'xlsx'>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    api<string[]>('/admin/products/categories', nav)
+      .then(setCategories)
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const id = setTimeout(() => setDq(q.trim()), 300);
     return () => clearTimeout(id);
   }, [q]);
 
+  /** The filters the list and the export share (days are Brasília days, UTC-3). */
+  const filterParams = useCallback(() => {
+    const qs = new URLSearchParams();
+    if (status) qs.set('status', status);
+    if (dq) qs.set('q', dq);
+    if (from) qs.set('from', `${from}T00:00:00-03:00`);
+    if (to) qs.set('to', `${to}T23:59:59.999-03:00`);
+    if (category) qs.set('category', category);
+    return qs;
+  }, [status, dq, from, to, category]);
+  const filtered = Boolean(status || dq || from || to || category);
+
+  async function exportSales(format: 'csv' | 'xlsx') {
+    setExporting(format);
+    try {
+      const qs = filterParams();
+      qs.set('format', format);
+      await downloadFile(`/admin/sales/export?${qs}`);
+    } catch (e) {
+      toast(errorText(e, m, 'Não foi possível exportar as vendas.'), 'error');
+    } finally {
+      setExporting('');
+    }
+  }
+
   const load = useCallback(
     async (p: number) => {
       setLoading(true);
       setError('');
       try {
-        const qs = new URLSearchParams({ page: String(p), pageSize: String(PAGE_SIZE) });
-        if (status) qs.set('status', status);
-        if (dq) qs.set('q', dq);
+        const qs = filterParams();
+        qs.set('page', String(p));
+        qs.set('pageSize', String(PAGE_SIZE));
         const d = await api<{ items: Sale[]; total: number }>(`/admin/sales?${qs}`, nav);
         setItems(d.items);
         setTotal(d.total);
@@ -70,7 +111,7 @@ export function SalesPage() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [status, dq, m],
+    [filterParams, m],
   );
   useEffect(() => {
     void load(1);
@@ -115,10 +156,40 @@ export function SalesPage() {
         </div>
       </div>
 
+      {/* period, category and export */}
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <div>
+          <label htmlFor="sf-from" className="label">De</label>
+          <input id="sf-from" type="date" className="field !w-auto !py-2 text-sm" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor="sf-to" className="label">Até</label>
+          <input id="sf-to" type="date" className="field !w-auto !py-2 text-sm" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor="sf-cat" className="label">Categoria</label>
+          <select id="sf-cat" className="field !w-auto !py-2 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option value="">Todas</option>
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        {(from || to || category) && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setFrom(''); setTo(''); setCategory(''); }}>Limpar filtros</button>
+        )}
+        <div className="ml-auto flex gap-2">
+          <button type="button" className="btn btn-ghost btn-sm" disabled={exporting !== '' || total === 0} onClick={() => exportSales('csv')} title="Baixa as vendas filtradas em CSV (abre no Excel)">
+            {exporting === 'csv' ? 'Exportando…' : 'Exportar CSV'}
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" disabled={exporting !== '' || total === 0} onClick={() => exportSales('xlsx')} title="Baixa as vendas filtradas em Excel (vendas e itens em abas separadas)">
+            {exporting === 'xlsx' ? 'Exportando…' : 'Exportar Excel'}
+          </button>
+        </div>
+      </div>
+
       {error && <p role="alert" className="mt-6 rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-red-200">{error}</p>}
 
       <p className="mt-6 text-sm text-pearl/45" aria-live="polite">
-        {loading && items.length === 0 ? 'Carregando…' : `${total} ${total === 1 ? 'venda' : 'vendas'}`}
+        {loading && items.length === 0 ? 'Carregando…' : `${total} ${total === 1 ? 'venda' : 'vendas'}${filtered ? ' com os filtros atuais' : ''}`}
       </p>
 
       {loading && items.length === 0 && (

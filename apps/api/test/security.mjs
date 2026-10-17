@@ -170,6 +170,7 @@ const adminRoutes = [
   ['POST', '/admin/team/abc/delete'],
   ['POST', '/admin/team/abc/reset-password'],
   ['GET', '/admin/sales'],
+  ['GET', '/admin/sales/export?format=csv'],
   ['POST', '/admin/sales'],
   ['GET', '/admin/sales/abc'],
   ['PATCH', '/admin/sales/abc'],
@@ -750,6 +751,37 @@ if (!PASS) {
       ok('paid in BRL with a negotiated amount: that amount is kept (and the rate is still recorded)', r.status === 201 && r.json.paidAmountCents === 50000 && r.json.fxRate > 1 && r.json.totalCents === 10000, JSON.stringify(r.json).slice(0, 200));
     }
     await mut('DELETE', `/admin/products/${PF.id}`, session);
+  }
+
+  // Export and filters (period / category): admin-only downloads of the filtered sales
+  {
+    r = await call('GET', '/admin/sales/export?format=csv', { cookie: session });
+    const cd = r.headers.get('content-disposition') || '';
+    const csv = typeof r.json === 'string' ? r.json : '';
+    ok('sales export (CSV) → 200 attachment with a UTF-8 BOM, ";" header and our sale inside', r.status === 200 && /^attachment; filename="vendas-d{4}-d{2}-d{2}.csv"$/.test(cd) && csv.startsWith('﻿Pedido;Data;') && csv.includes(`Cust ${tag}`), `${r.status} ${cd} ${csv.slice(0, 60)}`);
+    ok('the export is never cached', /no-store/.test(r.headers.get('cache-control') || '') && r.headers.get('x-content-type-options') === 'nosniff');
+    r = await call('GET', '/admin/sales/export?format=xlsx', { cookie: session });
+    ok('sales export (XLSX) → a real .xlsx (zip)', r.status === 200 && /spreadsheetml.sheet/.test(r.headers.get('content-type') || '') && typeof r.json === 'string' && r.json.startsWith('PK'), `${r.status} ${r.headers.get('content-type')}`);
+    r = await call('GET', '/admin/sales/export?format=pdf', { cookie: session });
+    ok('export with an unknown format → 400', r.status === 400, r.status);
+    r = await call('GET', '/admin/sales/export', { cookie: session });
+    ok('export without a format → 400', r.status === 400, r.status);
+    r = await call('GET', '/admin/sales/export?format=csv&from=2099-01-01T00:00:00Z', { cookie: session });
+    ok('export honours the period filter (future → header only)', r.status === 200 && r.json.trimEnd().split('\r\n').length === 1, String(r.json).slice(0, 80));
+    r = await call('GET', '/admin/sales/export?format=csv&category=NoSuchCategoryZZ', { cookie: session });
+    ok('export honours the category filter (unknown category → header only)', r.status === 200 && r.json.trimEnd().split('\r\n').length === 1, String(r.json).slice(0, 80));
+    r = await call('GET', '/admin/sales/export?format=csv&category=SecTest', { cookie: session });
+    ok('export with an existing category → our sales', r.status === 200 && r.json.includes(`Cust ${tag}`), String(r.json).slice(0, 80));
+    r = await call('GET', '/admin/sales?category=SecTest', { cookie: session });
+    const withCat = r.json.total;
+    r = await call('GET', '/admin/sales?category=NoSuchCategoryZZ', { cookie: session });
+    ok('list filters by category', withCat >= 1 && r.json.total === 0, `${withCat} / ${r.json.total}`);
+    r = await call('GET', '/admin/sales?from=2099-01-01T00:00:00Z', { cookie: session });
+    ok('list filters by period (nothing in the future)', r.status === 200 && r.json.total === 0, r.json.total);
+    r = await call('GET', '/admin/sales/export?format=csv&category=' + 'x'.repeat(81), { cookie: session });
+    ok('export rejects an oversized category filter → 400', r.status === 400, r.status);
+    r = await call('GET', '/admin/audit-log?pageSize=20', { cookie: session });
+    ok('the export is recorded in the activity log', r.status === 200 && r.json.items.some((e) => e.action === 'sale.export'), JSON.stringify(r.json.items?.slice(0, 2)).slice(0, 160));
   }
   r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
   const afterP1 = r.json;
