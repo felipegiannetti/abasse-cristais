@@ -42,6 +42,10 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
           key={l}
           href={localePath(l, base)}
           scroll={false}
+          // Never prefetch: the unprefixed English URL ("/") answers with a cookie-based redirect to /pt or /es for
+          // someone who saved another language, and a prefetched redirect would be cached and replayed when they
+          // click "EN", sending them straight back. The click navigates after the language cookie is updated.
+          prefetch={false}
           lang={l}
           hrefLang={l}
           aria-current={l === locale ? 'true' : undefined}
