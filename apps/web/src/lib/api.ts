@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache';
 import { site } from '@/content/site';
 import { getMessages, type Locale, type Messages } from '@/i18n';
 import { applyTemplateOverrides, type TemplatesMap } from '@/i18n/templates';
@@ -6,6 +7,14 @@ import type { CategoryCount, FxInfo, Product, ProductList } from './types';
 // Leitura pública feita no servidor (Server Components), com cache por tag.
 const API_URL = (process.env.API_URL || 'http://localhost:4000').replace(/\/$/, '');
 
+/**
+ * Call when the API did not give a usable answer and a fallback is shown instead. It opts the page out of
+ * static generation/ISR caching, so the fallback (an empty catalogue, no exchange rate…) is only ever shown to
+ * the request that hit the failure — never frozen into a prerendered page (e.g. a build made while the API was
+ * down) that would keep serving "no products" until the next revalidation.
+ */
+const degraded = () => noStore();
+
 export const PRODUCTS_TAG = 'products';
 export const SETTINGS_TAG = 'settings';
 export const FX_TAG = 'fx';
@@ -13,10 +22,14 @@ export const FX_TAG = 'fx';
 async function get<T>(path: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(`${API_URL}${path}`, { next: { revalidate: 60, tags: [PRODUCTS_TAG] } });
-    if (!res.ok) return fallback;
+    if (!res.ok) {
+      degraded();
+      return fallback;
+    }
     return (await res.json()) as T;
   } catch {
-    // API fora do ar (ou no build): o site continua abrindo, só sem produtos.
+    // API fora do ar (ou no build): o site continua abrindo, só sem produtos, e essa página não é guardada.
+    degraded();
     return fallback;
   }
 }
@@ -40,8 +53,14 @@ export async function fetchProduct(slug: string, locale?: string): Promise<Produ
     const res = await fetch(`${API_URL}/products/${encodeURIComponent(slug)}${locale ? `?locale=${encodeURIComponent(locale)}` : ''}`, {
       next: { revalidate: 60, tags: [PRODUCTS_TAG] },
     });
-    return res.ok ? ((await res.json()) as Product) : null;
+    if (res.status === 404) return null; // a real "no such product": fine to cache
+    if (!res.ok) {
+      degraded();
+      return null;
+    }
+    return (await res.json()) as Product;
   } catch {
+    degraded();
     return null;
   }
 }
@@ -54,13 +73,20 @@ export async function fetchProduct(slug: string, locale?: string): Promise<Produ
 export async function fetchFx(): Promise<FxInfo | null> {
   try {
     const res = await fetch(`${API_URL}/fx/usd-brl`, { next: { revalidate: 3600, tags: [FX_TAG] } });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      degraded();
+      return null;
+    }
     const d = (await res.json()) as Partial<FxInfo>;
     const sources = ['BCB_PTAX', 'AWESOMEAPI'];
-    if (typeof d.rate !== 'number' || !(d.rate > 1 && d.rate < 20) || typeof d.asOf !== 'string' || !sources.includes(d.source ?? '')) return null;
+    if (typeof d.rate !== 'number' || !(d.rate > 1 && d.rate < 20) || typeof d.asOf !== 'string' || !sources.includes(d.source ?? '')) {
+      degraded();
+      return null;
+    }
     const previousRate = typeof d.previousRate === 'number' && d.previousRate > 1 && d.previousRate < 20 ? d.previousRate : null;
     return { rate: d.rate, asOf: d.asOf, source: d.source as FxInfo['source'], stale: d.stale === true, previousRate };
   } catch {
+    degraded();
     return null;
   }
 }
@@ -84,7 +110,10 @@ export async function fetchContact(): Promise<ContactSettings> {
   const fallback: ContactSettings = { whatsapp: site.whatsapp, sms: '', email: '', templates: {} };
   try {
     const res = await fetch(`${API_URL}/settings/public`, { next: { revalidate: 60, tags: [SETTINGS_TAG] } });
-    if (!res.ok) return fallback;
+    if (!res.ok) {
+      degraded();
+      return fallback;
+    }
     const data = (await res.json()) as Partial<ContactSettings>;
     return {
       whatsapp: /^\d{10,15}$/.test(data.whatsapp ?? '') ? (data.whatsapp as string) : fallback.whatsapp,
@@ -93,6 +122,7 @@ export async function fetchContact(): Promise<ContactSettings> {
       templates: data.templates && typeof data.templates === 'object' ? data.templates : {},
     };
   } catch {
+    degraded();
     return fallback;
   }
 }
