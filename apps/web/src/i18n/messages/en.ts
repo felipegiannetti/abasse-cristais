@@ -14,7 +14,12 @@ export const en = {
     cancel: 'Cancel',
     genericError: 'Something went wrong. Please try again.',
   },
-  price: { onRequest: 'On request', perKg: 'per kg' },
+  price: {
+    onRequest: 'On request',
+    perKg: 'per kg',
+    fxNote: 'Prices converted to reais at the {source} of {date}: US$ 1 = R$ {rate}.',
+    fxSource: { BCB_PTAX: 'official Banco Central (PTAX) rate', AWESOMEAPI: 'market rate (AwesomeAPI)' },
+  },
   nav: {
     home: 'Home',
     collection: 'Collection',

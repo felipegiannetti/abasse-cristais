@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import type { FxInfo } from '@/lib/types';
 import { localePath, type Locale } from './config';
 import type { Messages } from './messages/types';
 
@@ -15,6 +16,8 @@ interface I18n {
   sms: string;
   /** Contact email configured by the admin; empty hides the Email contact option. */
   email: string;
+  /** USD→BRL rate, only set on the Portuguese site; null shows prices in dollars. */
+  fx: FxInfo | null;
 }
 
 const Ctx = createContext<I18n | null>(null);
@@ -25,6 +28,7 @@ export function I18nProvider({
   whatsapp = '',
   sms = '',
   email = '',
+  fx = null,
   children,
 }: {
   locale: Locale;
@@ -32,11 +36,12 @@ export function I18nProvider({
   whatsapp?: string;
   sms?: string;
   email?: string;
+  fx?: FxInfo | null;
   children: ReactNode;
 }) {
   const value = useMemo<I18n>(
-    () => ({ locale, m: messages, href: (p) => localePath(locale, p), whatsapp, sms, email }),
-    [locale, messages, whatsapp, sms, email],
+    () => ({ locale, m: messages, href: (p) => localePath(locale, p), whatsapp, sms, email, fx }),
+    [locale, messages, whatsapp, sms, email, fx],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

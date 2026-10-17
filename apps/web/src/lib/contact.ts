@@ -1,7 +1,7 @@
 import { site } from '@/content/site';
 import { fmt, localePath, type Locale } from '@/i18n/config';
 import { formatPrice, type Messages } from '@/i18n';
-import type { Product } from './types';
+import type { FxInfo, Product } from './types';
 
 /**
  * `sms:` URI. Body separator differs by platform (iOS wants "&", Android wants "?"); "?&body="
@@ -21,11 +21,12 @@ export function productSms(
   p: Pick<Product, 'name' | 'slug' | 'priceCents' | 'saleMode'>,
   locale: Locale,
   m: Messages,
+  fx: Pick<FxInfo, 'rate'> | null = null,
 ): string {
   return fmt(m.sms.product, {
     brand: site.name,
     name: p.name,
-    price: formatPrice(p.priceCents, locale, m, p.saleMode),
+    price: formatPrice(p.priceCents, locale, m, p.saleMode, fx),
     url: `${site.url}${localePath(locale, `/products/${p.slug}`)}`,
   });
 }
@@ -41,11 +42,12 @@ export function productEmailBody(
   p: Pick<Product, 'name' | 'slug' | 'priceCents' | 'saleMode'>,
   locale: Locale,
   m: Messages,
+  fx: Pick<FxInfo, 'rate'> | null = null,
 ): string {
   return fmt(m.email.product, {
     brand: site.name,
     name: p.name,
-    price: formatPrice(p.priceCents, locale, m, p.saleMode),
+    price: formatPrice(p.priceCents, locale, m, p.saleMode, fx),
     url: `${site.url}${localePath(locale, `/products/${p.slug}`)}`,
   });
 }

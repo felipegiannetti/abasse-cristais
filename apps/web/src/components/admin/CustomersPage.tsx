@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { countryName, flag } from '@/lib/countries';
-import { STATUS_LABELS, brl, formatGrams } from '@/lib/format';
+import { STATUS_LABELS, usd, formatGrams } from '@/lib/format';
 import type { Customer } from '@/lib/types';
 import { IconEdit, IconPlus, IconSearch, IconShield, IconTrash } from './AdminIcons';
 import { AddressFields, addressComplete, addressFilled, emptyAddress, type AddressForm } from './AddressFields';
@@ -187,7 +187,7 @@ export function CustomersPage() {
                 <p className="mt-3 truncate text-sm text-pearl/55">{[c.email, c.phone].filter(Boolean).join(' · ') || 'Sem contato'}</p>
                 <div className="mt-4 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
                   <div><p className="text-xs uppercase tracking-wider text-pearl/40">Pedidos</p><p className="font-display text-2xl tabular-nums text-pearl">{c.orders ?? 0}</p></div>
-                  <div><p className="text-xs uppercase tracking-wider text-pearl/40">Total gasto</p><p className="font-display text-2xl tabular-nums text-gold-300">{brl(c.spentCents ?? 0)}</p></div>
+                  <div><p className="text-xs uppercase tracking-wider text-pearl/40">Total gasto</p><p className="font-display text-2xl tabular-nums text-gold-300">{usd(c.spentCents ?? 0)}</p></div>
                 </div>
                 <p className="mt-2 text-xs text-pearl/40">{c.lastPurchaseAt ? `Última compra em ${fmtDate(c.lastPurchaseAt)}` : 'Ainda não comprou'}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -246,7 +246,7 @@ export function CustomersPage() {
                         <span className="text-xs text-pearl/45">{fmtDate(s.soldAt)}{s.shippingMethod ? ` · ${s.shippingMethod}` : ''}{s.trackingCode ? ` · ${s.trackingCode}` : ''}</span>
                       </span>
                       <span className={`rounded-md border px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLE[s.status]}`}>{STATUS_LABELS[s.status]}</span>
-                      <span className="w-24 text-right text-sm font-semibold tabular-nums text-pearl">{brl(s.totalCents)}</span>
+                      <span className="w-24 text-right text-sm font-semibold tabular-nums text-pearl">{usd(s.totalCents)}</span>
                     </Link>
                   </li>
                 ))}

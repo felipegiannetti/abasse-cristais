@@ -12,7 +12,7 @@ import { WhatsAppIcon } from './icons';
 import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export function ProductCard({ product, priority = false }: { product: Product; priority?: boolean }) {
-  const { locale, m, href } = useI18n();
+  const { locale, m, href, fx } = useI18n();
   const soldOut = product.status === 'SOLD_OUT' || !product.inStock;
   const cover = product.images[0]?.url;
   const second = product.images[1]?.url;
@@ -50,14 +50,14 @@ export function ProductCard({ product, priority = false }: { product: Product; p
         <div className="flex flex-1 flex-col gap-1 p-5 pb-3">
           <h3 className="font-display text-2xl font-semibold leading-tight text-pearl">{product.name}</h3>
           <p className={`text-lg font-semibold ${product.priceCents == null ? 'text-pearl/60' : 'text-gold-300'}`}>
-            {formatPrice(product.priceCents, locale, m, product.saleMode)}
+            {formatPrice(product.priceCents, locale, m, product.saleMode, fx)}
           </p>
         </div>
       </Link>
 
       <div className="p-5 pt-2">
         <WhatsAppLink
-          message={productMessage(product, locale, m)} source="PRODUCT_CARD" productSlug={product.slug}
+          message={productMessage(product, locale, m, fx)} source="PRODUCT_CARD" productSlug={product.slug}
           className={`btn w-full ${soldOut ? 'btn-ghost' : 'btn-primary'}`}
         >
           <WhatsAppIcon className="h-4 w-4" />

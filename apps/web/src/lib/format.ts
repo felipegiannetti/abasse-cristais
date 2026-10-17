@@ -23,8 +23,12 @@ export function centsToInput(cents: number | null | undefined, locale: Locale): 
   return locale === 'en' ? s : s.replace('.', ',');
 }
 
+const USD = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'USD' });
+/** Money in the admin: US dollars (the stored currency), Brazilian number formatting: "US$ 1.299,00". */
+export const usd = (cents: number) => USD.format(cents / 100);
+
 const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
-/** Money in the admin: always R$ and Brazilian formatting. */
+/** Reais (what a customer paid in BRL): "R$ 6.601,34". */
 export const brl = (cents: number) => BRL.format(cents / 100);
 
 /** 1500 → "1,5 kg"; 350 → "350 g". */

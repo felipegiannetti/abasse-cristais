@@ -728,6 +728,29 @@ if (!PASS) {
   ok('sale keeps the customer name and the destination address as snapshots (worldwide: country US)', S1.customerName === `Cust ${tag}` && S1.shipTo?.country === 'US' && S1.shipTo?.city === 'Austin', JSON.stringify(S1.shipTo));
   ok('sale items keep name, mode and per-line totals', S1.items.length === 2 && S1.items.some((i) => i.mode === 'WEIGHT' && i.quantity === 500 && i.totalCents === 25000) && S1.items.some((i) => i.mode === 'UNIT' && i.totalCents === 20000));
   ok('sale has a human order number', Number.isInteger(S1.number) && S1.number > 0);
+  ok('sales are stored in US dollars; paid in USD by default (no rate, received = total)', S1.currency === 'USD' && S1.paidCurrency === 'USD' && S1.fxRate === null && S1.paidAmountCents === S1.totalCents, JSON.stringify({ c: S1.currency, p: S1.paidCurrency, f: S1.fxRate, a: S1.paidAmountCents }));
+  {
+    // payment currency: BRL records the reais received and the rate in force; its own product so the stock checks above stay exact
+    const fxProbe = await call('GET', '/fx/usd-brl');
+    const fxOk = fxProbe.status === 200;
+    const pr = await mut('POST', '/admin/products', session, { name: `Sec FX ${tag}`, description: 'd', category: 'SecTest', priceCents: 10000, stockQuantity: 5 });
+    const PF = pr.json;
+    const base = { customerId: C1.id, paymentMethod: 'PIX', items: [{ productId: PF.id, quantity: 1 }] };
+    r = await mut('POST', '/admin/sales', session, { ...base, paidCurrency: 'EUR' });
+    ok('an unsupported paid currency → 400', r.status === 400, r.status);
+    r = await mut('POST', '/admin/sales', session, { ...base, paidAmountCents: 5000 });
+    ok('a received amount without paidCurrency BRL → 400 PAID_AMOUNT_NEEDS_BRL', r.status === 400 && r.json.code === 'PAID_AMOUNT_NEEDS_BRL', JSON.stringify(r.json));
+    if (!fxOk) {
+      skip('sales paid in BRL', 'no exchange rate available (Banco Central and AwesomeAPI unreachable)');
+    } else {
+      r = await mut('POST', '/admin/sales', session, { ...base, paidCurrency: 'BRL' });
+      const sb = r.json;
+      ok('paid in BRL: the dollar total is kept and the reais equivalent uses the recorded rate', r.status === 201 && sb.currency === 'USD' && sb.totalCents === 10000 && sb.paidCurrency === 'BRL' && sb.fxRate > 1 && sb.paidAmountCents === Math.round(10000 * sb.fxRate), JSON.stringify(sb).slice(0, 260));
+      r = await mut('POST', '/admin/sales', session, { ...base, paidCurrency: 'BRL', paidAmountCents: 50000 });
+      ok('paid in BRL with a negotiated amount: that amount is kept (and the rate is still recorded)', r.status === 201 && r.json.paidAmountCents === 50000 && r.json.fxRate > 1 && r.json.totalCents === 10000, JSON.stringify(r.json).slice(0, 200));
+    }
+    await mut('DELETE', `/admin/products/${PF.id}`, session);
+  }
   r = await call('GET', `/admin/products/${P1.id}`, { cookie: session });
   const afterP1 = r.json;
   r = await call('GET', `/admin/products/${P2.id}`, { cookie: session });

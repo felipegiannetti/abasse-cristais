@@ -1,13 +1,14 @@
 import { site } from '@/content/site';
 import { getMessages, type Locale, type Messages } from '@/i18n';
 import { applyTemplateOverrides, type TemplatesMap } from '@/i18n/templates';
-import type { CategoryCount, Product, ProductList } from './types';
+import type { CategoryCount, FxInfo, Product, ProductList } from './types';
 
 // Leitura pública feita no servidor (Server Components), com cache por tag.
 const API_URL = (process.env.API_URL || 'http://localhost:4000').replace(/\/$/, '');
 
 export const PRODUCTS_TAG = 'products';
 export const SETTINGS_TAG = 'settings';
+export const FX_TAG = 'fx';
 
 async function get<T>(path: string, fallback: T): Promise<T> {
   try {
@@ -39,6 +40,24 @@ export async function fetchProduct(slug: string): Promise<Product | null> {
       next: { revalidate: 60, tags: [PRODUCTS_TAG] },
     });
     return res.ok ? ((await res.json()) as Product) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The USD→BRL rate for the Portuguese site (prices are stored in dollars). Cached for an hour here; the API
+ * itself refreshes from the Banco Central (PTAX) with AwesomeAPI as the fallback. null = no rate available,
+ * in which case prices simply stay in dollars.
+ */
+export async function fetchFx(): Promise<FxInfo | null> {
+  try {
+    const res = await fetch(`${API_URL}/fx/usd-brl`, { next: { revalidate: 3600, tags: [FX_TAG] } });
+    if (!res.ok) return null;
+    const d = (await res.json()) as Partial<FxInfo>;
+    const sources = ['BCB_PTAX', 'AWESOMEAPI'];
+    if (typeof d.rate !== 'number' || !(d.rate > 1 && d.rate < 20) || typeof d.asOf !== 'string' || !sources.includes(d.source ?? '')) return null;
+    return { rate: d.rate, asOf: d.asOf, source: d.source as FxInfo['source'], stale: d.stale === true };
   } catch {
     return null;
   }

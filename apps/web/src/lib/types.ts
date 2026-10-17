@@ -30,6 +30,16 @@ export interface Product {
   updatedAt: string;
 }
 
+/** USD→BRL rate used to show prices in reais on the Portuguese site (see GET /fx/usd-brl). */
+export interface FxInfo {
+  /** reais per 1 US dollar */
+  rate: number;
+  /** ISO time the source set the quote */
+  asOf: string;
+  source: 'BCB_PTAX' | 'AWESOMEAPI';
+  stale: boolean;
+}
+
 export interface ProductList {
   items: Product[];
   total: number;
@@ -118,6 +128,10 @@ export interface Sale {
   shippingMethod: string | null;
   shippingCostCents: number;
   trackingCode: string | null;
+  /** money is always US dollars; these record what was actually received when the customer paid in reais */
+  paidCurrency: 'USD' | 'BRL';
+  paidAmountCents: number | null;
+  fxRate: number | null;
   paymentMethod: string;
   discountCents: number;
   subtotalCents: number;
@@ -154,6 +168,10 @@ export interface Customer {
     totalCents: number;
     shippingMethod: string | null;
     trackingCode: string | null;
+  /** money is always US dollars; these record what was actually received when the customer paid in reais */
+  paidCurrency: 'USD' | 'BRL';
+  paidAmountCents: number | null;
+  fxRate: number | null;
     items: { productName: string; mode: SaleMode; quantity: number }[];
   }[];
 }

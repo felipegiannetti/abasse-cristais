@@ -142,7 +142,12 @@ model Sale {
   discountCents     Int         @default(0)
   subtotalCents     Int
   totalCents        Int
-  currency          String      @default("BRL")
+  // All money is stored in US dollars (cents), so this is always "USD". When the customer paid in reais, what
+  // was actually received and the exchange rate used at that moment (BRL per USD) are kept for the records.
+  currency          String      @default("USD")
+  paidCurrency      String      @default("USD")
+  paidAmountCents   Int?
+  fxRate            Decimal?    @db.Decimal(12, 6)
   notes             String?
   // WhatsApp reference code that led to this sale (links clicks → conversations → sales)
   clickRef          String?

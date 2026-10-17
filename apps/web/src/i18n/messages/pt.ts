@@ -16,7 +16,12 @@ export const pt: PublicMessages = {
     cancel: 'Cancelar',
     genericError: 'Algo deu errado. Tente novamente.',
   },
-  price: { onRequest: 'Sob consulta', perKg: 'por kg' },
+  price: {
+    onRequest: 'Sob consulta',
+    perKg: 'por kg',
+    fxNote: 'Valores em dólar (US$) convertidos para reais pela {source} de {date}: US$ 1 = R$ {rate}.',
+    fxSource: { BCB_PTAX: 'cotação oficial do Banco Central (PTAX)', AWESOMEAPI: 'cotação de mercado (AwesomeAPI)' },
+  },
   nav: {
     home: 'Início',
     collection: 'Coleção',

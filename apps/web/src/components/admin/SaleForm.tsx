@@ -7,8 +7,9 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { revalidateCatalog } from '@/app/actions';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
-import { centsToInput, formatGrams, kgToGrams, parsePriceToCents, PAYMENT_LABELS, brl } from '@/lib/format';
+import { brl, centsToInput, formatGrams, kgToGrams, parsePriceToCents, PAYMENT_LABELS, usd } from '@/lib/format';
 import { prepareImage } from '@/lib/image-prepare';
+import { useFx } from '@/lib/useFx';
 import type { Customer, Product, Sale } from '@/lib/types';
 import { IconCheck, IconGem, IconImage, IconPlus, IconSearch, IconTrash, IconTruck } from './AdminIcons';
 import { AddressFields, addressComplete, addressFilled, emptyAddress, type AddressForm } from './AddressFields';
@@ -82,6 +83,10 @@ export function SaleForm() {
   const [tracking, setTracking] = useState('');
   const [discount, setDiscount] = useState('');
   const [payment, setPayment] = useState('PIX');
+  // prices are in dollars; when the customer paid in reais we also record what was received and the rate used
+  const fx = useFx();
+  const [paidCurrency, setPaidCurrency] = useState<'USD' | 'BRL'>('USD');
+  const [paidReais, setPaidReais] = useState('');
   const [status, setStatus] = useState<'PAID' | 'PENDING'>('PAID');
   const [soldAt, setSoldAt] = useState(nowLocal());
   const [clickRef, setClickRef] = useState('');
@@ -192,6 +197,8 @@ export function SaleForm() {
       shippingCostCents: shippingCents,
       trackingCode: tracking || undefined,
       paymentMethod: payment,
+      paidCurrency,
+      ...(paidCurrency === 'BRL' && paidReais.trim() && parsePriceToCents(paidReais) ? { paidAmountCents: parsePriceToCents(paidReais)! } : {}),
       discountCents,
       notes: notes || undefined,
       clickRef: clickRef.trim() || undefined,
@@ -281,10 +288,10 @@ export function SaleForm() {
                           {w && q !== null && <p className="mt-1 text-xs text-pearl/40">= {formatGrams(q)}</p>}
                         </div>
                         <div>
-                          <label className="label" htmlFor={`p-${l.key}`}>{w ? 'Valor por kg (R$)' : 'Valor unitário (R$)'}</label>
+                          <label className="label" htmlFor={`p-${l.key}`}>{w ? 'Valor por kg (US$)' : 'Valor unitário (US$)'}</label>
                           <input id={`p-${l.key}`} className="field" inputMode="decimal" value={l.price} onChange={(e) => setLines((c) => c.map((x) => (x.key === l.key ? { ...x, price: e.target.value } : x)))} />
                         </div>
-                        <p className="pb-3 text-right font-display text-2xl text-gold-300">{brl(lineTotal(l))}</p>
+                        <p className="pb-3 text-right font-display text-2xl text-gold-300">{usd(lineTotal(l))}</p>
                       </div>
                     </motion.li>
                   );
@@ -408,7 +415,7 @@ export function SaleForm() {
                 </div>
               )}
               <div>
-                <label htmlFor="sc" className="label">Frete cobrado (R$)</label>
+                <label htmlFor="sc" className="label">Frete cobrado (US$)</label>
                 <input id="sc" className="field" inputMode="decimal" value={shippingCost} onChange={(e) => setShippingCost(e.target.value)} placeholder="0,00" />
               </div>
             </div>
@@ -424,6 +431,20 @@ export function SaleForm() {
                 </select>
               </div>
               <div>
+                <label htmlFor="cur" className="label">Pago em</label>
+                <select id="cur" className="field" value={paidCurrency} onChange={(e) => setPaidCurrency(e.target.value as 'USD' | 'BRL')}>
+                  <option value="USD">Dólar (US$)</option>
+                  {fx && <option value="BRL">Real (R$)</option>}
+                </select>
+              </div>
+              {paidCurrency === 'BRL' && fx && (
+                <div>
+                  <label htmlFor="paidReais" className="label">Valor recebido em reais (R$)</label>
+                  <input id="paidReais" className="field" inputMode="decimal" value={paidReais} onChange={(e) => setPaidReais(e.target.value)} placeholder={centsToInput(Math.round(total * fx.rate), 'pt')} />
+                  <p className="mt-1.5 text-xs text-pearl/40">Em branco = total convertido pela cotação de hoje (US$ 1 = R$ {fx.rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}).</p>
+                </div>
+              )}
+              <div>
                 <label htmlFor="st" className="label">Situação</label>
                 <select id="st" className="field" value={status} onChange={(e) => setStatus(e.target.value as 'PAID' | 'PENDING')}>
                   <option value="PAID">Pago</option>
@@ -431,7 +452,7 @@ export function SaleForm() {
                 </select>
               </div>
               <div>
-                <label htmlFor="disc" className="label">Desconto (R$)</label>
+                <label htmlFor="disc" className="label">Desconto (US$)</label>
                 <input id="disc" className="field" inputMode="decimal" value={discount} onChange={(e) => setDiscount(e.target.value)} placeholder="0,00" />
               </div>
               <div>
@@ -483,15 +504,18 @@ export function SaleForm() {
           <div className="glass-strong gold-border rounded-3xl p-6">
             <h3 className="font-display text-2xl text-pearl">Resumo</h3>
             <dl className="mt-4 space-y-2.5 text-sm">
-              <div className="flex justify-between"><dt className="text-pearl/55">Subtotal</dt><dd className="tabular-nums text-pearl">{brl(subtotal)}</dd></div>
-              <div className="flex justify-between"><dt className="text-pearl/55">Desconto</dt><dd className="tabular-nums text-pearl">− {brl(discountCents)}</dd></div>
-              <div className="flex justify-between"><dt className="flex items-center gap-1.5 text-pearl/55"><IconTruck className="h-4 w-4" /> Frete</dt><dd className="tabular-nums text-pearl">{brl(shippingCents)}</dd></div>
-              <div className="flex items-baseline justify-between border-t border-white/10 pt-3"><dt className="font-semibold text-pearl">Total</dt><dd className="font-display text-3xl text-gold-300 tabular-nums">{brl(total)}</dd></div>
+              <div className="flex justify-between"><dt className="text-pearl/55">Subtotal</dt><dd className="tabular-nums text-pearl">{usd(subtotal)}</dd></div>
+              <div className="flex justify-between"><dt className="text-pearl/55">Desconto</dt><dd className="tabular-nums text-pearl">− {usd(discountCents)}</dd></div>
+              <div className="flex justify-between"><dt className="flex items-center gap-1.5 text-pearl/55"><IconTruck className="h-4 w-4" /> Frete</dt><dd className="tabular-nums text-pearl">{usd(shippingCents)}</dd></div>
+              <div className="flex items-baseline justify-between border-t border-white/10 pt-3"><dt className="font-semibold text-pearl">Total</dt><dd className="font-display text-3xl text-gold-300 tabular-nums">{usd(total)}</dd></div>
+              {paidCurrency === 'BRL' && fx && (
+                <div className="flex justify-between"><dt className="text-pearl/55">Recebido em reais</dt><dd className="tabular-nums text-pearl">{brl(parsePriceToCents(paidReais) ?? Math.round(total * fx.rate))}</dd></div>
+              )}
             </dl>
             {lines.length > 0 && (
               <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm">
-                <div className="flex justify-between"><span className="text-pearl/55">Custo estimado</span><span className="tabular-nums text-pearl">{brl(costEstimate)}</span></div>
-                <div className="mt-1.5 flex justify-between"><span className="text-pearl/55">Lucro estimado</span><span className={`tabular-nums font-semibold ${subtotal - discountCents - costEstimate >= 0 ? 'text-gold-300' : 'text-red-300'}`}>{brl(subtotal - discountCents - costEstimate)}</span></div>
+                <div className="flex justify-between"><span className="text-pearl/55">Custo estimado</span><span className="tabular-nums text-pearl">{usd(costEstimate)}</span></div>
+                <div className="mt-1.5 flex justify-between"><span className="text-pearl/55">Lucro estimado</span><span className={`tabular-nums font-semibold ${subtotal - discountCents - costEstimate >= 0 ? 'text-gold-300' : 'text-red-300'}`}>{usd(subtotal - discountCents - costEstimate)}</span></div>
                 {missingCost && <p className="mt-2 text-xs text-amber-300/80">Alguma pedra está sem custo cadastrado: o lucro real é menor que o estimado.</p>}
               </div>
             )}

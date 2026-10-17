@@ -339,7 +339,7 @@ export const adminMessages = {
       namePh: 'Ex.: Drusa de Ametista',
       category: 'Categoria',
       categoryPh: 'Ex.: Ametista',
-      price: 'Valor (R$)',
+      price: 'Valor (US$)',
       pricePh: '159,90',
       priceHint: 'Deixe em branco para exibir “Sob consulta”.',
       description: 'Descrição',

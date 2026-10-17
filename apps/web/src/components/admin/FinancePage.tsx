@@ -5,7 +5,8 @@ import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { countryName, flag } from '@/lib/countries';
-import { PAYMENT_LABELS, SOURCE_LABELS, brl, formatGrams } from '@/lib/format';
+import { PAYMENT_LABELS, SOURCE_LABELS, brl, usd, formatGrams } from '@/lib/format';
+import { useFx } from '@/lib/useFx';
 import type { ClicksSummary, FinanceSummary } from '@/lib/types';
 import { IconChart, IconCheck, IconGem, IconSparkle, IconStar, IconTruck, IconCart } from './AdminIcons';
 import { AreaChart, DonutChart, Funnel, HBars } from './charts';
@@ -60,6 +61,10 @@ export function FinancePage() {
   const [error, setError] = useState('');
   const [ref, setRef] = useState('');
   const [confirming, setConfirming] = useState(false);
+  // money is stored in dollars; "R$" shows the same numbers converted at the current rate
+  const fx = useFx();
+  const [inReais, setInReais] = useState(false);
+  const money = (cents: number) => (inReais && fx ? brl(Math.round(cents * fx.rate)) : usd(cents));
 
   const load = useCallback(() => {
     setError('');
@@ -104,6 +109,16 @@ export function FinancePage() {
           <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">Como está o negócio</h1>
           <p className="mt-3 max-w-xl text-pearl/55">Faturamento, lucro, produtos e países que mais vendem, e quantos cliques no WhatsApp viraram venda.</p>
         </div>
+        <div className="flex flex-wrap items-center gap-3">
+        {fx && (
+          <div role="group" aria-label="Moeda" className="glass inline-flex gap-1 rounded-lg p-1">
+            {([['USD', 'US$', false], ['BRL', 'R$', true]] as const).map(([k, label, reais]) => (
+              <button key={k} type="button" aria-pressed={inReais === reais} onClick={() => setInReais(reais)} className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${inReais === reais ? 'bg-gold-400 text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
         <div role="tablist" className="glass inline-flex flex-wrap gap-1 rounded-lg p-1">
           {RANGES.map((r) => (
             <button key={r.key} role="tab" aria-selected={range === r.key} onClick={() => setRange(r.key)} className={`relative whitespace-nowrap rounded-md px-3.5 py-1.5 text-sm font-medium transition-colors ${range === r.key ? 'text-navy-950' : 'text-pearl/65 hover:text-pearl'}`}>
@@ -111,6 +126,7 @@ export function FinancePage() {
               <span className="relative">{r.label}</span>
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -123,16 +139,16 @@ export function FinancePage() {
         <motion.div key={range} variants={container} initial="hidden" animate="show" className="mt-8 space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Kpi accent icon={<IconCart />} label="Faturamento" note={delta !== null ? <span className={delta >= 0 ? 'text-emerald-300' : 'text-red-300'}>{delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}% vs. período anterior</span> : <span className="text-pearl/35">sem período anterior</span>}>
-              {brl(Math.round(fin.revenueCents))}
+              {money(Math.round(fin.revenueCents))}
             </Kpi>
             <Kpi icon={<IconChart />} label="Lucro" note={fin.marginPct !== null ? <span className="text-pearl/55">margem {fin.marginPct.toLocaleString('pt-BR')}%{fin.costCoveragePct < 100 && <span className="text-amber-300/80"> · custo em {fin.costCoveragePct}% das vendas</span>}</span> : <span className="text-amber-300/80">cadastre o custo dos produtos</span>}>
-              {brl(Math.round(fin.profitCents))}
+              {money(Math.round(fin.profitCents))}
             </Kpi>
-            <Kpi icon={<IconGem />} label="Pedidos" note={<span className="text-pearl/55">ticket médio {brl(fin.averageTicketCents)}</span>}>
+            <Kpi icon={<IconGem />} label="Pedidos" note={<span className="text-pearl/55">ticket médio {money(fin.averageTicketCents)}</span>}>
               {fin.orders.toLocaleString('pt-BR')}
             </Kpi>
             <Kpi icon={<IconTruck />} label="Frete cobrado" note={<span className="text-pearl/55">{fin.units} peças · {formatGrams(fin.grams)} vendidos</span>}>
-              {brl(Math.round(fin.shippingCents))}
+              {money(Math.round(fin.shippingCents))}
             </Kpi>
           </div>
 
@@ -142,7 +158,7 @@ export function FinancePage() {
             ) : (
               <AreaChart
                 points={fin.series.map((s) => ({ label: fmtLabel(s.date, fin.perDay), value: s.revenueCents, sub: `${s.orders} ${s.orders === 1 ? 'pedido' : 'pedidos'}` }))}
-                format={brl}
+                format={money}
               />
             )}
           </Panel>
@@ -157,7 +173,7 @@ export function FinancePage() {
                       <li key={c.name} className="flex items-center gap-2.5">
                         <span className="h-3 w-3 shrink-0 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
                         <span className="flex-1 truncate text-pearl/75">{c.name}</span>
-                        <span className="tabular-nums text-pearl/60">{brl(c.revenueCents)}</span>
+                        <span className="tabular-nums text-pearl/60">{money(c.revenueCents)}</span>
                       </li>
                     ))}
                   </ul>
@@ -167,19 +183,19 @@ export function FinancePage() {
 
             <Panel title="Pedras que mais vendem">
               {fin.topProducts.length === 0 ? <p className="text-sm text-pearl/45">Sem vendas.</p> : (
-                <HBars rows={fin.topProducts.map((p) => ({ label: p.name, value: p.revenueCents, note: p.grams > 0 ? formatGrams(p.grams) : `${p.units} un.` }))} format={brl} />
+                <HBars rows={fin.topProducts.map((p) => ({ label: p.name, value: p.revenueCents, note: p.grams > 0 ? formatGrams(p.grams) : `${p.units} un.` }))} format={money} />
               )}
             </Panel>
 
             <Panel title="Países (envio para o mundo)">
               {fin.byCountry.length === 0 ? <p className="text-sm text-pearl/45">Sem vendas.</p> : (
-                <HBars rows={fin.byCountry.map((c) => ({ label: `${flag(c.country)} ${c.country === '—' ? 'Sem endereço' : countryName(c.country)}`, value: c.revenueCents, note: `${c.orders} ${c.orders === 1 ? 'pedido' : 'pedidos'}` }))} format={brl} />
+                <HBars rows={fin.byCountry.map((c) => ({ label: `${flag(c.country)} ${c.country === '—' ? 'Sem endereço' : countryName(c.country)}`, value: c.revenueCents, note: `${c.orders} ${c.orders === 1 ? 'pedido' : 'pedidos'}` }))} format={money} />
               )}
             </Panel>
 
             <Panel title="Formas de pagamento">
               {fin.byPayment.length === 0 ? <p className="text-sm text-pearl/45">Sem vendas.</p> : (
-                <HBars rows={fin.byPayment.map((p) => ({ label: PAYMENT_LABELS[p.method] ?? p.method, value: p.revenueCents, note: `${p.orders}×` }))} format={brl} />
+                <HBars rows={fin.byPayment.map((p) => ({ label: PAYMENT_LABELS[p.method] ?? p.method, value: p.revenueCents, note: `${p.orders}×` }))} format={money} />
               )}
             </Panel>
           </div>

@@ -5,7 +5,7 @@ import { site } from '@/content/site';
 import { getMessages, getPublicMessages, htmlLang, isLocale, locales, ogLocale } from '@/i18n';
 import { I18nProvider } from '@/i18n/provider';
 import { applyTemplateOverrides } from '@/i18n/templates';
-import { fetchContact } from '@/lib/api';
+import { fetchContact, fetchFx } from '@/lib/api';
 import '../globals.css';
 
 const display = Cormorant_Garamond({
@@ -55,7 +55,8 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const contact = await fetchContact();
+  // prices are stored in dollars; only the Portuguese site needs the rate to show reais
+  const [contact, fx] = await Promise.all([fetchContact(), locale === 'pt' ? fetchFx() : Promise.resolve(null)]);
   // getPublicMessages returns the shared, module-level dictionary — applyTemplateOverrides returns a
   // fresh object rather than mutating it, so other requests/locales are never affected.
   const messages = applyTemplateOverrides(getPublicMessages(locale), contact.templates[locale]);
@@ -63,7 +64,7 @@ export default async function LocaleLayout({
   return (
     <html lang={htmlLang[locale]} className={`${display.variable} ${sans.variable}`} data-scroll-behavior="smooth">
       <body className="min-h-dvh antialiased">
-        <I18nProvider locale={locale} messages={messages} whatsapp={contact.whatsapp} sms={contact.sms} email={contact.email}>
+        <I18nProvider locale={locale} messages={messages} whatsapp={contact.whatsapp} sms={contact.sms} email={contact.email} fx={fx}>
           {children}
         </I18nProvider>
       </body>

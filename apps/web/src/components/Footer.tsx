@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { site } from '@/content/site';
+import { fxNote } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import { generalMessage } from '@/lib/whatsapp';
 import { LanguageSwitcher } from './LanguageSwitcher';
@@ -10,7 +11,7 @@ import { GlobeIcon, WhatsAppIcon } from './icons';
 import { WhatsAppLink } from '@/components/WhatsAppLink';
 
 export function Footer() {
-  const { m, href } = useI18n();
+  const { m, href, fx } = useI18n();
   return (
     <footer className="relative mt-32 border-t border-white/[0.07]">
       <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:px-8 md:grid-cols-[1.4fr_1fr_1fr]">
@@ -49,6 +50,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/[0.05] py-6 text-center text-xs text-pearl/40">
+        {fx && <p className="mx-auto mb-2 max-w-3xl px-5">{fxNote(fx, m)}</p>}
         © {new Date().getFullYear()} {site.name}. {m.footer.rights}
       </div>
     </footer>

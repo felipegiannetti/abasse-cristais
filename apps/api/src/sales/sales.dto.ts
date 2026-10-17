@@ -205,6 +205,18 @@ export class CreateSaleDto {
   @IsIn(PAYMENT_METHODS)
   paymentMethod: (typeof PAYMENT_METHODS)[number];
 
+  /** Currency the customer actually paid in. Prices and totals are always US dollars; "BRL" records the reais received. */
+  @IsOptional()
+  @IsIn(['USD', 'BRL'])
+  paidCurrency?: 'USD' | 'BRL';
+
+  /** Reais (centavos) actually received, when paid in BRL. Omitted = total × the current exchange rate. */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(MAX_MONEY_CENTS * 10)
+  paidAmountCents?: number;
+
   @IsOptional()
   @IsInt()
   @Min(0)

@@ -16,7 +16,12 @@ export const es: PublicMessages = {
     cancel: 'Cancelar',
     genericError: 'Algo salió mal. Inténtalo de nuevo.',
   },
-  price: { onRequest: 'Consultar precio', perKg: 'por kg' },
+  price: {
+    onRequest: 'Consultar precio',
+    perKg: 'por kg',
+    fxNote: 'Precios convertidos a reales con la {source} del {date}: US$ 1 = R$ {rate}.',
+    fxSource: { BCB_PTAX: 'cotización oficial del Banco Central (PTAX)', AWESOMEAPI: 'cotización de mercado (AwesomeAPI)' },
+  },
   nav: {
     home: 'Inicio',
     collection: 'Colección',

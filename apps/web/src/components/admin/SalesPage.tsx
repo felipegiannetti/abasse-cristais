@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { flag } from '@/lib/countries';
-import { STATUS_LABELS, brl, formatGrams } from '@/lib/format';
+import { STATUS_LABELS, usd, formatGrams } from '@/lib/format';
 import type { Sale, SaleStatus } from '@/lib/types';
 import { IconPlus, IconSearch, IconTruck } from './AdminIcons';
 import { Pagination } from './Pagination';
@@ -173,7 +173,7 @@ export function SalesPage() {
                   )}
                 </div>
                 <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:gap-1.5">
-                  <span className="font-display text-2xl text-gold-300">{brl(s.totalCents)}</span>
+                  <span className="font-display text-2xl text-gold-300">{usd(s.totalCents)}</span>
                   <span className={`rounded-md border px-3 py-1 text-xs font-semibold ${STATUS_STYLE[s.status]}`}>{STATUS_LABELS[s.status]}</span>
                 </div>
               </Link>

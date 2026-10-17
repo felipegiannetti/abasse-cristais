@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { fmt } from '@/i18n/config';
-import { fetchContact, fetchMessages, fetchProduct } from '@/lib/api';
+import { fetchContact, fetchFx, fetchMessages, fetchProduct } from '@/lib/api';
 import { makeRef } from '@/lib/ref';
 import { productMessage, whatsappUrl } from '@/lib/whatsapp';
 
@@ -21,10 +21,10 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const product = await fetchProduct(slug);
   if (!product) return NextResponse.redirect(new URL('/pt/products', _req.url));
 
-  const [contact, m] = await Promise.all([fetchContact(), fetchMessages('pt')]);
+  const [contact, m, fx] = await Promise.all([fetchContact(), fetchMessages('pt'), fetchFx()]); // the QR message is Portuguese: reais
   const ref = makeRef();
   const tail = fmt(m.whatsapp.tail, { ref, origin: m.whatsapp.origins.QR_CODE });
-  const message = `${productMessage(product, 'pt', m)}\n\n${tail}`;
+  const message = `${productMessage(product, 'pt', m, fx)}\n\n${tail}`;
 
   try {
     await fetch(`${API_URL}/track/click`, {

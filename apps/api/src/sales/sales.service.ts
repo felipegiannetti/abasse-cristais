@@ -4,11 +4,13 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ServiceUnavailableException,
   UnsupportedMediaTypeException,
 } from '@nestjs/common';
 import { Prisma, ProductStatus, SaleMode, SaleStatus } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { FinanceService } from '../finance/finance.service';
+import { FxService } from '../fx/fx.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { detectImage } from '../products/image-type';
 import { imageUrl } from '../products/products.service';
@@ -61,6 +63,9 @@ export function serializeSale(s: SaleFull) {
     subtotalCents: s.subtotalCents,
     totalCents: s.totalCents,
     currency: s.currency,
+    paidCurrency: s.paidCurrency,
+    paidAmountCents: s.paidAmountCents,
+    fxRate: s.fxRate === null ? null : Number(s.fxRate),
     notes: s.notes,
     clickRef: s.clickRef,
     createdAt: s.createdAt,
@@ -88,6 +93,7 @@ export class SalesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly finance: FinanceService,
+    private readonly fx: FxService,
   ) {}
 
   // ------------------------------------------------------------- read
@@ -126,6 +132,17 @@ export class SalesService {
   async create(actorId: string, dto: CreateSaleDto) {
     if (dto.status === 'CANCELLED') throw err(400, 'INVALID_STATUS', 'A new sale cannot start cancelled.');
     if (!dto.customerId && !dto.customer) throw err(400, 'CUSTOMER_REQUIRED', 'Choose a customer or enter the customer data.');
+    if (dto.paidAmountCents !== undefined && dto.paidCurrency !== 'BRL') {
+      throw err(400, 'PAID_AMOUNT_NEEDS_BRL', 'paidAmountCents only applies to sales paid in BRL.');
+    }
+
+    // paid in reais: the rate in force right now is recorded with the sale (a network call, so before the transaction)
+    let fxRate: number | null = null;
+    if (dto.paidCurrency === 'BRL') {
+      const fx = await this.fx.current();
+      if (!fx) throw new ServiceUnavailableException({ code: 'FX_UNAVAILABLE', message: 'The exchange rate is unavailable right now. Try again in a moment.' });
+      fxRate = fx.rate;
+    }
 
     const saleId = await this.prisma.$transaction(async (tx) => {
       // customer (existing or created inline)
@@ -161,6 +178,8 @@ export class SalesService {
       if (discount > subtotal) throw err(400, 'DISCOUNT_TOO_HIGH', 'The discount cannot exceed the items subtotal.');
       const total = subtotal - discount + shipping;
       if (total > MAX_TOTAL_CENTS) throw err(400, 'TOTAL_TOO_LARGE', 'The sale total is too large.');
+      // what was actually received: the dollar total, or its reais equivalent (or the negotiated amount)
+      const paidAmountCents = fxRate === null ? total : (dto.paidAmountCents ?? Math.round(total * fxRate));
 
       // address snapshot: what was typed for this sale, else the customer's registered address
       const shipTo = dto.shipTo
@@ -188,6 +207,10 @@ export class SalesService {
           shippingCostCents: shipping,
           trackingCode: dto.trackingCode ?? null,
           paymentMethod: dto.paymentMethod,
+          currency: 'USD',
+          paidCurrency: fxRate === null ? 'USD' : 'BRL',
+          paidAmountCents,
+          fxRate,
           discountCents: discount,
           subtotalCents: subtotal,
           totalCents: total,

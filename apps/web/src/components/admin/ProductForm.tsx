@@ -197,7 +197,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
                 </datalist>
               </div>
               <div>
-                <label htmlFor="price" className="label">{saleMode === 'WEIGHT' ? 'Valor (R$) por quilo' : 'Valor (R$) por peça'}</label>
+                <label htmlFor="price" className="label">{saleMode === 'WEIGHT' ? 'Valor (US$) por quilo' : 'Valor (US$) por peça'}</label>
                 <input id="price" className="field" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} placeholder={t.pricePh} />
                 <p className="mt-1.5 text-xs text-pearl/40">{t.priceHint}</p>
               </div>
@@ -253,7 +253,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
                 </div>
               )}
               <div>
-                <label htmlFor="cost" className="label">{saleMode === 'WEIGHT' ? 'Custo por quilo (R$)' : 'Custo por peça (R$)'} {opt}</label>
+                <label htmlFor="cost" className="label">{saleMode === 'WEIGHT' ? 'Custo por quilo (US$)' : 'Custo por peça (US$)'} {opt}</label>
                 <input id="cost" className="field" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="80,00" />
                 <p className="mt-1.5 text-xs text-pearl/40">Só você vê. Usado para calcular lucro e margem no financeiro.</p>
               </div>

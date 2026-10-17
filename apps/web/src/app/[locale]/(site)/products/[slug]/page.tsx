@@ -6,9 +6,9 @@ import { ProductGallery } from '@/components/ProductGallery';
 import { Reveal } from '@/components/Reveal';
 import { GlobeIcon, WhatsAppIcon } from '@/components/icons';
 import { site } from '@/content/site';
-import { formatPrice, getMessages, isLocale, localePath, type Locale } from '@/i18n';
+import { formatPrice, fxNote, getMessages, isLocale, localePath, type Locale } from '@/i18n';
 import { alternates } from '@/i18n/seo';
-import { fetchMessages, fetchProduct } from '@/lib/api';
+import { fetchFx, fetchMessages, fetchProduct } from '@/lib/api';
 import { productMessage } from '@/lib/whatsapp';
 import { WhatsAppLink } from '@/components/WhatsAppLink';
 
@@ -35,9 +35,10 @@ export default async function ProductPage({ params }: Props) {
   const { locale: raw, slug } = await params;
   const locale: Locale = isLocale(raw) ? raw : 'en';
   // independent fetches: run together instead of waterfalling
-  const [m, p] = await Promise.all([
+  const [m, p, fx] = await Promise.all([
     fetchMessages(locale), // getMessages() + any admin-customized WhatsApp text
     fetchProduct(slug),
+    locale === 'pt' ? fetchFx() : Promise.resolve(null), // prices are in dollars; the Portuguese page shows reais
   ]);
   if (!p) notFound();
 
@@ -59,7 +60,7 @@ export default async function ProductPage({ params }: Props) {
     ...(p.priceCents != null && {
       offers: {
         '@type': 'Offer',
-        priceCurrency: 'BRL',
+        priceCurrency: 'USD', // the catalogue price, whatever currency the page displays
         price: (p.priceCents / 100).toFixed(2),
         availability: soldOut ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
         url: `${site.url}${localePath(locale, `/products/${p.slug}`)}`,
@@ -88,8 +89,9 @@ export default async function ProductPage({ params }: Props) {
           <p className="eyebrow">{p.category}</p>
           <h1 className="mt-4 font-display text-5xl font-medium leading-[1.05] text-pearl sm:text-6xl">{p.name}</h1>
           <p className={`mt-5 text-3xl font-semibold ${p.priceCents == null ? 'text-pearl/60' : 'text-gold-300'}`}>
-            {formatPrice(p.priceCents, locale, m, p.saleMode)}
+            {formatPrice(p.priceCents, locale, m, p.saleMode, fx)}
           </p>
+          {fx && p.priceCents != null && <p className="mt-1.5 text-xs text-pearl/45">{fxNote(fx, m)}</p>}
 
           <div className="mt-8 h-px bg-gradient-to-r from-gold-400/50 via-white/10 to-transparent" />
 
@@ -108,7 +110,7 @@ export default async function ProductPage({ params }: Props) {
 
           <div className="mt-10">
             <WhatsAppLink
-              message={productMessage(p, locale, m)} source="PRODUCT_PAGE" productSlug={p.slug}
+              message={productMessage(p, locale, m, fx)} source="PRODUCT_PAGE" productSlug={p.slug}
               className="btn btn-primary w-full py-4 text-base sm:w-auto"
             >
               <WhatsAppIcon className="h-5 w-5" />

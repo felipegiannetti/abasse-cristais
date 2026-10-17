@@ -14,17 +14,17 @@ type ContactProduct = Pick<Product, 'name' | 'slug' | 'priceCents' | 'saleMode'>
  * Renders nothing when the admin hasn't configured either channel.
  */
 export function ProductContactOptions({ product, className = '' }: { product: ContactProduct; className?: string }) {
-  const { locale, m, sms, email } = useI18n();
+  const { locale, m, sms, email, fx } = useI18n();
   if (!sms && !email) return null;
 
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
-      <SmsLink message={productSms(product, locale, m)} className="btn btn-ghost btn-sm">
+      <SmsLink message={productSms(product, locale, m, fx)} className="btn btn-ghost btn-sm">
         <SmsIcon className="h-4 w-4" /> {m.sms.button}
       </SmsLink>
       <EmailLink
         subject={productEmailSubject(product, m)}
-        body={productEmailBody(product, locale, m)}
+        body={productEmailBody(product, locale, m, fx)}
         className="btn btn-ghost btn-sm"
       >
         <MailIcon className="h-4 w-4" /> {m.email.button}

@@ -7,7 +7,7 @@ import { revalidateCatalog } from '@/app/actions';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { countryName, flag } from '@/lib/countries';
-import { PAYMENT_LABELS, STATUS_LABELS, brl, formatGrams } from '@/lib/format';
+import { PAYMENT_LABELS, STATUS_LABELS, brl, usd, formatGrams } from '@/lib/format';
 import { prepareImage } from '@/lib/image-prepare';
 import type { Sale, SaleStatus } from '@/lib/types';
 import { IconCheck, IconGem, IconImage, IconTrash, IconTruck } from './AdminIcons';
@@ -151,18 +151,21 @@ export function SaleDetail({ id }: { id: string }) {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-display text-xl text-pearl">{it.productName}</p>
                     <p className="text-xs text-pearl/45">
-                      {it.category} · {it.mode === 'WEIGHT' ? `${formatGrams(it.quantity)} × ${brl(it.unitPriceCents)}/kg` : `${it.quantity} × ${brl(it.unitPriceCents)}`}
+                      {it.category} · {it.mode === 'WEIGHT' ? `${formatGrams(it.quantity)} × ${usd(it.unitPriceCents)}/kg` : `${it.quantity} × ${usd(it.unitPriceCents)}`}
                     </p>
                   </div>
-                  <span className="font-semibold tabular-nums text-gold-300">{brl(it.totalCents)}</span>
+                  <span className="font-semibold tabular-nums text-gold-300">{usd(it.totalCents)}</span>
                 </li>
               ))}
             </ul>
             <dl className="mt-4 space-y-2 border-t border-white/10 pt-4 text-sm">
-              <div className="flex justify-between"><dt className="text-pearl/55">Subtotal</dt><dd className="tabular-nums text-pearl">{brl(sale.subtotalCents)}</dd></div>
-              {sale.discountCents > 0 && <div className="flex justify-between"><dt className="text-pearl/55">Desconto</dt><dd className="tabular-nums text-pearl">− {brl(sale.discountCents)}</dd></div>}
-              <div className="flex justify-between"><dt className="text-pearl/55">Frete</dt><dd className="tabular-nums text-pearl">{brl(sale.shippingCostCents)}</dd></div>
-              <div className="flex items-baseline justify-between pt-1"><dt className="font-semibold text-pearl">Total</dt><dd className="font-display text-3xl tabular-nums text-gold-300">{brl(sale.totalCents)}</dd></div>
+              <div className="flex justify-between"><dt className="text-pearl/55">Subtotal</dt><dd className="tabular-nums text-pearl">{usd(sale.subtotalCents)}</dd></div>
+              {sale.discountCents > 0 && <div className="flex justify-between"><dt className="text-pearl/55">Desconto</dt><dd className="tabular-nums text-pearl">− {usd(sale.discountCents)}</dd></div>}
+              <div className="flex justify-between"><dt className="text-pearl/55">Frete</dt><dd className="tabular-nums text-pearl">{usd(sale.shippingCostCents)}</dd></div>
+              <div className="flex items-baseline justify-between pt-1"><dt className="font-semibold text-pearl">Total</dt><dd className="font-display text-3xl tabular-nums text-gold-300">{usd(sale.totalCents)}</dd></div>
+              {sale.paidCurrency === 'BRL' && sale.paidAmountCents != null && (
+                <div className="flex justify-between"><dt className="text-pearl/55">Recebido em reais</dt><dd className="tabular-nums text-pearl">{brl(sale.paidAmountCents)}{sale.fxRate ? <span className="ml-2 text-xs text-pearl/40">cotação {sale.fxRate.toLocaleString('pt-BR', { maximumFractionDigits: 4 })}</span> : null}</dd></div>
+              )}
             </dl>
           </Block>
 

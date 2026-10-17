@@ -21,7 +21,7 @@ const GROUPS: { key: 'groupWhatsapp' | 'groupSms' | 'groupEmail'; fields: Templa
 
 // Sample data for the live preview — a stand-in product, always shown in this shape regardless of
 // which language tab is open (it's just an example, not real copy).
-const SAMPLE = { name: 'Drusa de Ametista', price: 'R$ 249,90', url: `${site.url}/products/drusa-de-ametista` };
+const SAMPLE = { name: 'Drusa de Ametista', price: 'US$ 49,90', url: `${site.url}/products/drusa-de-ametista` };
 
 interface Props {
   templates: TemplatesMap;
