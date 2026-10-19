@@ -823,7 +823,7 @@ if (!PASS) {
     ok('categories without ?locale: label = the category as typed', r.json.some((c) => c.name === 'SecTrCat' && c.label === 'SecTrCat'));
     // search also reads the translated texts (any language), case-insensitively, but never the JSON keys
     r = await call('GET', '/products?q=' + encodeURIComponent('sectrcat en'));
-    ok('public search finds a product by its TRANSLATED text (case-insensitive)', r.status === 200 && r.json.items.some((p) => p.categoryKey === 'SecTrCat'), JSON.stringify(r.json.items?.map((p) => p.name)));
+    ok('public search finds a product by its TRANSLATED text (case-insensitive)', r.status === 200 && r.json.items.some((p) => p.name === `Sec Tr ${tag}`), JSON.stringify(r.json.items?.map((p) => p.name)));
     r = await call('GET', '/products?q=' + encodeURIComponent(`sec tr en ${tag}`.toUpperCase()) + '&locale=pt');
     ok('...from any language of the site (searching the English name on the Portuguese site)', r.status === 200 && r.json.items.some((p) => p.categoryKey === 'SecTrCat'), JSON.stringify(r.json.items?.map((p) => p.name)));
     r = await call('GET', '/products?q=name');
