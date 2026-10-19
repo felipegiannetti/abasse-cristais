@@ -44,14 +44,14 @@ export function Navbar() {
       <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8">
         <Logo />
 
-        <nav aria-label={m.nav.main} className="hidden items-center gap-9 md:flex">
+        <nav aria-label={m.nav.main} className="hidden items-center gap-6 md:flex lg:gap-9">
           {links.map((l) => {
             const active = l.path === current || (l.path === '/products' && current.startsWith('/products/'));
             return (
               <Link
                 key={l.path}
                 href={l.href}
-                className={`group relative text-sm font-medium tracking-wide transition-colors ${
+                className={`group relative whitespace-nowrap text-sm font-medium tracking-wide transition-colors ${
                   active ? 'text-gold-300' : 'text-pearl/75 hover:text-pearl'
                 }`}
               >

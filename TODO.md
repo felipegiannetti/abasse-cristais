@@ -100,4 +100,4 @@ Estes itens não foram pedidos agora; estão aqui só para não se perderem.
 - [x] Pipeline de CI (typecheck, lint, testes de unidade, build e a suíte de segurança a cada push) — `.github/workflows/ci.yml`.
 - [ ] Ativar **backup do banco** no provedor e, no GitHub, uma regra de proteção da `main` exigindo os dois trabalhos do CI.
 - [ ] Riscos de segurança **aceitos** que valem revisão futura: CSP com `'unsafe-inline'`, sessão fixa de 60 dias, alertas do `npm audit` no CLI do Prisma (detalhes em `README.md`).
-- [ ] **Conferir a responsividade geral** (site público e painel admin) em celular, tablet e telas grandes.
+- [x] **Conferir a responsividade geral** (site público e painel admin) em celular, tablet e telas grandes — feito: 76 telas em 4 tamanhos (375, 768, 1280 e 1920 px), sem rolagem horizontal; ajustes de menu, filtros de categoria, listas e áreas de toque.

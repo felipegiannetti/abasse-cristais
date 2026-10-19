@@ -25,9 +25,9 @@ export function Footer() {
         <nav aria-label={m.footer.label} className="text-sm">
           <p className="eyebrow mb-4">{m.footer.navigate}</p>
           <ul className="space-y-3 text-pearl/70">
-            <li><Link className="hover:text-gold-300" href={href('/')}>{m.nav.home}</Link></li>
-            <li><Link className="hover:text-gold-300" href={href('/products')}>{m.nav.collection}</Link></li>
-            <li><Link className="hover:text-gold-300" href={href('/#story')}>{m.nav.story}</Link></li>
+            <li><Link className="-my-1.5 inline-block py-1.5 hover:text-gold-300" href={href('/')}>{m.nav.home}</Link></li>
+            <li><Link className="-my-1.5 inline-block py-1.5 hover:text-gold-300" href={href('/products')}>{m.nav.collection}</Link></li>
+            <li><Link className="-my-1.5 inline-block py-1.5 hover:text-gold-300" href={href('/#story')}>{m.nav.story}</Link></li>
           </ul>
         </nav>
 

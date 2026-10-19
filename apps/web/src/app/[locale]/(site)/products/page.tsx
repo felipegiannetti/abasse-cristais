@@ -62,7 +62,7 @@ export default async function CatalogPage({ params, searchParams }: Props) {
 
       {/* Filters */}
       <div className="mt-12 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-2" role="list" aria-label={c.categories}>
+        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden" role="list" aria-label={c.categories}>
           <Chip active={!sp.category} to={href({ q: sp.q })}>
             {c.all}
           </Chip>
@@ -157,7 +157,7 @@ function Chip({ active, to, children }: { active: boolean; to: string; children:
       href={to}
       role="listitem"
       aria-current={active ? 'true' : undefined}
-      className={`rounded-full border px-4 py-2 text-sm font-medium transition-all ${
+      className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-all ${
         active
           ? 'border-gold-400 bg-gold-400/15 text-gold-300'
           : 'border-white/12 text-pearl/70 hover:border-gold-400/50 hover:text-pearl'

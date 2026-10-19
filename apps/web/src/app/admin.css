@@ -215,3 +215,8 @@
   background: rgb(255 255 255 / 0.04);
   box-shadow: 0 0 0 3px rgb(224 189 122 / 0.18);
 }
+
+/* Itens de grid podem encolher abaixo do tamanho do texto (o padrão "auto" os deixa estourar a tela no celular quando há texto com truncate). */
+.admin-area .grid > * {
+  min-width: 0;
+}

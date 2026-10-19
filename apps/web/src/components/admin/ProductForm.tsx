@@ -169,7 +169,7 @@ export function ProductForm({ initial }: { initial?: Product }) {
     <form onSubmit={onSubmit} noValidate>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link href={href('/admin/products')} className="text-sm text-pearl/50 transition-colors hover:text-gold-300">
+          <Link href={href('/admin/products')} className="-my-2 inline-block py-2 text-sm text-pearl/50 transition-colors hover:text-gold-300">
             {t.back}
           </Link>
           <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">{initial ? t.titleEdit : t.titleNew}</h1>

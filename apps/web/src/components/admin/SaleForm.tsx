@@ -245,7 +245,7 @@ export function SaleForm() {
   return (
     <form onSubmit={onSubmit} noValidate>
       <div className="mb-8">
-        <Link href={href('/admin/sales')} className="text-sm text-pearl/50 transition-colors hover:text-gold-300">← Voltar às vendas</Link>
+        <Link href={href('/admin/sales')} className="-my-2 inline-block py-2 text-sm text-pearl/50 transition-colors hover:text-gold-300">← Voltar às vendas</Link>
         <h1 className="mt-2 font-display text-2xl font-semibold text-pearl sm:text-3xl">Registrar venda</h1>
       </div>
 

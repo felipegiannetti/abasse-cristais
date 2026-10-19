@@ -73,7 +73,7 @@ export default async function ProductPage({ params }: Props) {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
 
       <nav aria-label={m.product.breadcrumb} className="mb-8 text-sm text-pearl/50">
-        <Link href={localePath(locale, '/products')} className="hover:text-gold-300">
+        <Link href={localePath(locale, '/products')} className="-my-2 inline-block py-2 hover:text-gold-300">
           {m.product.back}
         </Link>
       </nav>

@@ -113,7 +113,7 @@ export function SaleDetail({ id }: { id: string }) {
 
   return (
     <div>
-      <Link href={href('/admin/sales')} className="text-sm text-pearl/50 transition-colors hover:text-gold-300">← Voltar às vendas</Link>
+      <Link href={href('/admin/sales')} className="-my-2 inline-block py-2 text-sm text-pearl/50 transition-colors hover:text-gold-300">← Voltar às vendas</Link>
       <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-semibold text-pearl sm:text-3xl">Venda #{sale.number}</h1>
@@ -149,7 +149,7 @@ export function SaleDetail({ id }: { id: string }) {
                     )}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-display text-xl text-pearl">{it.productName}</p>
+                    <p className="break-words font-display text-xl leading-tight text-pearl">{it.productName}</p>
                     <p className="text-xs text-pearl/45">
                       {it.category} · {it.mode === 'WEIGHT' ? `${formatGrams(it.quantity)} × ${usd(it.unitPriceCents)}/kg` : `${it.quantity} × ${usd(it.unitPriceCents)}`}
                     </p>
@@ -192,7 +192,7 @@ export function SaleDetail({ id }: { id: string }) {
         <div className="space-y-6">
           <Block title="Cliente">
             <p className="font-medium text-pearl">{sale.customerName}</p>
-            {sale.customerId && <Link href={href('/admin/customers')} className="text-xs text-gold-300 hover:text-gold-400">Ver clientes →</Link>}
+            {sale.customerId && <Link href={href('/admin/customers')} className="-my-2 inline-block py-2 text-xs text-gold-300 hover:text-gold-400">Ver clientes →</Link>}
             {addr ? (
               <address className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-sm not-italic leading-relaxed text-pearl/75">
                 {addr.recipient && <span className="block font-medium text-pearl">{addr.recipient}</span>}

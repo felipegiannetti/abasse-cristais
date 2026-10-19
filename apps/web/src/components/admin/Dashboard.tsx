@@ -164,9 +164,9 @@ export function Dashboard() {
                   <li key={p.id}>
                     <Link
                       href={href(`/admin/products/${p.id}`)}
-                      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-white/5"
+                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 rounded-xl px-3 py-2 text-sm transition-colors hover:bg-white/5"
                     >
-                      <span className="truncate text-pearl/85">{p.name}</span>
+                      <span className="min-w-0 break-words text-pearl/85">{p.name}</span>
                       <span className="shrink-0 font-semibold text-amber-300">{plural(p.stockQuantity, t.lowStockUnitOne, t.lowStockUnitMany)}</span>
                     </Link>
                   </li>
@@ -265,7 +265,7 @@ export function Dashboard() {
         <motion.section variants={item} className="glass-strong rounded-3xl p-6">
           <div className="flex items-center justify-between">
             <h2 className="font-display text-2xl text-pearl">{t.recentTitle}</h2>
-            <Link href={href('/admin/products')} className="text-sm text-gold-300 hover:text-gold-400">
+            <Link href={href('/admin/products')} className="-my-2 inline-block py-2 text-sm text-gold-300 hover:text-gold-400">
               {t.viewAll} →
             </Link>
           </div>
