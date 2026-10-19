@@ -254,6 +254,9 @@ model ExchangeRate {
   source      String
   // when the source says the quote was set
   referenceAt DateTime
+  // the reading the source itself gives for the move before this one (PTAX: the previous different bulletin;
+  // AwesomeAPI: derived from its daily % change); lets the up/down arrow work from the very first stored quote
+  previousRate Decimal? @db.Decimal(12, 6)
   fetchedAt   DateTime @default(now())
 
   @@index([base, quote, fetchedAt])

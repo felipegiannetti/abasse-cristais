@@ -11,7 +11,18 @@ describe('parsePtax', () => {
 
   it('uses the selling rate of the newest row and reads the time as Brasília time', () => {
     const q = parsePtax(body);
-    expect(q).toEqual({ rate: 5.0826, source: 'BCB_PTAX', referenceAt: new Date('2026-10-16T16:04:14.000Z') });
+    expect(q).toEqual({ rate: 5.0826, source: 'BCB_PTAX', referenceAt: new Date('2026-10-16T16:04:14.000Z'), previousRate: 5.0521 });
+  });
+
+  it('skips older bulletins with the same rate when looking for the previous reading', () => {
+    const rows = [5.1, 5.1, 5.1, 5.05].map((v, i) => ({ cotacaoVenda: v, dataHoraCotacao: `2026-10-1${6 - i} 13:00:00` }));
+    expect(parsePtax({ value: rows })?.previousRate).toBe(5.05);
+  });
+
+  it('has no previousRate when every bulletin is the same value or there is only one', () => {
+    expect(parsePtax({ value: [body.value[0]] })).not.toHaveProperty('previousRate');
+    const same = [5.1, 5.1].map((v) => ({ cotacaoVenda: v, dataHoraCotacao: '2026-10-16 13:00:00' }));
+    expect(parsePtax({ value: same })).not.toHaveProperty('previousRate');
   });
 
   it('returns null for an empty or malformed answer', () => {
@@ -27,6 +38,13 @@ describe('parseAwesome', () => {
   it('uses the asking price and the epoch timestamp', () => {
     const q = parseAwesome({ USDBRL: { bid: '5.0627', ask: '5.0631', timestamp: '1792184472', create_date: '2026-10-16 18:01:12' } });
     expect(q).toEqual({ rate: 5.0631, source: 'AWESOMEAPI', referenceAt: new Date(1792184472 * 1000) });
+  });
+
+  it('derives the previous reading from the daily percentage change', () => {
+    const q = parseAwesome({ USDBRL: { ask: '5.0631', timestamp: '1792184472', pctChange: '-0.692429' } });
+    expect(q?.previousRate).toBeCloseTo(5.0631 / (1 - 0.00692429), 4);
+    expect(parseAwesome({ USDBRL: { ask: '5.0', timestamp: '1792184472', pctChange: '0' } })).not.toHaveProperty('previousRate');
+    expect(parseAwesome({ USDBRL: { ask: '5.0', timestamp: '1792184472', pctChange: '900' } })).not.toHaveProperty('previousRate');
   });
 
   it('returns null for an unexpected shape', () => {

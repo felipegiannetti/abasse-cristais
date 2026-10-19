@@ -10,6 +10,8 @@ export interface FxQuote {
   source: FxSourceName;
   /** when the source says the quote was set */
   referenceAt: Date;
+  /** the source's own previous reading, when it gives one (drives the up/down arrow) */
+  previousRate?: number;
 }
 
 const FETCH_TIMEOUT_MS = 6_000;
@@ -41,7 +43,12 @@ export function parsePtax(json: unknown): FxQuote | null {
   const rate = Number(row.cotacaoVenda);
   const referenceAt = typeof row.dataHoraCotacao === 'string' ? parseBrtTimestamp(row.dataHoraCotacao) : null;
   if (!Number.isFinite(rate) || !referenceAt) return null;
-  return { rate, source: 'BCB_PTAX', referenceAt };
+  // the next older bulletin whose rate differs from the newest one
+  const older = json.value
+    .slice(1)
+    .map((r: unknown) => (isRecord(r) ? Number(r.cotacaoVenda) : NaN))
+    .find((v) => Number.isFinite(v) && v !== rate);
+  return { rate, source: 'BCB_PTAX', referenceAt, ...(older !== undefined ? { previousRate: older } : {}) };
 }
 
 /** AwesomeAPI `/json/last/USD-BRL` response: uses the asking price (`ask`) and the epoch `timestamp`. */
@@ -51,7 +58,10 @@ export function parseAwesome(json: unknown): FxQuote | null {
   const rate = Number(q.ask);
   const seconds = Number(q.timestamp);
   if (!Number.isFinite(rate) || !Number.isFinite(seconds) || seconds <= 0) return null;
-  return { rate, source: 'AWESOMEAPI', referenceAt: new Date(seconds * 1000) };
+  // pctChange is the move since the previous close, in percent: previous = rate / (1 + pct/100)
+  const pct = Number(q.pctChange);
+  const previousRate = Number.isFinite(pct) && pct !== 0 && Math.abs(pct) < 50 ? Math.round((rate / (1 + pct / 100)) * 1e6) / 1e6 : undefined;
+  return { rate, source: 'AWESOMEAPI', referenceAt: new Date(seconds * 1000), ...(previousRate !== undefined ? { previousRate } : {}) };
 }
 
 const mmddyyyy = (d: Date) => `${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}-${d.getUTCFullYear()}`;
@@ -67,7 +77,7 @@ export async function fetchPtax(now = new Date()): Promise<FxQuote | null> {
   const from = new Date(now.getTime() - 10 * 86_400_000);
   const url =
     'https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoDolarPeriodo(dataInicial=@dataInicial,dataFinalCotacao=@dataFinalCotacao)' +
-    `?@dataInicial='${mmddyyyy(from)}'&@dataFinalCotacao='${mmddyyyy(now)}'&$top=1&$orderby=dataHoraCotacao%20desc&$format=json`;
+    `?@dataInicial='${mmddyyyy(from)}'&@dataFinalCotacao='${mmddyyyy(now)}'&$top=10&$orderby=dataHoraCotacao%20desc&$format=json`;
   return parsePtax(await getJson(url));
 }
 

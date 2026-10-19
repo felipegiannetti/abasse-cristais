@@ -69,7 +69,7 @@ export class FxService {
           this.logger.warn(`discarded implausible ${quote.source} quote ${quote.rate} (previous ${previous?.rate ?? 'none'})`);
           continue;
         }
-        await this.prisma.exchangeRate.create({ data: { rate: quote.rate, source: quote.source, referenceAt: quote.referenceAt } });
+        await this.prisma.exchangeRate.create({ data: { rate: quote.rate, source: quote.source, referenceAt: quote.referenceAt, previousRate: quote.previousRate ?? null } });
         this.memory = null;
         return;
       } catch (e) {
@@ -94,7 +94,8 @@ export class FxService {
           asOf: row.referenceAt,
           fetchedAt: row.fetchedAt,
           stale: Date.now() - row.fetchedAt.getTime() > STALE_AFTER_MS,
-          previousRate: before ? Number(before.rate) : null,
+          // our own stored history first; otherwise the source's own previous reading
+          previousRate: before ? Number(before.rate) : row.previousRate == null ? null : Number(row.previousRate),
         }
       : null;
     this.memory = { at: Date.now(), value };

@@ -19,7 +19,7 @@ function fakePrisma(initial: Row[] = []) {
       const not = args?.where?.rate?.not === undefined ? null : Number(args.where.rate.not);
       return Promise.resolve([...rows].filter((r) => not === null || r.rate !== not).sort((a, b) => b.fetchedAt.getTime() - a.fetchedAt.getTime())[0] ?? null);
     }),
-    create: vi.fn(({ data }: { data: { rate: number; source: string; referenceAt: Date } }) => {
+    create: vi.fn(({ data }: { data: { rate: number; source: string; referenceAt: Date; previousRate?: number | null } }) => {
       rows.push({ ...data, fetchedAt: new Date() });
       return Promise.resolve();
     }),
@@ -113,6 +113,14 @@ describe('FxService', () => {
     const r = await svc.current();
     expect(r?.rate).toBe(5.1);
     expect(r?.previousRate).toBe(5.0);
+  });
+
+  it("uses the source's own previous reading when there is no stored history yet", async () => {
+    const { prisma } = fakePrisma();
+    const svc = new FxService(prisma);
+    svc.sources = [() => Promise.resolve({ ...ptax(5.0826), previousRate: 5.0521 })];
+    const r = await svc.current();
+    expect(r?.previousRate).toBe(5.0521);
   });
 
   it('has no previous rate when every stored reading is the same value', async () => {
