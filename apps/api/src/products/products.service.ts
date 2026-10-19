@@ -78,6 +78,8 @@ export class ProductsService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 24;
 
+    // the search also looks at the translated texts (any language), so "amethyst" finds "Drusa de Ametista"
+    const translated = query.q ? await this.idsMatchingTranslations(query.q) : [];
     const where: Prisma.ProductWhereInput = {
       status: opts.admin ? query.status : { in: PUBLIC_STATUSES },
       category: query.category ? { equals: likeSafe(query.category), mode: 'insensitive' } : undefined,
@@ -87,6 +89,7 @@ export class ProductsService {
             { name: { contains: likeSafe(query.q), mode: 'insensitive' } },
             { description: { contains: likeSafe(query.q), mode: 'insensitive' } },
             { category: { contains: likeSafe(query.q), mode: 'insensitive' } },
+            ...(translated.length ? [{ id: { in: translated } }] : []),
           ]
         : undefined,
     };
@@ -106,6 +109,25 @@ export class ProductsService {
   }
 
   /** `name` is the category as typed (what the `?category=` filter takes); `label` is how to show it in `locale`. */
+  /**
+   * Ids of the products whose translated name/description/category (in ANY language) contains `q`, ignoring
+   * case. Only the values are searched (never the JSON keys, so typing "name" matches nothing), and the match is
+   * a plain substring test (strpos), so `%` and `_` in the search text are ordinary characters.
+   */
+  private async idsMatchingTranslations(q: string): Promise<string[]> {
+    const rows = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT p.id
+      FROM "Product" p
+      WHERE EXISTS (
+        SELECT 1
+        FROM jsonb_each(p.translations) AS lang(code, texts), jsonb_each_text(lang.texts) AS field(name, value)
+        WHERE jsonb_typeof(lang.texts) = 'object' AND strpos(lower(field.value), lower(${q})) > 0
+      )
+      LIMIT 1000
+    `;
+    return rows.map((r) => r.id);
+  }
+
   async categories(locale?: TranslationLocale) {
     const rows = await this.prisma.product.groupBy({
       by: ['category'],

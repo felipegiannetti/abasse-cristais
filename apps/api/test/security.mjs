@@ -821,6 +821,15 @@ if (!PASS) {
     ok('categories carry the original name (for filtering) and a translated label', r.status === 200 && r.json.some((c) => c.name === 'SecTrCat' && c.label === 'SecTrCat EN'), JSON.stringify(r.json).slice(0, 200));
     r = await call('GET', '/products/categories');
     ok('categories without ?locale: label = the category as typed', r.json.some((c) => c.name === 'SecTrCat' && c.label === 'SecTrCat'));
+    // search also reads the translated texts (any language), case-insensitively, but never the JSON keys
+    r = await call('GET', '/products?q=' + encodeURIComponent('sectrcat en'));
+    ok('public search finds a product by its TRANSLATED text (case-insensitive)', r.status === 200 && r.json.items.some((p) => p.categoryKey === 'SecTrCat'), JSON.stringify(r.json.items?.map((p) => p.name)));
+    r = await call('GET', '/products?q=' + encodeURIComponent(`sec tr en ${tag}`.toUpperCase()) + '&locale=pt');
+    ok('...from any language of the site (searching the English name on the Portuguese site)', r.status === 200 && r.json.items.some((p) => p.categoryKey === 'SecTrCat'), JSON.stringify(r.json.items?.map((p) => p.name)));
+    r = await call('GET', '/products?q=name');
+    ok('searching a JSON key ("name") does not match the translations structure', r.status === 200 && !r.json.items.some((p) => p.categoryKey === 'SecTrCat' || p.slug.startsWith('sec-tr')), JSON.stringify(r.json.items?.map((p) => p.name)));
+    r = await call('GET', '/admin/products?q=' + encodeURIComponent('sectrcat en'), { cookie: session });
+    ok('the admin list search uses the translations too', r.status === 200 && r.json.items.some((p) => p.id === T.id), JSON.stringify(r.json.items?.map((p) => p.name)));
     r = await mut('PATCH', `/admin/products/${T.id}`, session, { translations: { es: { name: 'Prueba ES' } } });
     ok('updating translations replaces them (English gone, Spanish set)', r.status === 200 && r.json.translations?.en === undefined && r.json.translations?.es?.name === 'Prueba ES', JSON.stringify(r.json.translations));
     r = await mut('PATCH', `/admin/products/${T.id}`, session, { featured: false });
