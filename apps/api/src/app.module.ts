@@ -1,4 +1,4 @@
-import { Controller, Get, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AnalyticsModule } from './analytics/analytics.module';
@@ -6,19 +6,12 @@ import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { FinanceModule } from './finance/finance.module';
 import { FxModule } from './fx/fx.module';
+import { HealthController } from './health/health.controller';
 import { PrismaModule } from './prisma/prisma.service';
 import { ProductsModule } from './products/products.module';
 import { SalesModule } from './sales/sales.module';
 import { SettingsModule } from './settings/settings.module';
 import { TeamModule } from './team/team.module';
-
-@Controller('health')
-class HealthController {
-  @Get()
-  ok() {
-    return { status: 'ok' };
-  }
-}
 
 @Module({
   imports: [
