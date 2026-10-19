@@ -101,7 +101,7 @@ export function ChangePasswordForm() {
             <button
               type="button"
               onClick={() => setShow((v) => !v)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wider text-pearl/50 hover:text-gold-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md px-2 py-2 text-xs font-semibold uppercase tracking-wider text-pearl/50 hover:text-gold-300 sm:py-1"
             >
               {show ? t.hide : t.show}
             </button>

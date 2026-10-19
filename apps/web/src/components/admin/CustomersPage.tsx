@@ -2,9 +2,10 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
+import { usePagedList } from '@/lib/usePagedList';
 import { countryName, flag } from '@/lib/countries';
 import { STATUS_LABELS, usd, formatGrams } from '@/lib/format';
 import type { Customer } from '@/lib/types';
@@ -24,13 +25,8 @@ export function CustomersPage() {
   const toast = useToast();
   const nav = { homePath: href('/'), changePasswordPath: href('/admin/change-password') };
 
-  const [items, setItems] = useState<Customer[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [dialog, setDialog] = useState<Dialog>(null);
 
   // form state (create / edit)
@@ -48,29 +44,8 @@ export function CustomersPage() {
     return () => clearTimeout(id);
   }, [q]);
 
-  const load = useCallback(
-    async (p: number) => {
-      setLoading(true);
-      setError('');
-      try {
-        const qs = new URLSearchParams({ page: String(p), pageSize: String(PAGE_SIZE) });
-        if (dq) qs.set('q', dq);
-        const d = await api<{ items: Customer[]; total: number }>(`/admin/customers?${qs}`, nav);
-        setItems(d.items);
-        setTotal(d.total);
-        setPage(p);
-      } catch (e) {
-        setError(errorText(e, m, 'Não foi possível carregar os clientes.'));
-      } finally {
-        setLoading(false);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dq, m],
-  );
-  useEffect(() => {
-    void load(1);
-  }, [load]);
+  const filters = useMemo(() => new URLSearchParams(dq ? { q: dq } : {}), [dq]);
+  const { items, total, page, loading, error, load } = usePagedList<Customer>({ path: '/admin/customers', pageSize: PAGE_SIZE, params: filters, failedMessage: 'Não foi possível carregar os clientes.' });
 
   const close = () => {
     if (busy) return;

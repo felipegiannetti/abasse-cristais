@@ -2,10 +2,11 @@
 
 import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
 import { downloadFile } from '@/lib/download';
+import { usePagedList } from '@/lib/usePagedList';
 import { flag } from '@/lib/countries';
 import { STATUS_LABELS, usd, formatGrams } from '@/lib/format';
 import type { Sale, SaleStatus } from '@/lib/types';
@@ -40,9 +41,6 @@ export function SalesPage() {
   const { m, href } = useI18n();
   const toast = useToast();
   const nav = { homePath: href('/'), changePasswordPath: href('/admin/change-password') };
-  const [items, setItems] = useState<Sale[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
   const [status, setStatus] = useState<'' | SaleStatus>('');
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
@@ -52,8 +50,6 @@ export function SalesPage() {
   const [category, setCategory] = useState('');
   const [categories, setCategories] = useState<string[]>([]);
   const [exporting, setExporting] = useState<'' | 'csv' | 'xlsx'>('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     api<string[]>('/admin/products/categories', nav)
@@ -68,7 +64,7 @@ export function SalesPage() {
   }, [q]);
 
   /** The filters the list and the export share (days are Brasília days, UTC-3). */
-  const filterParams = useCallback(() => {
+  const filters = useMemo(() => {
     const qs = new URLSearchParams();
     if (status) qs.set('status', status);
     if (dq) qs.set('q', dq);
@@ -82,7 +78,7 @@ export function SalesPage() {
   async function exportSales(format: 'csv' | 'xlsx') {
     setExporting(format);
     try {
-      const qs = filterParams();
+      const qs = new URLSearchParams(filters);
       qs.set('format', format);
       await downloadFile(`/admin/sales/export?${qs}`);
     } catch (e) {
@@ -92,30 +88,7 @@ export function SalesPage() {
     }
   }
 
-  const load = useCallback(
-    async (p: number) => {
-      setLoading(true);
-      setError('');
-      try {
-        const qs = filterParams();
-        qs.set('page', String(p));
-        qs.set('pageSize', String(PAGE_SIZE));
-        const d = await api<{ items: Sale[]; total: number }>(`/admin/sales?${qs}`, nav);
-        setItems(d.items);
-        setTotal(d.total);
-        setPage(p);
-      } catch (e) {
-        setError(errorText(e, m, 'Não foi possível carregar as vendas.'));
-      } finally {
-        setLoading(false);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filterParams, m],
-  );
-  useEffect(() => {
-    void load(1);
-  }, [load]);
+  const { items, total, page, loading, error, load } = usePagedList<Sale>({ path: '/admin/sales', pageSize: PAGE_SIZE, params: filters, failedMessage: 'Não foi possível carregar as vendas.' });
 
   return (
     <div>

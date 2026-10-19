@@ -226,7 +226,7 @@ function IconBtn({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={`grid h-7 w-7 place-items-center rounded-md text-xs backdrop-blur transition-colors disabled:opacity-30 ${
+      className={`grid h-9 w-9 place-items-center rounded-md text-xs backdrop-blur sm:h-7 sm:w-7 transition-colors disabled:opacity-30 ${
         danger ? 'bg-red-500/25 text-red-200 hover:bg-red-500/50' : 'bg-white/10 text-pearl hover:bg-gold-400 hover:text-navy-950'
       }`}
     >

@@ -3,14 +3,15 @@
 import { AnimatePresence, motion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { revalidateCatalog } from '@/app/actions';
 import { fmt } from '@/i18n/config';
 import { formatPrice, plural } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import { api, errorText } from '@/lib/client-api';
+import { usePagedList } from '@/lib/usePagedList';
 import { formatGrams } from '@/lib/format';
-import type { Product, ProductList, ProductStatus, Stats } from '@/lib/types';
+import type { Product, ProductStatus, Stats } from '@/lib/types';
 import { IconCopy, IconEdit, IconGem, IconGrid, IconList, IconPlus, IconSearch, IconStar, IconTrash } from './AdminIcons';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Pagination } from './Pagination';
@@ -37,11 +38,6 @@ export function ProductsAdmin() {
   const t = m.admin.list;
   const nav = { homePath: href('/'), changePasswordPath: href('/admin/change-password') };
 
-  const [items, setItems] = useState<Product[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [status, setStatus] = useState<'' | ProductStatus>('');
@@ -81,31 +77,13 @@ export function ProductsAdmin() {
   }, []);
   useEffect(loadCounts, [loadCounts]);
 
-  const load = useCallback(
-    async (pageToLoad: number) => {
-      setLoading(true);
-      setError('');
-      try {
-        const qs = new URLSearchParams({ page: String(pageToLoad), pageSize: String(PAGE_SIZE) });
-        if (debouncedQ) qs.set('q', debouncedQ);
-        if (status) qs.set('status', status);
-        const data = await api<ProductList>(`/admin/products?${qs}`, nav);
-        setItems(data.items);
-        setTotal(data.total);
-        setPage(pageToLoad);
-      } catch (e) {
-        setError(errorText(e, m, t.loadFailed));
-      } finally {
-        setLoading(false);
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [debouncedQ, status, m],
-  );
-
-  useEffect(() => {
-    void load(1);
-  }, [load]);
+  const filters = useMemo(() => {
+    const qs = new URLSearchParams();
+    if (debouncedQ) qs.set('q', debouncedQ);
+    if (status) qs.set('status', status);
+    return qs;
+  }, [debouncedQ, status]);
+  const { items, setItems, total, page, loading, error, load } = usePagedList<Product>({ path: '/admin/products', pageSize: PAGE_SIZE, params: filters, failedMessage: t.loadFailed });
 
   async function patch(p: Product, data: Partial<Pick<Product, 'status' | 'featured'>>, okMessage: string) {
     const before = items;
@@ -163,7 +141,7 @@ export function ProductsAdmin() {
       aria-label={fmt(t.statusOf, { name: p.name })}
       value={p.status}
       onChange={(e) => patch(p, { status: e.target.value as ProductStatus }, t.statusUpdated)}
-      className={`cursor-pointer appearance-none rounded-md border px-3 py-1 text-xs font-semibold outline-none transition-colors ${STATUS_STYLE[p.status]}`}
+      className={`cursor-pointer appearance-none rounded-md border px-3 py-2 text-xs font-semibold outline-none sm:py-1 transition-colors ${STATUS_STYLE[p.status]}`}
     >
       {STATUSES.map((s) => (
         <option key={s} value={s} className="bg-navy-900 text-pearl">
