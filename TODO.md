@@ -83,7 +83,7 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 - [x] **Moeda:** o dólar (US$) é a moeda principal e tudo é guardado em dólar; o site em português converte para reais pela cotação do dia (PTAX do Banco Central, com AwesomeAPI de reserva). A venda pode ser registrada como paga em reais (guarda os reais recebidos e a cotação). Só dólar e real; outras moedas não estão previstas.
 - [x] **Tradução por produto** (nome, descrição e categoria em en/pt/es), em *Editar produto → Traduções*; em branco usa o texto original.
 - [ ] Revisão do texto em espanhol por um falante nativo.
-- [ ] Política de privacidade e aviso sobre o contador de cliques para visitantes da UE/América Latina (LGPD/GDPR).
+- [x] Política de privacidade e aviso sobre o contador de cliques (LGPD/GDPR): página `/privacy` nos três idiomas, com link no rodapé. **Falta** um advogado revisar o texto e a empresa preencher os dados (`NEXT_PUBLIC_LEGAL_*`).
 
 ---
 
@@ -95,7 +95,7 @@ Estes itens não foram pedidos agora; estão aqui só para não se perderem.
 - [ ] Trocar o **texto provisório da história** da empresa, nos dois idiomas (`apps/web/src/i18n/messages/en.ts` e `pt.ts`).
 - [ ] Cadastrar os **produtos e fotos reais** (os atuais são de demonstração) e configurar o **número de WhatsApp** em *Configurações*.
 - [ ] **Publicar na Vercel** (site e API), com banco Postgres em produção, variáveis de ambiente e `npm run db:deploy` (o passo a passo está no `README.md`; atenção ao aviso sobre a migração das fotos).
-- [ ] Rodapé com **dados da empresa** (razão social, CNPJ, contato) e **política de privacidade** (LGPD).
+- [x] Rodapé com **dados da empresa** e **política de privacidade**: o rodapé já mostra a linha da empresa quando `NEXT_PUBLIC_LEGAL_NAME/CNPJ/ADDRESS` estão preenchidas. **Falta** preencher os dados reais.
 - [x] Tradução por produto (en/pt/es) — feito (ver o item acima).
 - [x] Pipeline de CI (typecheck, lint, testes de unidade, build e a suíte de segurança a cada push) — `.github/workflows/ci.yml`.
 - [ ] Ativar **backup do banco** no provedor e, no GitHub, uma regra de proteção da `main` exigindo os dois trabalhos do CI.

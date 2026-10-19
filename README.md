@@ -113,6 +113,20 @@ Crie **dois projetos** a partir deste mesmo repositório.
 | `NEXT_PUBLIC_WHATSAPP_NUMBER` | só dígitos com país+DDD, ex. `5511999999999` |
 | `NEXT_PUBLIC_SITE_URL` | URL pública do site |
 | `ADMIN_LOGIN_TOKEN` | o token secreto do login |
+| `NEXT_PUBLIC_LEGAL_NAME` | (opcional) razão social, mostrada no rodapé e na política de privacidade |
+| `NEXT_PUBLIC_LEGAL_CNPJ` | (opcional) CNPJ, ex. `00.000.000/0001-00` |
+| `NEXT_PUBLIC_LEGAL_ADDRESS` | (opcional) endereço da empresa |
+
+### 3) Depois de publicar — checklist
+
+1. Banco de produção com **backup automático** ativado no provedor (Neon: *Backups / Branches*).
+2. `npm run db:deploy` e `npm run db:seed` (uma vez) e **troque a senha** do admin no primeiro login. O endereço secreto do login é `SEU-SITE/<ADMIN_LOGIN_TOKEN>`.
+3. Em *Configurações* do painel: número de **WhatsApp**, SMS e e-mail de contato (o e-mail aparece como canal de privacidade na política).
+4. Abra `<URL da API>/health` (deve responder `{"status":"ok"}`) e `<URL da API>/fx/usd-brl` (deve devolver a cotação; a API precisa de acesso de saída à internet para consultar o Banco Central). Abra `/pt` no site: os preços saem em reais e o canto superior direito mostra o dólar.
+5. Preencha as variáveis `NEXT_PUBLIC_LEGAL_*` (razão social, CNPJ, endereço) e **peça a um advogado para revisar** a política de privacidade em `/privacy` (o texto descreve o que o site faz hoje).
+6. Cadastre os produtos reais e fotos; troque a logo (`apps/web/public/logo.svg`) e o texto da história (`apps/web/src/i18n/messages`).
+7. No GitHub: confira o resultado do CI na aba *Actions* e, em *Settings → Branches*, proteja a `main` exigindo os dois trabalhos do CI.
+8. Teste o fluxo completo: catálogo → botão de WhatsApp → registrar a venda no painel → financeiro → exportar.
 
 ## Personalização
 
