@@ -38,6 +38,7 @@ export const en = {
     contact: 'Contact',
     chat: 'Chat on WhatsApp',
     instagram: 'Instagram',
+    privacy: 'Privacy policy',
     rights: 'All rights reserved.',
     label: 'Footer',
   },

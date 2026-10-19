@@ -6,4 +6,11 @@ export const site = {
   whatsapp: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '').replace(/\D/g, ''),
   // Leave empty to hide the footer link.
   instagram: '',
+  // Company identification shown in the footer and in the privacy policy. Set the NEXT_PUBLIC_LEGAL_* variables
+  // (see .env.example); whatever is empty is simply left out.
+  legal: {
+    name: (process.env.NEXT_PUBLIC_LEGAL_NAME || '').trim(),
+    cnpj: (process.env.NEXT_PUBLIC_LEGAL_CNPJ || '').trim(),
+    address: (process.env.NEXT_PUBLIC_LEGAL_ADDRESS || '').trim(),
+  },
 };

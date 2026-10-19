@@ -50,7 +50,17 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-white/[0.05] py-6 text-center text-xs text-pearl/40">
+        {(site.legal.name || site.legal.cnpj || site.legal.address) && (
+          <p className="mx-auto mb-2 max-w-3xl px-5">
+            {[site.legal.name, site.legal.cnpj && `CNPJ ${site.legal.cnpj}`, site.legal.address].filter(Boolean).join(' · ')}
+          </p>
+        )}
         {fx && <p className="mx-auto mb-2 max-w-3xl px-5">{fxNote(fx, m)}</p>}
+        <p className="mb-2">
+          <Link href={href('/privacy')} className="-my-1 inline-block py-1 underline-offset-4 hover:text-gold-300 hover:underline">
+            {m.footer.privacy}
+          </Link>
+        </p>
         © {new Date().getFullYear()} {site.name}. {m.footer.rights}
       </div>
     </footer>

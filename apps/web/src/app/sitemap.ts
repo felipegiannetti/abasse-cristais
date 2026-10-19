@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     ...entries('/', { changeFrequency: 'weekly', priority: 1 }),
     ...entries('/products', { changeFrequency: 'daily', priority: 0.9 }),
+    ...entries('/privacy', { changeFrequency: 'yearly', priority: 0.2 }),
     ...items.flatMap((p) => entries(`/products/${p.slug}`, { lastModified: p.updatedAt, changeFrequency: 'weekly', priority: 0.7 })),
   ];
 }

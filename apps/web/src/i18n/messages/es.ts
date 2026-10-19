@@ -40,6 +40,7 @@ export const es: PublicMessages = {
     contact: 'Contacto',
     chat: 'Escribir por WhatsApp',
     instagram: 'Instagram',
+    privacy: 'Política de privacidad',
     rights: 'Todos los derechos reservados.',
     label: 'Pie de página',
   },

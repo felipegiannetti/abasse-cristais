@@ -40,6 +40,7 @@ export const pt: PublicMessages = {
     contact: 'Contato',
     chat: 'Chamar no WhatsApp',
     instagram: 'Instagram',
+    privacy: 'Política de privacidade',
     rights: 'Todos os direitos reservados.',
     label: 'Rodapé',
   },
