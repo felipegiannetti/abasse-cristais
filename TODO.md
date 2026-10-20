@@ -87,6 +87,20 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 
 ---
 
+## 5. Perfis de acesso e primeiro login (a fazer)
+
+- [ ] **Novo perfil `SUPORTE`**: enxerga o painel inteiro (visão geral), mas com edição limitada.
+  - Pode **editar, criar e excluir contas** (usuários do painel).
+  - **Não pode** mexer em inventário (produtos, estoque, fotos, traduções), valores (preços, vendas, financeiro) nem nas demais configurações do negócio; essas telas ficam só para leitura.
+  - A regra tem de valer **na API** (guardas por perfil em cada rota de escrita), não só escondendo botões no painel; incluir testes na suíte de segurança (`apps/api/test/security.mjs`) para provar que o suporte recebe 403 ao tentar alterar produtos, vendas, finanças e configurações, e que as exportações continuam só para quem for autorizado.
+  - A ação de excluir/editar contas deve ter proteções: o suporte não promove ninguém (nem a si mesmo) a admin, não edita nem exclui contas de admin e não exclui a própria conta; tudo registrado no histórico de atividade.
+- [ ] **Troca de senha obrigatória no primeiro login** da primeira conta de admin (a senha inicial é gerada pelo dono): ao entrar pela primeira vez, o painel só libera depois de definir uma nova senha, digitada duas vezes para confirmar.
+  - A nova senha tem de ser diferente da inicial e seguir a regra de força já usada; a confirmação precisa ser igual.
+  - Enquanto a troca não for feita, a API deve **recusar** qualquer outra rota do painel (não basta redirecionar no front); guardar um indicador `mustChangePassword` na conta, que a troca desliga, encerrando as outras sessões.
+  - O mesmo indicador pode servir para contas novas criadas pelo suporte/admin (senha provisória).
+
+---
+
 ## Também pendente (já identificado antes, fora do que foi pedido agora)
 
 Estes itens não foram pedidos agora; estão aqui só para não se perderem.
