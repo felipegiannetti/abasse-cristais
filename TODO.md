@@ -99,6 +99,13 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
   - A nova senha tem de ser diferente da inicial e seguir a regra de força já usada; a confirmação precisa ser igual.
   - Enquanto a troca não for feita, a API deve **recusar** qualquer outra rota do painel (não basta redirecionar no front); guardar um indicador `mustChangePassword` na conta, que a troca desliga, encerrando as outras sessões.
   - O mesmo indicador pode servir para contas novas criadas pelo suporte/admin (senha provisória).
+- [ ] **Recuperação de senha por e-mail** (EmailJS, plano gratuito), **só para o admin**:
+  - No **primeiro login do admin**, na mesma tela da troca obrigatória de senha, ele cadastra **dois e-mails de recuperação diferentes** (validar formato e exigir que sejam distintos).
+  - Em "Esqueci a senha", o link de redefinição vai **primeiro para o e-mail 1**; se o admin quiser (por exemplo, perdeu o acesso ao primeiro), ele escolhe **enviar também para o e-mail 2**.
+  - Os dois e-mails podem ser **editados depois**, em *Configurações → Conta*, exigindo a senha atual (ou a recuperação em andamento) para alterar.
+  - Segurança: link com token aleatório, **de uso único e curto prazo** (ex. 30 min), guardado só como hash no banco; resposta idêntica exista ou não a conta (sem revelar se o usuário existe); limite de pedidos por IP e por conta; ao concluir a redefinição, encerrar todas as sessões ativas da conta; registrar no histórico de atividade; avisar nos dois e-mails quando a senha for trocada ou quando os e-mails de recuperação forem editados.
+  - Conferir antes de implementar: o EmailJS foi pensado para envio pelo navegador. Chamá-lo pela API (servidor) exige ativar *Allow EmailJS API for non-browser applications* na conta e usar a chave privada, e é preciso confirmar se o plano gratuito permite isso. O plano gratuito também tem cota mensal baixa (na casa de 200 e-mails/mês) e um único serviço de envio conectado. Se não servir, a alternativa é um SMTP gratuito (ex. Resend ou Brevo) no lugar. Nunca disparar o e-mail direto do navegador, senão o link de redefinição ficaria exposto.
+  - O SUPORTE (item acima) **não** usa esse fluxo: a senha dele é redefinida por um admin; e a recuperação do admin continua podendo ser feita pelo suporte, conforme definido acima.
 
 ---
 
