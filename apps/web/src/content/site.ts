@@ -12,5 +12,8 @@ export const site = {
     name: (process.env.NEXT_PUBLIC_LEGAL_NAME || '').trim(),
     cnpj: (process.env.NEXT_PUBLIC_LEGAL_CNPJ || '').trim(),
     address: (process.env.NEXT_PUBLIC_LEGAL_ADDRESS || '').trim(),
+    // "Encarregado" (LGPD art. 41): the person who answers data subjects. Empty = the contact channel is shown instead.
+    dpoName: (process.env.NEXT_PUBLIC_LEGAL_DPO_NAME || '').trim(),
+    dpoEmail: (process.env.NEXT_PUBLIC_LEGAL_DPO_EMAIL || '').trim(),
   },
 };

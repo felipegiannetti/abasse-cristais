@@ -83,7 +83,7 @@ Lista do que ainda **não foi feito**. Marque `[x]` quando concluir.
 - [x] **Moeda:** o dólar (US$) é a moeda principal e tudo é guardado em dólar; o site em português converte para reais pela cotação do dia (PTAX do Banco Central, com AwesomeAPI de reserva). A venda pode ser registrada como paga em reais (guarda os reais recebidos e a cotação). Só dólar e real; outras moedas não estão previstas.
 - [x] **Tradução por produto** (nome, descrição e categoria em en/pt/es), em *Editar produto → Traduções*; em branco usa o texto original.
 - [ ] Revisão do texto em espanhol por um falante nativo.
-- [x] Política de privacidade e aviso sobre o contador de cliques (LGPD/GDPR): página `/privacy` nos três idiomas, com link no rodapé. **Falta** um advogado revisar o texto e a empresa preencher os dados (`NEXT_PUBLIC_LEGAL_*`).
+- [x] Política de privacidade e aviso sobre o contador de cliques (LGPD/GDPR): página `/privacy` nos três idiomas, com link no rodapé. Alinhada ao texto da Lei 13.709/2018 (arts. 6–9, 14, 16, 18–19, 33, 41 e 48: direitos I–IX, prazos, encarregado/canal, crianças, incidentes). **Falta** um advogado revisar o texto e a empresa preencher os dados (`NEXT_PUBLIC_LEGAL_*`, incluindo o encarregado `_DPO_NAME/_EMAIL`, opcional para agentes de pequeno porte, Res. CD/ANPD nº 2/2022).
 
 ---
 

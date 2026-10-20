@@ -116,6 +116,7 @@ Crie **dois projetos** a partir deste mesmo repositório.
 | `NEXT_PUBLIC_LEGAL_NAME` | (opcional) razão social, mostrada no rodapé e na política de privacidade |
 | `NEXT_PUBLIC_LEGAL_CNPJ` | (opcional) CNPJ, ex. `00.000.000/0001-00` |
 | `NEXT_PUBLIC_LEGAL_ADDRESS` | (opcional) endereço da empresa |
+| `NEXT_PUBLIC_LEGAL_DPO_NAME` / `_DPO_EMAIL` | (opcional) encarregado pelo tratamento de dados (LGPD art. 41); vazio = a política mostra o canal de contato |
 
 ### 3) Depois de publicar — checklist
 
