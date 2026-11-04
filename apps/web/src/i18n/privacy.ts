@@ -34,7 +34,7 @@ export interface PrivacyDoc {
 }
 
 /** ISO date of the last revision of the text below. */
-export const PRIVACY_UPDATED = '2026-10-19';
+export const PRIVACY_UPDATED = '2026-11-04';
 
 export const LGPD_URL = 'https://www.planalto.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709.htm';
 
@@ -63,6 +63,7 @@ export const privacy: Record<Locale, PrivacyDoc> = {
           'Contador de cliques: quando você toca em um botão de contato (WhatsApp, SMS ou e-mail) ou escaneia o QR code de uma peça, registramos apenas um código de referência aleatório, qual botão foi usado, a página, a peça, o idioma e a data e hora. Não guardamos seu IP, seu aparelho, seu navegador nem nada que identifique você.',
           'Armazenamento no seu navegador: guardamos somente a sua escolha de idioma (cookie "NEXT_LOCALE", por até 1 ano), para abrir o site no idioma que você escolheu. É um cookie funcional, sem fins de rastreamento. A área administrativa usa um cookie de sessão, que só existe para a equipe da loja.',
           'Contato e pedidos: se você nos chama por WhatsApp, SMS ou e-mail, tratamos o que você nos enviar (nome, telefone, e-mail, mensagens). Para concluir uma compra registramos também o endereço de entrega, a forma de pagamento, o código de rastreio, observações do pedido e, se houver, fotos do que foi enviado.',
+          'Lista de novidades por e-mail: se você se cadastrar no formulário do site para ser avisado de peças novas ou promoções, guardamos o seu e-mail e o idioma do site em que você se cadastrou. Usamos isso só para enviar essas notificações, quando o administrador decide enviar uma. Você pode cancelar a qualquer momento, sem custo, pelo link no rodapé de cada e-mail recebido.',
           'Registros técnicos: o provedor de hospedagem do site pode registrar o endereço IP e dados do acesso por motivos de segurança e funcionamento. Só acessamos esses registros no que for necessário para a operação.',
         ],
       },
@@ -77,7 +78,7 @@ export const privacy: Record<Locale, PrivacyDoc> = {
           'Cumprir obrigações legais e fiscais ligadas às vendas (art. 7º, II).',
           'Medir, de forma agregada e anônima, quais botões e peças despertam interesse, para melhorar o catálogo, e manter o site seguro: legítimo interesse (art. 7º, IX), respeitados seus direitos e liberdades.',
           'Exercer direitos em processos judiciais, administrativos ou arbitrais, quando necessário (art. 7º, VI).',
-          'Hoje não usamos o consentimento como base. Se um dia o usarmos (por exemplo, para enviar novidades), pediremos de forma específica e você poderá revogá-lo a qualquer momento, sem custo (art. 8º, § 5º).',
+          'Enviar novidades por e-mail a quem se cadastra para isso: consentimento (art. 7º, I), que você pode revogar a qualquer momento, sem custo, pelo link de cancelamento em cada e-mail ou pelo contato desta política (art. 8º, § 5º).',
         ],
       },
       {
@@ -169,6 +170,7 @@ export const privacy: Record<Locale, PrivacyDoc> = {
           'Click counter: when you tap a contact button (WhatsApp, SMS or email) or scan a piece’s QR code, we record only a random reference code, which button was used, the page, the piece, the language and the date and time. We do not store your IP address, device, browser or anything that identifies you.',
           'Storage in your browser: we only keep your language choice (cookie “NEXT_LOCALE”, for up to 1 year) so the site opens in the language you picked. It is a functional cookie with no tracking purpose. The administration area uses a session cookie that exists only for the shop’s staff.',
           'Contact and orders: if you reach us by WhatsApp, SMS or email, we process what you send (name, phone, email, messages). To complete a purchase we also record the delivery address, payment method, tracking code, order notes and, if any, photos of what was shipped.',
+          'Newsletter: if you sign up on the site to be notified about new pieces or promotions, we keep your email address and the language of the site version you signed up on. We use it only to send those notifications, when the admin decides to send one. You can unsubscribe at any time, free of charge, through the link in the footer of every email you receive.',
           'Technical logs: the site’s hosting provider may log your IP address and access data for security and operation. We only access those logs as far as operating the site requires.',
         ],
       },
@@ -183,7 +185,7 @@ export const privacy: Record<Locale, PrivacyDoc> = {
           'To meet legal and tax obligations tied to sales (LGPD art. 7, II; GDPR art. 6(1)(c)).',
           'To measure, in aggregate and anonymously, which buttons and pieces draw interest, so we can improve the catalogue, and to keep the site secure: legitimate interest (LGPD art. 7, IX; GDPR art. 6(1)(f)), respecting your rights and freedoms.',
           'To exercise rights in judicial, administrative or arbitration proceedings when needed (LGPD art. 7, VI).',
-          'We do not currently rely on consent. If we ever do (for example, to send news), we will ask for it specifically and you may withdraw it at any time, free of charge (LGPD art. 8, § 5).',
+          'To send newsletter emails to those who sign up for them: consent (LGPD art. 7, I; GDPR art. 6(1)(a)), which you may withdraw at any time, free of charge, through the unsubscribe link in each email or the contact in this policy (LGPD art. 8, § 5).',
         ],
       },
       {
@@ -275,6 +277,7 @@ export const privacy: Record<Locale, PrivacyDoc> = {
           'Contador de clics: cuando pulsas un botón de contacto (WhatsApp, SMS o correo) o escaneas el código QR de una pieza, registramos solo un código de referencia aleatorio, qué botón se usó, la página, la pieza, el idioma y la fecha y hora. No guardamos tu IP, tu dispositivo, tu navegador ni nada que te identifique.',
           'Almacenamiento en tu navegador: solo guardamos tu elección de idioma (cookie «NEXT_LOCALE», hasta 1 año) para abrir el sitio en el idioma que elegiste. Es una cookie funcional, sin fines de rastreo. El área administrativa usa una cookie de sesión que solo existe para el equipo de la tienda.',
           'Contacto y pedidos: si nos escribes por WhatsApp, SMS o correo, tratamos lo que nos envíes (nombre, teléfono, correo, mensajes). Para completar una compra registramos también la dirección de entrega, la forma de pago, el código de seguimiento, notas del pedido y, si las hay, fotos de lo enviado.',
+          'Novedades por correo: si te registras en el sitio para que te avisemos de piezas nuevas o promociones, guardamos tu correo electrónico y el idioma del sitio en el que te registraste. Lo usamos solo para enviar esos avisos, cuando el administrador decide enviar uno. Puedes cancelar en cualquier momento, sin costo, mediante el enlace en el pie de cada correo recibido.',
           'Registros técnicos: el proveedor de alojamiento del sitio puede registrar la dirección IP y datos del acceso por seguridad y funcionamiento. Solo accedemos a esos registros en lo necesario para operar.',
         ],
       },
@@ -289,7 +292,7 @@ export const privacy: Record<Locale, PrivacyDoc> = {
           'Cumplir obligaciones legales y fiscales ligadas a las ventas (LGPD art. 7, II; RGPD art. 6.1.c).',
           'Medir, de forma agregada y anónima, qué botones y piezas despiertan interés, para mejorar el catálogo, y mantener el sitio seguro: interés legítimo (LGPD art. 7, IX; RGPD art. 6.1.f), respetando tus derechos y libertades.',
           'Ejercer derechos en procesos judiciales, administrativos o arbitrales, cuando sea necesario (LGPD art. 7, VI).',
-          'Hoy no usamos el consentimiento como base. Si algún día lo usamos (por ejemplo, para enviar novedades), lo pediremos de forma específica y podrás revocarlo en cualquier momento, sin coste (LGPD art. 8, § 5).',
+          'Enviar novedades por correo a quienes se registran para ello: consentimiento (LGPD art. 7, I; RGPD art. 6.1.a), que puedes revocar en cualquier momento, sin coste, mediante el enlace de cancelación en cada correo o el contacto de esta política (LGPD art. 8, § 5).',
         ],
       },
       {

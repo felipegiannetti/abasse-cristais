@@ -1,6 +1,7 @@
 import { FloatingWhatsApp } from '@/components/FloatingWhatsApp';
 import { Footer } from '@/components/Footer';
 import { Navbar } from '@/components/Navbar';
+import { NewsletterModal } from '@/components/NewsletterModal';
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -11,6 +12,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <main>{children}</main>
       <Footer />
       <FloatingWhatsApp />
+      <NewsletterModal />
     </div>
   );
 }

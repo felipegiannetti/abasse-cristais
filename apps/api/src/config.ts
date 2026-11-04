@@ -61,4 +61,9 @@ export const config = {
   // Number of trusted reverse-proxy hops in front of the API (Vercel edge = 1). Never `true`:
   // that would trust a client-supplied X-Forwarded-For and let attackers dodge rate limits.
   trustProxyHops: Number.parseInt(process.env.TRUST_PROXY_HOPS ?? (isProd ? '1' : '0'), 10) || 0,
+  // Newsletter (admin → subscribers). Empty = the feature is disabled with a clear error instead of
+  // silently failing; unlike JWT_SECRET this never crashes the boot, since not every deploy uses it.
+  resendApiKey: process.env.RESEND_API_KEY?.trim() || '',
+  // "Name <address@your-verified-domain>" — Resend rejects sending from an unverified domain.
+  resendFromEmail: process.env.RESEND_FROM_EMAIL?.trim() || '',
 };

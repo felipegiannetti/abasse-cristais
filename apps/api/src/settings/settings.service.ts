@@ -61,7 +61,8 @@ export function normalizePhone(input: string): string {
 // The WHATWG/HTML5 `input[type=email]` pattern: permissive enough for real addresses (plus-addressing,
 // dots, hyphens), but the character classes exclude "<", ">", quotes and whitespace — unlike a loose
 // "has an @ and a dot" check, this can't be filled with markup (e.g. "<script>...</script>@x.com").
-const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
+// Exported: the newsletter module validates subscriber addresses with the same rule.
+export const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*\.[a-zA-Z]{2,}$/;
 
 /** Trims and lowercases; empty = hide the Email button. */
 export function normalizeEmail(input: string): string {

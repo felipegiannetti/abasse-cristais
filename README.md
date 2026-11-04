@@ -32,6 +32,7 @@ Além do catálogo, o painel controla o negócio (tudo **só para admin logado**
 - **Financeiro** (`/admin/finance`): faturamento (7/30/90 dias, 1 ano, tudo) com gráfico, comparação com o período anterior, ticket médio, peças e peso vendidos, lucro e margem (quando há custo cadastrado), categorias, pedras mais vendidas, países, formas de pagamento e o **funil** cliques no WhatsApp → conversas confirmadas → vendas. Faturamento conta vendas *paga, enviada e entregue*; datas seguem o horário de Brasília.
 - **Cliques no WhatsApp:** todo botão de WhatsApp do site registra um clique **anônimo** (sem IP, sem user-agent) e acrescenta à mensagem uma linha `Ref: K7M2QX · Enviado de: página do produto` (no idioma da versão). **O site só consegue contar o clique**: depois que o WhatsApp abre, ele não sabe se a mensagem foi enviada. O admin confirma a conversa digitando o código *Ref* no Financeiro, ou informando o código ao registrar a venda (a conversa é confirmada automaticamente e a venda fica ligada à origem). Para saber automaticamente quando a mensagem chegou, seria preciso a API oficial do WhatsApp Business.
 - **Envio para o mundo todo:** aviso na home, no hero, no rodapé e na página do produto. Os preços continuam em reais (R$).
+- **Notificações por e-mail** (`/admin/newsletter`): um pop-up no site (uma vez por visitante) pede o e-mail de quem quiser ser avisado de peças novas ou promoções. O admin escreve o assunto e a mensagem, opcionalmente escolhe produtos para ilustrar (foto, nome, valor e link), e envia pra todos os assinantes ativos de uma vez, via [Resend](https://resend.com). Cada e-mail tem um link de cancelamento próprio — quem cancela nunca mais recebe, sem precisar logar em nada. Exige `RESEND_API_KEY`/`RESEND_FROM_EMAIL` configurados (ver tabela de variáveis abaixo); sem eles a tela mostra um aviso em vez de travar o resto do painel.
 
 ## Idiomas (inglês, português e espanhol)
 
@@ -100,6 +101,8 @@ Crie **dois projetos** a partir deste mesmo repositório.
 | `ADMIN_USERNAME` | `admin` |
 | `ADMIN_INITIAL_PASSWORD` | senha temporária (opcional; será trocada no 1º login) |
 | `WEB_ORIGIN` | URL do site, ex. `https://abassecrystal.com.br` |
+| `RESEND_API_KEY` | opcional — sem ela a tela *Notificações* fica desativada |
+| `RESEND_FROM_EMAIL` | opcional — endereço de um domínio verificado no [Resend](https://resend.com), ex. `Abasse Crystal <novidades@seudominio.com>` |
 
 - Uma vez, com as variáveis de produção no seu terminal: `npm run db:deploy` e `npm run db:seed` (o script `vercel-build` também roda `prisma migrate deploy` no build).
 

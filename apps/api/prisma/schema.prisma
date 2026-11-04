@@ -261,3 +261,34 @@ model ExchangeRate {
 
   @@index([base, quote, fetchedAt])
 }
+
+// ------------------------------------------------------------------ newsletter
+
+model NewsletterSubscriber {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  // language the visitor was on when they subscribed (en/pt/es) — used for the unsubscribe footer and
+  // to link products in their language; the campaign's subject/body itself is not translated
+  locale           String    @default("pt")
+  unsubscribeToken String    @unique @default(cuid())
+  createdAt        DateTime  @default(now())
+  unsubscribedAt   DateTime?
+
+  @@index([unsubscribedAt])
+}
+
+// One row per newsletter blast the admin sends (new arrivals, promotions...). History only — sending
+// itself is fire-and-forget through Resend, nothing here tracks per-recipient delivery or opens.
+model NewsletterCampaign {
+  id             String   @id @default(cuid())
+  subject        String
+  body           String
+  // ids of the products featured in the email, snapshot at send time (a product can change/be deleted later)
+  productIds     Json     @default("[]")
+  recipientCount Int
+  // who sent it; no @relation (same convention as AuditLog.actorId — the log still reads if that admin is removed)
+  sentById       String?
+  sentAt         DateTime @default(now())
+
+  @@index([sentAt])
+}

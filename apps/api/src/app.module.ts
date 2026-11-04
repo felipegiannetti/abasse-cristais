@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { FinanceModule } from './finance/finance.module';
 import { FxModule } from './fx/fx.module';
 import { HealthController } from './health/health.controller';
+import { NewsletterModule } from './newsletter/newsletter.module';
 import { PrismaModule } from './prisma/prisma.service';
 import { ProductsModule } from './products/products.module';
 import { SalesModule } from './sales/sales.module';
@@ -28,6 +29,7 @@ import { TeamModule } from './team/team.module';
     AnalyticsModule,
     FinanceModule,
     FxModule,
+    NewsletterModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

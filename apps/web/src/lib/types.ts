@@ -99,6 +99,20 @@ export interface AuditLogList {
   pageSize: number;
 }
 
+export interface NewsletterCampaign {
+  id: string;
+  subject: string;
+  body: string;
+  productIds: string[];
+  recipientCount: number;
+  sentAt: string;
+}
+
+export interface NewsletterOverview {
+  activeSubscribers: number;
+  campaigns: NewsletterCampaign[];
+}
+
 export interface TeamMember {
   id: string;
   username: string;
