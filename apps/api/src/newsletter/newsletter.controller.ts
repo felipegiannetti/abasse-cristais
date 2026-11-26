@@ -28,7 +28,11 @@ export class PublicNewsletterController {
 
   @Post('subscribe')
   @HttpCode(200)
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  // Generous on purpose: the web app's domain rewrites to this api on a separate Vercel project, an extra proxy
+  // hop the IP-based bucketing isn't tuned for — several real visitors can land in the same bucket. Subscribing
+  // is low-risk (worst case: a stray fake email, trivial to remove later), so a tight limit isn't worth the
+  // false positives it was causing real visitors.
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
   subscribe(@Body() dto: SubscribeDto) {
     return this.newsletter.subscribe(dto.email, dto.locale);
   }
